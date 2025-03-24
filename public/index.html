@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalender Hijriyah</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white flex justify-center items-center min-h-screen transition-all duration-300">
+    <div id="box" class="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-6 text-center transition-all duration-300">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold">🕌 Kalender Hijriyah</h1>
+            <button id="toggle-theme" class="bg-gray-700 text-white px-3 py-1 rounded-lg transition-all">
+                🌞 Light Mode
+            </button>
+        </div>
+
+        <!-- Waktu real-time -->
+        <p id="current-time" class="text-lg text-black mb-4">Loading waktu...</p>
+
+        <!-- Dropdown untuk metode -->
+        <div class="mb-4">
+            <label for="method" class="block text-sm font-medium text-gray-400">Metode Perhitungan:</label>
+            <select id="method" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white">
+                <option value="global">Global</option>
+                <option value="hisab">Hisab</option>
+                <option value="rukyat">Rukyat</option>
+                <option value="imkanur-rukyat">Imkanur Rukyat</option>
+            </select>
+        </div>
+
+        <!-- Loading indikator -->
+        <p id="loading" class="text-yellow-400">📍 Menunggu lokasi...</p>
+
+        <!-- Tanggal Masehi & Hijriyah -->
+        <div class="mt-4 p-4 rounded-lg transition-all duration-300" id="date-box">
+            <p><strong>📅 Tanggal Masehi:</strong> <span id="gregorian-date">-</span></p>
+            <p><strong>🕌 Tanggal Hijriyah:</strong> <span id="hijri-date">-</span></p>
+        </div>
+
+        <script src="script.js"></script>
+    </div>
+</body>
+</html>
