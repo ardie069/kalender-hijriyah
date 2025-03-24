@@ -13,8 +13,8 @@ const HIJRI_METHOD = process.env.HIJRI_METHOD || 'global';
 app.use(express.static('public'));
 
 app.get("/hijri-date", (req, res) => {
-    const lat = parseFloat(req.query.lat);
-    const lon = parseFloat(req.query.lon);
+    const lat = parseFloat(req.query.lat) || 0;
+    const lon = parseFloat(req.query.lon) || 0;
     const method = req.query.method || "global"; // Default ke metode "global"
 
     if (isNaN(lat) || isNaN(lon)) {
