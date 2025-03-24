@@ -57,9 +57,12 @@ function julianToHijri(jd) {
 /**
  * Ambil tanggal Hijriyah berdasarkan lokasi pengguna dan metode perhitungan
  */
-function getHijriDate(lat, lon, method = 'global') {
+function getHijriDate(lat, lon, method, timezone = "UTC") {
     const now = new Date();
     const sunsetTime = SunCalc.getTimes(now, lat, lon).sunset;
+    const localTime = new Date().toLocaleString("id-ID", { timeZone: timezone });
+
+    console.log(`📅 Menghitung Hijriyah untuk ${lat}, ${lon} dengan metode ${method} (Zona Waktu: ${timezone})`);
 
     console.log(`⏳ Sekarang: ${now.toISOString()}`);
     console.log(`🌅 Matahari terbenam: ${sunsetTime.toISOString()}`);
@@ -121,7 +124,7 @@ function getHijriDate(lat, lon, method = 'global') {
     }
 
     console.log(`📅 Hijriyah akhir: ${JSON.stringify(hijri)}`);
-    return { ...hijri, method };
+    return { ...hijri, method, timezone, localTime };
 }
 
 export { getHijriDate };
