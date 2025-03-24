@@ -8,6 +8,8 @@
 </head>
 <body class="bg-gray-900 text-white flex justify-center items-center min-h-screen transition-all duration-300">
     <div id="box" class="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-6 text-center transition-all duration-300">
+        
+        <!-- Header dengan Toggle Mode -->
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold">🕌 Kalender Hijriyah</h1>
             <button id="toggle-theme" class="bg-gray-700 text-white px-3 py-1 rounded-lg transition-all">
@@ -15,12 +17,13 @@
             </button>
         </div>
 
-        <!-- Waktu real-time -->
-        <p id="current-time" class="text-lg text-black mb-4">Loading waktu...</p>
+        <!-- Waktu Real-Time & Zona Waktu -->
+        <p id="current-time" class="text-lg text-white font-medium mb-2">🕒 Loading waktu...</p>
+        <p id="timezone" class="text-sm text-gray-400 mb-4">🌍 Zona Waktu: -</p>
 
-        <!-- Dropdown untuk metode -->
+        <!-- Dropdown untuk Metode -->
         <div class="mb-4">
-            <label for="method" class="block text-sm font-medium text-gray-400">Metode Perhitungan:</label>
+            <label for="method" class="block text-sm font-medium text-gray-300" id="method-label">Metode Perhitungan:</label>
             <select id="method" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white">
                 <option value="global">Global</option>
                 <option value="hisab">Hisab</option>
@@ -29,11 +32,11 @@
             </select>
         </div>
 
-        <!-- Loading indikator -->
-        <p id="loading" class="text-yellow-400">📍 Menunggu lokasi...</p>
+        <!-- Indikator Loading -->
+        <p id="loading" class="text-yellow-400 font-semibold">📍 Menunggu lokasi...</p>
 
         <!-- Tanggal Masehi & Hijriyah -->
-        <div class="mt-4 p-4 rounded-lg transition-all duration-300" id="date-box">
+        <div class="mt-4 p-4 bg-gray-700 rounded-lg transition-all duration-300" id="date-box">
             <p><strong>📅 Tanggal Masehi:</strong> <span id="gregorian-date">-</span></p>
             <p><strong>🕌 Tanggal Hijriyah:</strong> <span id="hijri-date">-</span></p>
         </div>
