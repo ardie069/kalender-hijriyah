@@ -31,11 +31,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
             try {
                 const response = await fetch(`/hijri-date?lat=${latitude}&lon=${longitude}&method=${method}`);
+                const response2 = await fetch(`/hijri-date?lat=${latitude}&lon=${longitude}&method=${method}`);
                 const data = await response.json();
+                const data2 = await response2.json();
 
                 loadingText.style.display = "none";
 
                 if (data.hijriDate) {
+                    const today = new Date();
+                    gregorianDateText.textContent = today.toLocaleDateString("id-ID", {
+                        weekday: "long", year: "numeric", month: "long", day: "numeric"
+                    });
+
+                    hijriDateText.textContent = `${data.hijriDate.day} ${getHijriMonthName(data.hijriDate.month)} ${data.hijriDate.year} H`;
+                } else {
+                    hijriDateText.textContent = "⚠️ Gagal mendapatkan data.";
+                }
+                if (data2.hijriDate) {
                     const today = new Date();
                     gregorianDateText.textContent = today.toLocaleDateString("id-ID", {
                         weekday: "long", year: "numeric", month: "long", day: "numeric"
