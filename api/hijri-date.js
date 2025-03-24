@@ -1,3 +1,5 @@
+import { getHijriDate } from "../server/hijriCalculator";
+
 export default function handler(req, res) {
     const { lat, lon, method } = req.query;
 
