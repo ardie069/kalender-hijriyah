@@ -1,0 +1,6 @@
+{
+    "rewrites": [
+      { "source": "/hijri-date", "destination": "/api/hijri_date" }
+    ]
+  }
+  
