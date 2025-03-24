@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             try {
                 const response = await fetch(`/hijri-date?lat=${latitude}&lon=${longitude}&method=${method}`);
-                const response2 = await fetch(`/hijri-date?lat=${latitude}&lon=${longitude}&method=${method}`);
+                const response2 = await fetch(`/api/hijri-date?lat=${latitude}&lon=${longitude}&method=${method}`);
                 const data = await response.json();
                 const data2 = await response2.json();
 
