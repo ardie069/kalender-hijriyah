@@ -1,4 +1,4 @@
-import { getHijriDate } from "../server/hijriCalculator";
+const { getHijriDate } = require("../server/hijriCalculator");
 
 export default function handler(req, res) {
     const { lat, lon, method, timezone } = req.query; // 🟢 Ambil timezone
