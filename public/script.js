@@ -24,46 +24,47 @@ document.addEventListener("DOMContentLoaded", () => {
             hijriDateText.textContent = "⚠️ Geolocation tidak didukung.";
             return;
         }
-
+    
         navigator.geolocation.getCurrentPosition(async (position) => {
             const { latitude, longitude } = position.coords;
             const method = methodSelect.value;
-
+    
+            // 🔥 Pilih endpoint berdasarkan lingkungan
+            const API_URL = window.location.hostname.includes("localhost")
+                ? "/hijri-date"  // Untuk lokal (Express.js)
+                : "/api/hijri-date";  // Untuk Vercel
+    
             try {
-                const response = await fetch(`/hijri-date?lat=${latitude}&lon=${longitude}&method=${method}`);
-                const response2 = await fetch(`/api/hijri-date?lat=${latitude}&lon=${longitude}&method=${method}`);
+                console.log(`📡 Fetching from ${API_URL}`);
+                const response = await fetch(`${API_URL}?lat=${latitude}&lon=${longitude}&method=${method}`);
+    
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+    
                 const data = await response.json();
-                const data2 = await response2.json();
-
+                console.log("✅ Data diterima:", data);
+    
                 loadingText.style.display = "none";
-
+    
                 if (data.hijriDate) {
                     const today = new Date();
                     gregorianDateText.textContent = today.toLocaleDateString("id-ID", {
                         weekday: "long", year: "numeric", month: "long", day: "numeric"
                     });
-
-                    hijriDateText.textContent = `${data.hijriDate.day} ${getHijriMonthName(data.hijriDate.month)} ${data.hijriDate.year} H`;
-                } else {
-                    hijriDateText.textContent = "⚠️ Gagal mendapatkan data.";
-                }
-                if (data2.hijriDate) {
-                    const today = new Date();
-                    gregorianDateText.textContent = today.toLocaleDateString("id-ID", {
-                        weekday: "long", year: "numeric", month: "long", day: "numeric"
-                    });
-
+    
                     hijriDateText.textContent = `${data.hijriDate.day} ${getHijriMonthName(data.hijriDate.month)} ${data.hijriDate.year} H`;
                 } else {
                     hijriDateText.textContent = "⚠️ Gagal mendapatkan data.";
                 }
             } catch (error) {
-                hijriDateText.textContent = "❌ Terjadi kesalahan.";
+                console.error("❌ Error Fetching Data:", error);
+                hijriDateText.textContent = "❌ Terjadi kesalahan saat mengambil data.";
             }
         }, () => {
             hijriDateText.textContent = "⚠️ Izin lokasi ditolak.";
         });
-    }
+    }    
 
     function getHijriMonthName(month) {
         const hijriMonths = [
