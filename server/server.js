@@ -17,13 +17,13 @@ app.get("/hijri-date", (req, res) => {
     const lat = parseFloat(req.query.lat) || 0;
     const lon = parseFloat(req.query.lon) || 0;
     const method = req.query.method || "global";
-    const timezone = req.query.timezone || "UTC"; // 🔥 Ambil zona waktu pengguna (default: UTC)
+    const timezone = req.query.timezone || "UTC";
 
     if (isNaN(lat) || isNaN(lon)) {
         return res.status(400).json({ error: "Lokasi tidak valid" });
     }
 
-    const hijriDate = getHijriDate(lat, lon, method, timezone); // Gunakan zona waktu pengguna
+    const hijriDate = getHijriDate(lat, lon, method, timezone);
     res.json({ hijriDate });
 });
 
@@ -34,9 +34,6 @@ app.get("/hijri-end-month", (req, res) => {
     const timezone = req.query.timezone || TIMEZONE;
 
     const prediction = predictEndOfMonth(lat, lon, method, timezone);
-
-    console.log("📡 API Response:", JSON.stringify(prediction, null, 2)); // ✅ Tambahkan ini
-
     res.json(prediction);
 });
 
