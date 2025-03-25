@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const loadingText = document.getElementById("loading");
     const hijriDateText = document.getElementById("hijri-date");
-    const gregorianDateText = document.getElementById("gregorian-date");
     const currentTimeText = document.getElementById("current-time");
     const methodSelect = document.getElementById("method");
     const methodLabel = document.getElementById("method-label");
@@ -12,8 +11,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const timezoneText = document.getElementById("timezone");
 
     function updateRealTime() {
-        if (!currentTimeText || !timezoneText) return;
-
         setInterval(() => {
             const now = new Date();
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -29,6 +26,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function fetchLocationAndHijriDate() {
+        loadingText.style.display = "block";
+        hijriDateText.textContent = "";
+
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
@@ -56,10 +56,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 await fetchHijriDate(data.lat, data.lon);
             } else {
                 hijriDateText.textContent = "⚠️ Gagal mendapatkan lokasi.";
+                loadingText.style.display = "none";
             }
         } catch (error) {
             console.error("❌ Error Fetching Location by IP:", error);
             hijriDateText.textContent = "❌ Gagal mendapatkan lokasi.";
+            loadingText.style.display = "none";
         }
     }
 
@@ -83,11 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
             loadingText.style.display = "none";
 
             if (data.hijriDate) {
-                const today = new Date();
-                gregorianDateText.textContent = today.toLocaleDateString("id-ID", {
-                    weekday: "long", year: "numeric", month: "long", day: "numeric"
-                });
-
                 hijriDateText.textContent = `${data.hijriDate.day} ${getHijriMonthName(data.hijriDate.month)} ${data.hijriDate.year} H`;
             } else {
                 hijriDateText.textContent = "⚠️ Gagal mendapatkan data.";
@@ -108,38 +105,40 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function toggleTheme() {
-        const isDarkMode = body.classList.contains("bg-gray-900");
+        body.classList.toggle("bg-gray-900");
+        body.classList.toggle("bg-white");
+        body.classList.toggle("text-white");
+        body.classList.toggle("text-black");
 
-        if (isDarkMode) {
-            body.classList.replace("bg-gray-900", "bg-white");
-            body.classList.replace("text-white", "text-black");
-            box.classList.replace("bg-gray-800", "bg-gray-200");
-            dateBox.classList.replace("bg-gray-700", "bg-gray-300");
-            currentTimeText.classList.replace("text-white", "text-black");
-            timezoneText.classList.replace("text-gray-400", "text-black");
-            methodSelect.classList.replace("bg-gray-300", "bg-gray-700");
-            methodSelect.classList.replace("text-black", "text-white");
-            methodLabel.classList.replace("text-gray-300", "text-black");
-            toggleThemeButton.textContent = "🌙 Dark Mode";
-            localStorage.setItem("theme", "light");
-        } else {
-            body.classList.replace("bg-white", "bg-gray-900");
-            body.classList.replace("text-black", "text-white");
-            box.classList.replace("bg-gray-200", "bg-gray-800");
-            dateBox.classList.replace("bg-gray-300", "bg-gray-700");
-            currentTimeText.classList.replace("text-black", "text-white");
-            timezoneText.classList.replace("text-black", "text-gray-400");
-            methodSelect.classList.replace("bg-gray-700", "bg-gray-300");
-            methodSelect.classList.replace("text-white", "text-black");
-            methodLabel.classList.replace("text-black", "text-gray-300");
-            toggleThemeButton.textContent = "🌞 Light Mode";
-            localStorage.setItem("theme", "dark");
-        }
+        box.classList.toggle("bg-gray-800");
+        box.classList.toggle("bg-gray-200");
+
+        dateBox.classList.toggle("bg-gray-700");
+        dateBox.classList.toggle("bg-gray-300");
+
+        currentTimeText.classList.toggle("text-white");
+        currentTimeText.classList.toggle("text-black");
+
+        timezoneText.classList.toggle("text-gray-400");
+        timezoneText.classList.toggle("text-black");
+
+        methodSelect.classList.toggle("bg-gray-300");
+        methodSelect.classList.toggle("bg-gray-700");
+
+        methodSelect.classList.toggle("text-black");
+        methodSelect.classList.toggle("text-white");
+
+        methodLabel.classList.toggle("text-gray-300");
+        methodLabel.classList.toggle("text-black");
+
+        const isDarkMode = body.classList.contains("bg-gray-900");
+        toggleThemeButton.textContent = isDarkMode ? "🌞 Light Mode" : "🌙 Dark Mode";
+        localStorage.setItem("theme", isDarkMode ? "dark" : "light");
     }
 
     function loadTheme() {
         const savedTheme = localStorage.getItem("theme");
-        if (savedTheme === "light") {
+        if (savedTheme === "dark") {
             toggleTheme();
         }
     }
