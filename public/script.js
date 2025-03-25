@@ -10,14 +10,12 @@ document.addEventListener("DOMContentLoaded", () => {
         box: document.getElementById("box"),
         dateBox: document.getElementById("date-box"),
         timezoneText: document.getElementById("timezone"),
-        hijriEndPrediction: document.getElementById("hijri-end-prediction"),
+        hijriEndPrediction: document.getElementById("hijri-end-prediction")
     };
 
     let lat = 0, lon = 0;
-    let selectedMethod = elements.methodSelect.value;
     let userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    // 📌 Tentukan URL API berdasarkan lingkungan (Lokal vs Produksi)
     const API_BASE_URL = window.location.hostname.includes("localhost")
         ? "http://localhost:3000"
         : "/api";
@@ -46,16 +44,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 async (position) => {
                     lat = position.coords.latitude;
                     lon = position.coords.longitude;
-                    console.log(`📍 Lokasi diperoleh: ${lat}, ${lon}`);
                     await fetchHijriData();
                 },
                 async () => {
-                    console.warn("⚠️ Geolocation ditolak. Menggunakan IP...");
                     await fetchLocationByIP();
                 }
             );
         } else {
-            console.warn("⚠️ Geolocation tidak didukung. Menggunakan IP...");
             await fetchLocationByIP();
         }
     }
@@ -68,14 +63,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if (data.lat && data.lon) {
                 lat = data.lat;
                 lon = data.lon;
-                console.log(`📍 Lokasi berdasarkan IP: ${lat}, ${lon}`);
                 await fetchHijriData();
             } else {
                 elements.hijriDateText.textContent = "⚠️ Gagal mendapatkan lokasi.";
                 elements.loadingText.style.display = "none";
             }
         } catch (error) {
-            console.error("❌ Error Fetching Location by IP:", error);
             elements.hijriDateText.textContent = "❌ Gagal mendapatkan lokasi.";
             elements.loadingText.style.display = "none";
         }
@@ -87,15 +80,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const END_MONTH_URL = `${API_BASE_URL}/hijri-end-month`;
 
         if (!lat || !lon || !userTimezone) {
-            console.error("❌ Lokasi atau zona waktu tidak tersedia.");
             elements.hijriDateText.textContent = "❌ Lokasi atau zona waktu belum diatur.";
             elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>Data tidak tersedia.</p>";
             return;
         }
 
         try {
-            console.log(`📡 Mengambil data Hijriyah dari ${API_URL} dan ${END_MONTH_URL} (Lat: ${lat}, Lon: ${lon})`);
-
             const [dateResponse, endMonthResponse] = await Promise.all([
                 fetch(`${API_URL}?lat=${lat}&lon=${lon}&method=${selectedMethod}&timezone=${userTimezone}`),
                 fetch(`${END_MONTH_URL}?lat=${lat}&lon=${lon}&method=${selectedMethod}&timezone=${userTimezone}`)
@@ -106,12 +96,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const dateData = await dateResponse.json();
             const endMonthData = await endMonthResponse.json();
 
-            console.log("📊 API Response - Hijri Date:", dateData);
-            console.log("📊 API Response - End of Month:", endMonthData);
-
             elements.loadingText.style.display = "none";
 
-            // **Menampilkan tanggal Hijriyah**
             if (dateData?.hijriDate) {
                 elements.hijriDateText.textContent =
                     `${dateData.hijriDate.day} ${getHijriMonthName(dateData.hijriDate.month)} ${dateData.hijriDate.year} H`;
@@ -119,7 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 elements.hijriDateText.textContent = "⚠️ Gagal mendapatkan data.";
             }
 
-            // **Menampilkan prediksi akhir bulan**
             if (endMonthData?.hijri) {
                 const {
                     moonAltitude,
@@ -130,12 +115,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     explanation
                 } = endMonthData;
 
-                // **Konversi data numerik jika tersedia**
                 const formattedMoonAltitude = moonAltitude !== "Tidak tersedia" ? parseFloat(moonAltitude).toFixed(2) : "Tidak tersedia";
                 const formattedElongation = elongation !== "Tidak tersedia" ? parseFloat(elongation).toFixed(2) : "Tidak tersedia";
                 const formattedSunAltitude = sunAltitude !== "Tidak tersedia" ? parseFloat(sunAltitude).toFixed(2) : "Tidak tersedia";
 
-                // **Memastikan moonAge tidak NaN atau null**
                 const parsedMoonAge = parseFloat(moonAge);
                 const formattedMoonAge = !isNaN(parsedMoonAge) && moonAge !== null ? `${parsedMoonAge.toFixed(2)} jam` : "Tidak diketahui";
 
@@ -172,7 +155,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>Gagal mendapatkan data.</p>";
             }
         } catch (error) {
-            console.error("❌ Error Fetching Hijri Data:", error);
             elements.hijriDateText.textContent = "❌ Terjadi kesalahan saat mengambil data.";
             elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>Gagal mengambil data.</p>";
         }
