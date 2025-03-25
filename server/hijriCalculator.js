@@ -1,5 +1,5 @@
 import SunCalc from 'suncalc';
-import { solar, moonposition, angle } from 'astronomia';
+import { solar, moonposition } from 'astronomia';
 import { DateTime } from 'luxon';
 
 function angularSeparation(ra1, dec1, ra2, dec2) {
