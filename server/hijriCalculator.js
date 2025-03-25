@@ -1,5 +1,6 @@
 import SunCalc from 'suncalc';
 import { julian, moonposition, solar } from 'astronomia';
+import { DateTime } from 'luxon';
 
 /**
  * Konversi Gregorian ke Julian Day
@@ -41,9 +42,7 @@ function julianToHijri(jd) {
     const startYearJD = jdEpoch + Math.floor((10631 * hijriYear) / 30);
     let remainingDays = Math.floor(jd - startYearJD);
 
-    if (remainingDays < 0) {
-        remainingDays += 354; // Koreksi jika kurang dari nol
-    }
+    if (remainingDays < 0) remainingDays += 354;
 
     let hijriMonth = Math.ceil(remainingDays / 29.5);
     hijriMonth = Math.max(1, Math.min(12, hijriMonth));
@@ -58,17 +57,18 @@ function julianToHijri(jd) {
  * Ambil tanggal Hijriyah berdasarkan lokasi pengguna dan metode perhitungan
  */
 function getHijriDate(lat, lon, method, timezone) {
-    const now = new Date();
-    const sunsetTime = SunCalc.getTimes(now, lat, lon).sunset;
-    const localTime = new Date().toLocaleString("id-ID", { timeZone: timezone });
+    const nowUTC = DateTime.utc();
+    const sunsetTimeUTC = SunCalc.getTimes(nowUTC.toJSDate(), lat, lon).sunset;
+    const sunsetLuxon = DateTime.fromJSDate(sunsetTimeUTC, { zone: "utc" }).setZone(timezone);
+    const nowLuxon = nowUTC.setZone(timezone);
 
-    console.log(`📅 Menghitung Hijriyah untuk ${lat}, ${lon} dengan metode ${method} (Zona Waktu: ${timezone})`);
-    console.log(`⏳ Sekarang: ${now.toISOString()}`);
-    console.log(`🌅 Matahari terbenam: ${sunsetTime.toISOString()}`);
+    console.log(`⏳ Sekarang UTC    : ${nowUTC.toISO()}`);
+    console.log(`⏳ Sekarang (Local): ${nowLuxon.toISO()}`);
+    console.log(`🌅 Matahari terbenam (Local): ${sunsetLuxon.toISO()}`);
 
-    // Gunakan waktu setelah matahari terbenam untuk menghitung Hijriyah
-    const effectiveTime = now >= sunsetTime ? new Date(now.getTime() + 86400000) : now;
-    let jd = gregorianToJulian(effectiveTime.getFullYear(), effectiveTime.getMonth() + 1, effectiveTime.getDate());
+    // Gunakan hari berikutnya jika sudah melewati matahari terbenam
+    const effectiveDate = nowLuxon >= sunsetLuxon ? nowLuxon.plus({ days: 1 }) : nowLuxon;
+    let jd = gregorianToJulian(effectiveDate.year, effectiveDate.month, effectiveDate.day);
 
     console.log(`📅 Julian Day: ${jd}`);
 
@@ -88,27 +88,17 @@ function getHijriDate(lat, lon, method, timezone) {
         console.log(`☀️ Posisi Matahari: altitude=${sunAltitude}`);
         console.log(`🔭 Konjungsi terjadi: ${conjunction}`);
 
-        if (method === 'global' || method === 'hisab') {
-            if (conjunction && moonAltitude > sunAltitude) {
-                hijri.day = 1;
-                hijri.month++;
-            } else {
-                hijri.day = 30;
-            }
-        } else if (method === 'rukyat') {
-            if (conjunction && moonAltitude > sunAltitude) {
-                hijri.day = 1;
-                hijri.month++;
-            } else {
-                hijri.day = 30;
-            }
-        } else if (method === 'imkanur-rukyat') {
-            if (conjunction && moonAltitude >= 3 && elongation >= 6.4) {
-                hijri.day = 1;
-                hijri.month++;
-            } else {
-                hijri.day = 30;
-            }
+        if ((method === 'global' || method === 'hisab') && conjunction && moonAltitude > sunAltitude) {
+            hijri.day = 1;
+            hijri.month++;
+        } else if (method === 'rukyat' && conjunction && moonAltitude > sunAltitude) {
+            hijri.day = 1;
+            hijri.month++;
+        } else if (method === 'imkanur-rukyat' && conjunction && moonAltitude >= 3 && elongation >= 6.4) {
+            hijri.day = 1;
+            hijri.month++;
+        } else {
+            hijri.day = 30;
         }
 
         // Pastikan bulan tidak melebihi 12
@@ -119,7 +109,13 @@ function getHijriDate(lat, lon, method, timezone) {
     }
 
     console.log(`📅 Hijriyah akhir: ${JSON.stringify(hijri)}`);
-    return { ...hijri, method, timezone, localTime };
+    return { 
+        ...hijri, 
+        method, 
+        timezone, 
+        localTime: nowLuxon.toISO(),
+        sunsetTime: sunsetLuxon.toISO()
+    };
 }
 
 export { getHijriDate };
