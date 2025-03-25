@@ -80,18 +80,37 @@ function julianToHijri(jd) {
 }
 
 export function getHijriDate(lat, lon, method, timezone, jd = null) {
-    const nowUTC = DateTime.utc();
-    const sunsetTimeUTC = SunCalc.getTimes(nowUTC.toJSDate(), lat, lon).sunset;
-    const sunsetLuxon = DateTime.fromJSDate(sunsetTimeUTC, { zone: "utc" }).setZone(timezone);
-    const nowLuxon = nowUTC.setZone(timezone);
-    const effectiveDate = nowLuxon >= sunsetLuxon ? nowLuxon.plus({ days: 1 }) : nowLuxon;
+    const nowLocal = DateTime.local().setZone(timezone); 
+
+    const yesterdayLocal = nowLocal.minus({ days: 1 });
+    
+    const sunsetTodayUTC = SunCalc.getTimes(nowLocal.toJSDate(), lat, lon).sunset;
+    const sunsetYesterdayUTC = SunCalc.getTimes(yesterdayLocal.toJSDate(), lat, lon).sunset;
+
+    const sunsetToday = DateTime.fromJSDate(sunsetTodayUTC).setZone(timezone);
+    const sunsetYesterday = DateTime.fromJSDate(sunsetYesterdayUTC).setZone(timezone);
+
+    let lastSunset = nowLocal >= sunsetToday ? sunsetToday : sunsetYesterday;
+
+    let effectiveDate = nowLocal;
+    if (nowLocal >= lastSunset) {
+        effectiveDate = nowLocal.plus({ days: 1 }).startOf('day');
+    }
 
     if (!jd) {
         jd = getJulianDate(effectiveDate);
     }
 
     let hijri = julianToHijri(jd);
-    return { ...hijri, method, timezone, localTime: nowLuxon.toISO(), sunsetTime: sunsetLuxon.toISO() };
+    return {
+        ...hijri,
+        method,
+        timezone,
+        localTime: nowLocal.toISO(),
+        sunsetYesterday: sunsetYesterday.toISO(),
+        sunsetToday: sunsetToday.toISO(),
+        effectiveDate: effectiveDate.toISO()
+    };
 }
 
 export function predictEndOfMonth(lat, lon, method, timezone, targetHijriDay = 29) {
