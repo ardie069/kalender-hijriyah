@@ -6,7 +6,7 @@ export default function handler(req, res) {
     try {
         const { lat, lon, method, timezone } = req.query;
 
-        // Validasi parameter
+        // Validasi parameter input
         if (!lat || !lon || !method || !timezone) {
             return res.status(400).json({ error: "Latitude, Longitude, Method, dan Timezone diperlukan!" });
         }
@@ -20,7 +20,7 @@ export default function handler(req, res) {
 
         console.log("📡 API Request:", { latitude, longitude, method, timezone });
 
-        // Hitung waktu matahari terbenam di lokasi pengguna dalam UTC
+        // Waktu UTC dan lokal
         const nowUTC = DateTime.utc();
         const sunsetUTC = SunCalc.getTimes(nowUTC.toJSDate(), latitude, longitude).sunset;
         const sunsetLocal = DateTime.fromJSDate(sunsetUTC).setZone(timezone);
@@ -30,7 +30,7 @@ export default function handler(req, res) {
         console.log(`⏳ Sekarang Lokal (${timezone}): ${nowLocal.toISO()}`);
         console.log(`🌅 Matahari terbenam (${timezone}): ${sunsetLocal.toISO()}`);
 
-        // Ambil tanggal Hijriyah berdasarkan parameter
+        // Hitung tanggal Hijriyah
         const hijriDate = getHijriDate(latitude, longitude, method, timezone);
 
         res.status(200).json({
