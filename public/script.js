@@ -110,6 +110,9 @@ document.addEventListener("DOMContentLoaded", () => {
         body.classList.toggle("text-white");
         body.classList.toggle("text-black");
 
+        loadingText.classList.toggle("text-yellow-400");
+        loadingText.classList.toggle("text-yellow-800");
+
         box.classList.toggle("bg-gray-800");
         box.classList.toggle("bg-gray-200");
 
