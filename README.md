@@ -30,7 +30,7 @@ npm install
 
 ### **4. Jalankan server lokal**
 ```sh
-npm start
+node server/server.js
 ```
 
 ### **5. Buka di browser:**
