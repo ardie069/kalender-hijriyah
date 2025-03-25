@@ -1,46 +1,61 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const loadingText = document.getElementById("loading");
-    const hijriDateText = document.getElementById("hijri-date");
-    const currentTimeText = document.getElementById("current-time");
-    const methodSelect = document.getElementById("method");
-    const methodLabel = document.getElementById("method-label");
-    const body = document.body;
-    const toggleThemeButton = document.getElementById("toggle-theme");
-    const box = document.getElementById("box");
-    const dateBox = document.getElementById("date-box");
-    const timezoneText = document.getElementById("timezone");
+    const elements = {
+        loadingText: document.getElementById("loading"),
+        hijriDateText: document.getElementById("hijri-date"),
+        currentTimeText: document.getElementById("current-time"),
+        methodSelect: document.getElementById("method"),
+        methodLabel: document.getElementById("method-label"),
+        body: document.body,
+        toggleThemeButton: document.getElementById("toggle-theme"),
+        box: document.getElementById("box"),
+        dateBox: document.getElementById("date-box"),
+        timezoneText: document.getElementById("timezone"),
+        hijriEndPrediction: document.getElementById("hijri-end-prediction"),
+    };
+
+    let lat = 0, lon = 0;
+    let selectedMethod = elements.methodSelect.value;
+    let userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // 📌 Tentukan URL API berdasarkan lingkungan (Lokal vs Produksi)
+    const API_BASE_URL = window.location.hostname.includes("localhost")
+        ? "http://localhost:3000"
+        : "/api";
 
     function updateRealTime() {
         setInterval(() => {
             const now = new Date();
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             const offset = now.getTimezoneOffset() / -60;
 
-            currentTimeText.textContent = `🕒 ${now.toLocaleString("id-ID", {
+            elements.currentTimeText.textContent = `🕒 ${now.toLocaleString("id-ID", {
                 weekday: "long", year: "numeric", month: "long", day: "numeric",
                 hour: "2-digit", minute: "2-digit", second: "2-digit"
             })}`;
 
-            timezoneText.textContent = `🌍 Zona Waktu: ${timezone} (UTC${offset >= 0 ? "+" : ""}${offset})`;
+            elements.timezoneText.textContent = `🌍 Zona Waktu: ${userTimezone} (UTC${offset >= 0 ? "+" : ""}${offset})`;
         }, 1000);
     }
 
     async function fetchLocationAndHijriDate() {
-        loadingText.style.display = "block";
-        hijriDateText.textContent = "";
+        elements.loadingText.style.display = "block";
+        elements.hijriDateText.textContent = "";
+        elements.hijriEndPrediction.innerHTML = "";
 
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
-                    await fetchHijriDate(position.coords.latitude, position.coords.longitude);
+                    lat = position.coords.latitude;
+                    lon = position.coords.longitude;
+                    console.log(`📍 Lokasi diperoleh: ${lat}, ${lon}`);
+                    await fetchHijriData();
                 },
                 async () => {
-                    console.warn("⚠️ Geolocation ditolak. Mencoba lokasi berdasarkan IP...");
+                    console.warn("⚠️ Geolocation ditolak. Menggunakan IP...");
                     await fetchLocationByIP();
                 }
             );
         } else {
-            console.warn("⚠️ Geolocation tidak didukung. Menggunakan lokasi berdasarkan IP...");
+            console.warn("⚠️ Geolocation tidak didukung. Menggunakan IP...");
             await fetchLocationByIP();
         }
     }
@@ -49,49 +64,117 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const response = await fetch("https://ip-api.com/json");
             if (!response.ok) throw new Error("Gagal mengambil lokasi IP.");
-
             const data = await response.json();
             if (data.lat && data.lon) {
-                console.log(`📍 Lokasi berdasarkan IP: ${data.city}, ${data.country}`);
-                await fetchHijriDate(data.lat, data.lon);
+                lat = data.lat;
+                lon = data.lon;
+                console.log(`📍 Lokasi berdasarkan IP: ${lat}, ${lon}`);
+                await fetchHijriData();
             } else {
-                hijriDateText.textContent = "⚠️ Gagal mendapatkan lokasi.";
-                loadingText.style.display = "none";
+                elements.hijriDateText.textContent = "⚠️ Gagal mendapatkan lokasi.";
+                elements.loadingText.style.display = "none";
             }
         } catch (error) {
             console.error("❌ Error Fetching Location by IP:", error);
-            hijriDateText.textContent = "❌ Gagal mendapatkan lokasi.";
-            loadingText.style.display = "none";
+            elements.hijriDateText.textContent = "❌ Gagal mendapatkan lokasi.";
+            elements.loadingText.style.display = "none";
         }
     }
 
-    async function fetchHijriDate(lat, lon) {
-        const method = methodSelect.value;
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    async function fetchHijriData() {
+        const selectedMethod = elements.methodSelect.value;
+        const API_URL = `${API_BASE_URL}/hijri-date`;
+        const END_MONTH_URL = `${API_BASE_URL}/hijri-end-month`;
 
-        const API_URL = window.location.hostname.includes("localhost")
-            ? "/hijri-date"
-            : "/api/hijri-date";
+        if (!lat || !lon || !userTimezone) {
+            console.error("❌ Lokasi atau zona waktu tidak tersedia.");
+            elements.hijriDateText.textContent = "❌ Lokasi atau zona waktu belum diatur.";
+            elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>Data tidak tersedia.</p>";
+            return;
+        }
 
         try {
-            console.log(`📡 Fetching from ${API_URL} with location ${lat}, ${lon}, TZ: ${timezone}`);
-            const response = await fetch(`${API_URL}?lat=${lat}&lon=${lon}&method=${method}&timezone=${timezone}`);
+            console.log(`📡 Mengambil data Hijriyah dari ${API_URL} dan ${END_MONTH_URL} (Lat: ${lat}, Lon: ${lon})`);
 
-            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            const [dateResponse, endMonthResponse] = await Promise.all([
+                fetch(`${API_URL}?lat=${lat}&lon=${lon}&method=${selectedMethod}&timezone=${userTimezone}`),
+                fetch(`${END_MONTH_URL}?lat=${lat}&lon=${lon}&method=${selectedMethod}&timezone=${userTimezone}`)
+            ]);
 
-            const data = await response.json();
-            console.log("✅ Data diterima:", data);
+            if (!dateResponse.ok || !endMonthResponse.ok) throw new Error("HTTP Error saat mengambil data.");
 
-            loadingText.style.display = "none";
+            const dateData = await dateResponse.json();
+            const endMonthData = await endMonthResponse.json();
 
-            if (data.hijriDate) {
-                hijriDateText.textContent = `${data.hijriDate.day} ${getHijriMonthName(data.hijriDate.month)} ${data.hijriDate.year} H`;
+            console.log("📊 API Response - Hijri Date:", dateData);
+            console.log("📊 API Response - End of Month:", endMonthData);
+
+            elements.loadingText.style.display = "none";
+
+            // **Menampilkan tanggal Hijriyah**
+            if (dateData?.hijriDate) {
+                elements.hijriDateText.textContent =
+                    `${dateData.hijriDate.day} ${getHijriMonthName(dateData.hijriDate.month)} ${dateData.hijriDate.year} H`;
             } else {
-                hijriDateText.textContent = "⚠️ Gagal mendapatkan data.";
+                elements.hijriDateText.textContent = "⚠️ Gagal mendapatkan data.";
+            }
+
+            // **Menampilkan prediksi akhir bulan**
+            if (endMonthData?.hijri) {
+                const {
+                    moonAltitude,
+                    elongation,
+                    sunAltitude,
+                    moonAge,
+                    conjunction,
+                    explanation
+                } = endMonthData;
+
+                // **Konversi data numerik jika tersedia**
+                const formattedMoonAltitude = moonAltitude !== "Tidak tersedia" ? parseFloat(moonAltitude).toFixed(2) : "Tidak tersedia";
+                const formattedElongation = elongation !== "Tidak tersedia" ? parseFloat(elongation).toFixed(2) : "Tidak tersedia";
+                const formattedSunAltitude = sunAltitude !== "Tidak tersedia" ? parseFloat(sunAltitude).toFixed(2) : "Tidak tersedia";
+
+                // **Memastikan moonAge tidak NaN atau null**
+                const parsedMoonAge = parseFloat(moonAge);
+                const formattedMoonAge = !isNaN(parsedMoonAge) && moonAge !== null ? `${parsedMoonAge.toFixed(2)} jam` : "Tidak diketahui";
+
+                let imkanurRukyat = "❌ Tidak memenuhi syarat → Bulan ini 30 hari";
+                if (
+                    moonAltitude !== "Tidak tersedia" &&
+                    elongation !== "Tidak tersedia" &&
+                    !isNaN(parsedMoonAge) && parsedMoonAge >= 8 &&
+                    parseFloat(moonAltitude) >= 3 && parseFloat(elongation) >= 6.4
+                ) {
+                    imkanurRukyat = `Ketinggian ≥3°, Elongasi ≥6.4°, Usia Bulan ≥8 jam → ${explanation}`;
+                }
+
+                elements.hijriEndPrediction.innerHTML = `
+                    <p><strong>🕌 Prediksi Akhir Bulan:</strong> ${explanation}</p>
+                    <br>
+                    <p><strong>🌙 Posisi Bulan:</strong></p>
+                    <ul>
+                        <li>- Ketinggian: ${formattedMoonAltitude}°</li>
+                        <li>- Elongasi: ${formattedElongation}°</li>
+                    </ul>
+                    <br>
+                    <p><strong>☀️ Posisi Matahari:</strong></p>
+                    <ul>
+                        <li>- Ketinggian: ${formattedSunAltitude}°</li>
+                    </ul>
+                    <br>
+                    <p><strong>🔭 Konjungsi Terjadi:</strong> ${conjunction ? "Ya" : "Tidak"}</p>
+                    <p><strong>⏳ Usia Bulan:</strong> ${formattedMoonAge}</p>
+                    <br>
+                    <p><strong>✅ Metode Imkanur Rukyat:</strong> ${imkanurRukyat}</p>
+                `;
+            } else {
+                elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>Gagal mendapatkan data.</p>";
             }
         } catch (error) {
-            console.error("❌ Error Fetching Data:", error);
-            hijriDateText.textContent = "❌ Terjadi kesalahan saat mengambil data.";
+            console.error("❌ Error Fetching Hijri Data:", error);
+            elements.hijriDateText.textContent = "❌ Terjadi kesalahan saat mengambil data.";
+            elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>Gagal mengambil data.</p>";
         }
     }
 
@@ -105,37 +188,40 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function toggleTheme() {
-        body.classList.toggle("bg-gray-900");
-        body.classList.toggle("bg-white");
-        body.classList.toggle("text-white");
-        body.classList.toggle("text-black");
+        elements.body.classList.toggle("bg-gray-900");
+        elements.body.classList.toggle("bg-white");
+        elements.body.classList.toggle("text-white");
+        elements.body.classList.toggle("text-black");
 
-        loadingText.classList.toggle("text-yellow-400");
-        loadingText.classList.toggle("text-yellow-800");
+        elements.loadingText.classList.toggle("text-yellow-400");
+        elements.loadingText.classList.toggle("text-yellow-800");
 
-        box.classList.toggle("bg-gray-800");
-        box.classList.toggle("bg-gray-200");
+        elements.box.classList.toggle("bg-gray-800");
+        elements.box.classList.toggle("bg-gray-200");
 
-        dateBox.classList.toggle("bg-gray-700");
-        dateBox.classList.toggle("bg-gray-300");
+        elements.dateBox.classList.toggle("bg-gray-700");
+        elements.dateBox.classList.toggle("bg-gray-300");
 
-        currentTimeText.classList.toggle("text-white");
-        currentTimeText.classList.toggle("text-black");
+        elements.hijriEndPrediction.classList.toggle("bg-gray-700");
+        elements.hijriEndPrediction.classList.toggle("bg-gray-300");
 
-        timezoneText.classList.toggle("text-gray-400");
-        timezoneText.classList.toggle("text-black");
+        elements.currentTimeText.classList.toggle("text-white");
+        elements.currentTimeText.classList.toggle("text-black");
 
-        methodSelect.classList.toggle("bg-gray-300");
-        methodSelect.classList.toggle("bg-gray-700");
+        elements.timezoneText.classList.toggle("text-gray-400");
+        elements.timezoneText.classList.toggle("text-black");
 
-        methodSelect.classList.toggle("text-black");
-        methodSelect.classList.toggle("text-white");
+        elements.methodSelect.classList.toggle("bg-gray-300");
+        elements.methodSelect.classList.toggle("bg-gray-700");
 
-        methodLabel.classList.toggle("text-gray-300");
-        methodLabel.classList.toggle("text-black");
+        elements.methodSelect.classList.toggle("text-black");
+        elements.methodSelect.classList.toggle("text-white");
 
-        const isDarkMode = body.classList.contains("bg-gray-900");
-        toggleThemeButton.textContent = isDarkMode ? "🌞 Light Mode" : "🌙 Dark Mode";
+        elements.methodLabel.classList.toggle("text-gray-300");
+        elements.methodLabel.classList.toggle("text-black");
+
+        const isDarkMode = elements.body.classList.contains("bg-gray-900");
+        elements.toggleThemeButton.textContent = isDarkMode ? "🌞 Light Mode" : "🌙 Dark Mode";
         localStorage.setItem("theme", isDarkMode ? "dark" : "light");
     }
 
@@ -148,7 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updateRealTime();
     fetchLocationAndHijriDate();
-    methodSelect.addEventListener("change", fetchLocationAndHijriDate);
-    toggleThemeButton.addEventListener("click", toggleTheme);
+    elements.methodSelect.addEventListener("change", fetchLocationAndHijriDate);
+    elements.toggleThemeButton.addEventListener("click", toggleTheme);
     loadTheme();
 });
