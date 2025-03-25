@@ -57,27 +57,22 @@ function julianToHijri(jd) {
 /**
  * Ambil tanggal Hijriyah berdasarkan lokasi pengguna dan metode perhitungan
  */
-function getHijriDate(lat, lon, method, timezone = "UTC") {
+function getHijriDate(lat, lon, method, timezone) {
     const now = new Date();
     const sunsetTime = SunCalc.getTimes(now, lat, lon).sunset;
     const localTime = new Date().toLocaleString("id-ID", { timeZone: timezone });
 
     console.log(`📅 Menghitung Hijriyah untuk ${lat}, ${lon} dengan metode ${method} (Zona Waktu: ${timezone})`);
-
     console.log(`⏳ Sekarang: ${now.toISOString()}`);
     console.log(`🌅 Matahari terbenam: ${sunsetTime.toISOString()}`);
 
-    let jd = gregorianToJulian(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    // Gunakan waktu setelah matahari terbenam untuk menghitung Hijriyah
+    const effectiveTime = now >= sunsetTime ? new Date(now.getTime() + 86400000) : now;
+    let jd = gregorianToJulian(effectiveTime.getFullYear(), effectiveTime.getMonth() + 1, effectiveTime.getDate());
 
-    if (now.getTime() >= sunsetTime.getTime()) {
-        jd += 1; // Geser ke hari berikutnya jika sudah melewati matahari terbenam
-        console.log(`🔄 Sudah melewati matahari terbenam, Julian Day bertambah: ${jd}`);
-    } else {
-        console.log(`⏳ Belum melewati matahari terbenam, Julian Day tetap: ${jd}`);
-    }
+    console.log(`📅 Julian Day: ${jd}`);
 
     let hijri = julianToHijri(jd);
-    console.log(`📅 Julian Day: ${jd}`);
     console.log(`🕌 Hijriyah awal: ${JSON.stringify(hijri)}`);
 
     if (hijri.day === 29) {
