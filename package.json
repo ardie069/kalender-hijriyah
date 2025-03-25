@@ -4,8 +4,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "node server/server.js",
-    "build": "npx tailwindcss/cli -i ./public/style/input.css -o ./public/style/output.css --minify",
-    "watch": "npx tailwindcss/cli -i ./public/style/input.css -o ./public/style/output.css --watch"
+    "build-css": "npx tailwindcss/cli -i ./public/style/input.css -o ./public/style/output.css --minify",
+    "watch-css": "npx tailwindcss/cli -i ./public/style/input.css -o ./public/style/output.css --watch"
   },
   "keywords": [],
   "author": "",
