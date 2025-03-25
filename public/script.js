@@ -12,6 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const timezoneText = document.getElementById("timezone");
 
     function updateRealTime() {
+        if (!currentTimeText || !timezoneText) return;
+
         setInterval(() => {
             const now = new Date();
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -30,8 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
-                    const { latitude, longitude } = position.coords;
-                    await fetchHijriDate(latitude, longitude);
+                    await fetchHijriDate(position.coords.latitude, position.coords.longitude);
                 },
                 async () => {
                     console.warn("⚠️ Geolocation ditolak. Mencoba lokasi berdasarkan IP...");
@@ -114,7 +115,10 @@ document.addEventListener("DOMContentLoaded", () => {
             body.classList.replace("text-white", "text-black");
             box.classList.replace("bg-gray-800", "bg-gray-200");
             dateBox.classList.replace("bg-gray-700", "bg-gray-300");
-            methodSelect.classList.replace("bg-gray-700", "bg-gray-300");
+            currentTimeText.classList.replace("text-white", "text-black");
+            timezoneText.classList.replace("text-gray-400", "text-black");
+            methodSelect.classList.replace("bg-gray-300", "bg-gray-700");
+            methodSelect.classList.replace("text-black", "text-white");
             methodLabel.classList.replace("text-gray-300", "text-black");
             toggleThemeButton.textContent = "🌙 Dark Mode";
             localStorage.setItem("theme", "light");
@@ -123,7 +127,10 @@ document.addEventListener("DOMContentLoaded", () => {
             body.classList.replace("text-black", "text-white");
             box.classList.replace("bg-gray-200", "bg-gray-800");
             dateBox.classList.replace("bg-gray-300", "bg-gray-700");
-            methodSelect.classList.replace("bg-gray-300", "bg-gray-700");
+            currentTimeText.classList.replace("text-black", "text-white");
+            timezoneText.classList.replace("text-black", "text-gray-400");
+            methodSelect.classList.replace("bg-gray-700", "bg-gray-300");
+            methodSelect.classList.replace("text-white", "text-black");
             methodLabel.classList.replace("text-black", "text-gray-300");
             toggleThemeButton.textContent = "🌞 Light Mode";
             localStorage.setItem("theme", "dark");
@@ -133,13 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function loadTheme() {
         const savedTheme = localStorage.getItem("theme");
         if (savedTheme === "light") {
-            body.classList.replace("bg-gray-900", "bg-white");
-            body.classList.replace("text-white", "text-black");
-            box.classList.replace("bg-gray-800", "bg-gray-200");
-            dateBox.classList.replace("bg-gray-700", "bg-gray-300");
-            methodSelect.classList.replace("bg-gray-700", "bg-gray-300");
-            methodLabel.classList.replace("text-gray-300", "text-black");
-            toggleThemeButton.textContent = "🌙 Dark Mode";
+            toggleTheme();
         }
     }
 
