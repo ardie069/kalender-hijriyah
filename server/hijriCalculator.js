@@ -31,6 +31,15 @@ function getSunPosition(jd) {
 }
 
 /**
+ * Menghitung waktu konjungsi dalam Julian Day
+ */
+function getConjunctionTime(jd) {
+    let phase = getMoonPhase(jd);
+    let conjunctionJD = jd - phase / 29.53; // Perkiraan waktu konjungsi dalam Julian Day
+    return conjunctionJD;
+}
+
+/**
  * Konversi Julian Day ke Hijriyah
  */
 function julianToHijri(jd) {
@@ -78,15 +87,21 @@ function getHijriDate(lat, lon, method, timezone) {
     if (hijri.day === 29) {
         const moonPos = getMoonPosition(jd);
         const sunPos = getSunPosition(jd);
-        const moonPhase = getMoonPhase(jd);
-        const conjunction = moonPhase < 0.5;
+        const conjunctionJD = getConjunctionTime(jd);
+
         const moonAltitude = moonPos.dec;
         const sunAltitude = sunPos.dec;
-        const elongation = Math.abs(moonPos.ra - sunPos.ra);
+        const elongation = Math.sqrt((moonPos.ra - sunPos.ra) ** 2 + (moonPos.dec - sunPos.dec) ** 2);
+        const conjunction = jd >= conjunctionJD; // Apakah konjungsi telah terjadi?
+        
+        const conjunctionUnix = (conjunctionJD - 2440587.5) * 86400 * 1000; // Konversi ke Unix timestamp (ms)
+        const nowUnix = nowLuxon.toMillis();
+        const moonAgeHours = (nowUnix - conjunctionUnix) / (1000 * 60 * 60); // Konversi ke jam
 
         console.log(`🌙 Posisi Bulan: altitude=${moonAltitude}, elongation=${elongation}`);
         console.log(`☀️ Posisi Matahari: altitude=${sunAltitude}`);
         console.log(`🔭 Konjungsi terjadi: ${conjunction}`);
+        console.log(`⏳ Usia Bulan: ${moonAgeHours} jam`);
 
         if ((method === 'global' || method === 'hisab') && conjunction && moonAltitude > sunAltitude) {
             hijri.day = 1;
@@ -94,7 +109,7 @@ function getHijriDate(lat, lon, method, timezone) {
         } else if (method === 'rukyat' && conjunction && moonAltitude > sunAltitude) {
             hijri.day = 1;
             hijri.month++;
-        } else if (method === 'imkanur-rukyat' && conjunction && moonAltitude >= 3 && elongation >= 6.4) {
+        } else if (method === 'imkanur-rukyat' && conjunction && moonAltitude >= 3 && elongation >= 6.4 && moonAgeHours >= 8) {
             hijri.day = 1;
             hijri.month++;
         } else {
