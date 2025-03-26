@@ -1,27 +1,21 @@
-import express from "express";
 import { getHijriDate, predictEndOfMonth } from "../server/hijriCalculator.js";
 
-const app = express();
+export default function handler(req, res) {
+    const { query } = req;
+    const lat = parseFloat(query.lat) || 0;
+    const lon = parseFloat(query.lon) || 0;
+    const method = query.method || "global";
+    const timezone = query.timezone || "UTC";
 
-app.get("/api/hijri-date", (req, res) => {
-    const lat = parseFloat(req.query.lat) || 0;
-    const lon = parseFloat(req.query.lon) || 0;
-    const method = req.query.method || "global";
-    const timezone = req.query.timezone || "UTC";
+    if (req.url.includes("/hijri-date")) {
+        const hijriDate = getHijriDate(lat, lon, method, timezone);
+        return res.json({ hijriDate });
+    }
 
-    const hijriDate = getHijriDate(lat, lon, method, timezone);
-    res.json({ hijriDate });
-});
+    if (req.url.includes("/hijri-end-month")) {
+        const endOfMonthPrediction = predictEndOfMonth(lat, lon, method, timezone);
+        return res.json(endOfMonthPrediction);
+    }
 
-app.get("/api/hijri-end-month", (req, res) => {
-    const lat = parseFloat(req.query.lat) || 0;
-    const lon = parseFloat(req.query.lon) || 0;
-    const method = req.query.method || "global";
-    const timezone = req.query.timezone || "UTC";
-
-    const endOfMonthPrediction = predictEndOfMonth(lat, lon, method, timezone);
-    res.json(endOfMonthPrediction);
-});
-
-// Ekspor handler supaya bisa dipakai di Vercel
-export default app;
+    res.status(404).json({ error: "Not Found" });
+}

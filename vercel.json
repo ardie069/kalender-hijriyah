@@ -1,9 +1,7 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "api/hijri-date.js", "use": "@vercel/node" }
-  ],
   "routes": [
-    { "src": "/api/hijri-date.js", "dest": "api/hijri-date.js" }
+    { "src": "/api/hijri-date", "dest": "/api/hijri-date.js" },
+    { "src": "/api/hijri-end-month", "dest": "/api/hijri-date.js" }
   ]
 }
