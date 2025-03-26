@@ -1,3 +1,4 @@
+const app = require("./api/index");
 import express from 'express';
 import dotenv from 'dotenv';
 import { getHijriDate, predictEndOfMonth } from './hijriCalculator.js';
@@ -40,3 +41,5 @@ app.get("/hijri-end-month", (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server berjalan di http://localhost:${PORT}/`);
 });
+
+module.exports = app;
