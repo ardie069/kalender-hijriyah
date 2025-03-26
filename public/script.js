@@ -36,8 +36,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function fetchLocationAndHijriDate() {
         elements.loadingText.style.display = "block";
-        elements.hijriDateText.textContent = "";
-        elements.hijriEndPrediction.innerHTML = "";
+        elements.hijriDateText.textContent = "📅🕌 Menghitung hasil tanggal Hijriyah... 🔍";
+        elements.hijriEndPrediction.innerHTML = "📅 Menunggu prediksi akhir bulan... ⏳";
 
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
