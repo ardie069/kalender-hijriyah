@@ -1,46 +1,26 @@
-import SunCalc from "suncalc";
-import { getHijriDate } from "../server/hijriCalculator.js";
-import { DateTime } from "luxon";
+import express from 'express';
+import { getHijriDate, predictEndOfMonth } from '../server/hijriCalculator.js';
 
-export default function handler(req, res) {
-    try {
-        const { lat, lon, method, timezone } = req.query;
+const app = express();
 
-        // Validasi parameter input
-        if (!lat || !lon || !method || !timezone) {
-            return res.status(400).json({ error: "Latitude, Longitude, Method, dan Timezone diperlukan!" });
-        }
+app.get("/hijri-date", (req, res) => {
+    const lat = parseFloat(req.query.lat) || 0;
+    const lon = parseFloat(req.query.lon) || 0;
+    const method = req.query.method || 'global';
+    const timezone = req.query.timezone || 'UTC';
 
-        const latitude = parseFloat(lat);
-        const longitude = parseFloat(lon);
+    const hijriDate = getHijriDate(lat, lon, method, timezone);
+    res.json({ hijriDate });
+});
 
-        if (isNaN(latitude) || isNaN(longitude)) {
-            return res.status(400).json({ error: "Latitude dan Longitude harus berupa angka yang valid!" });
-        }
+app.get("/hijri-end-month", (req, res) => {
+    const lat = parseFloat(req.query.lat) || 0;
+    const lon = parseFloat(req.query.lon) || 0;
+    const method = req.query.method || 'global';
+    const timezone = req.query.timezone || 'UTC';
 
-        console.log("📡 API Request:", { latitude, longitude, method, timezone });
+    const endOfMonthPrediction = predictEndOfMonth(lat, lon, method, timezone);
+    res.json(endOfMonthPrediction);
+});
 
-        // Waktu UTC dan lokal
-        const nowUTC = DateTime.utc();
-        const sunsetUTC = SunCalc.getTimes(nowUTC.toJSDate(), latitude, longitude).sunset;
-        const sunsetLocal = DateTime.fromJSDate(sunsetUTC).setZone(timezone);
-        const nowLocal = nowUTC.setZone(timezone);
-
-        console.log(`⏳ Sekarang UTC: ${nowUTC.toISO()}`);
-        console.log(`⏳ Sekarang Lokal (${timezone}): ${nowLocal.toISO()}`);
-        console.log(`🌅 Matahari terbenam (${timezone}): ${sunsetLocal.toISO()}`);
-
-        // Hitung tanggal Hijriyah
-        const hijriDate = getHijriDate(latitude, longitude, method, timezone);
-
-        res.status(200).json({
-            hijriDate,
-            localTime: nowLocal.toISO(),
-            sunsetTime: sunsetLocal.toISO(),
-            timezone
-        });
-    } catch (error) {
-        console.error("❌ API Error:", error);
-        res.status(500).json({ error: "Gagal menghitung tanggal Hijriyah. Silakan coba lagi." });
-    }
-}
+export default app;
