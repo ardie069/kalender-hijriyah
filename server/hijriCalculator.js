@@ -115,15 +115,14 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
 
 export function predictEndOfMonth(lat, lon, method, timezone, targetHijriDay = 29) {
     const nowLuxon = DateTime.now().setZone(timezone);
-    const hijri = getHijriDate(lat, lon, method, timezone);
+    const hijriToday = getHijriDate(lat, lon, method, timezone);
 
-    const targetDate = nowLuxon.plus({ days: targetHijriDay - hijri.day });
+    // Estimasi untuk tanggal 29
+    const targetDate = nowLuxon.plus({ days: targetHijriDay - hijriToday.day });
     const jd = getJulianDate(targetDate);
 
-    let isEndOfMonth = "30 hari";
     const moonAltitude = getMoonAltitude(targetDate.toJSDate(), lat, lon) ?? "Tidak tersedia";
     const sunAltitude = getSunAltitude(targetDate.toJSDate(), lat, lon) ?? "Tidak tersedia";
-
     const moonPos = getMoonPosition(jd) || { ra: 0, dec: 0 };
     const sunPos = getSunPosition(jd) || { ra: 0, dec: 0 };
     const conjunctionJD = getConjunctionTime(jd) || null;
@@ -136,29 +135,32 @@ export function predictEndOfMonth(lat, lon, method, timezone, targetHijriDay = 2
     const memenuhiRukyat = method === 'rukyat' && moonAltitude > sunAltitude;
     const memenuhiImkanurRukyat = method === 'imkanur-rukyat' && moonAltitude >= 3 && elongation >= 6.4 && moonAgeHours !== null && moonAgeHours >= 8;
 
+    let isEndOfMonth = "30 hari";
+    let hijriEnd = { ...hijriToday };
+
     if (conjunctionOccurred && (memenuhiGlobal || memenuhiRukyat || memenuhiImkanurRukyat)) {
-        hijri.day = 1;
-        hijri.month++;
+        hijriEnd.day = 1;
+        hijriEnd.month++;
         isEndOfMonth = "29 hari";
     } else {
-        hijri.day = 30;
+        hijriEnd.day = 30;
     }
 
-    if (hijri.month > 12) {
-        hijri.month = 1;
-        hijri.year++;
+    if (hijriEnd.month > 12) {
+        hijriEnd.month = 1;
+        hijriEnd.year++;
     }
 
     return {
-        hijri,
-        explanation: `Bulan ini berjumlah ${isEndOfMonth} berdasarkan metode ${method}.`,
-        method,
-        timezone,
-        localTime: targetDate.toISO(),
-        moonAltitude: moonAltitude !== "Tidak tersedia" ? moonAltitude.toFixed(2) : "Tidak tersedia",
-        sunAltitude: sunAltitude !== "Tidak tersedia" ? sunAltitude.toFixed(2) : "Tidak tersedia",
-        elongation: elongation !== "Tidak tersedia" ? elongation.toFixed(2) : "Tidak tersedia",
-        moonAge: moonAgeHours !== null ? moonAgeHours.toFixed(2) : "Tidak diketahui",
-        conjunction: conjunctionOccurred
+        today: hijriToday,
+        estimatedEndOfMonth: {
+            hijri: hijriEnd,
+            explanation: `Bulan ini berjumlah ${isEndOfMonth} berdasarkan metode ${method}.`,
+            moonAltitude: moonAltitude !== "Tidak tersedia" ? moonAltitude.toFixed(2) : "Tidak tersedia",
+            sunAltitude: sunAltitude !== "Tidak tersedia" ? sunAltitude.toFixed(2) : "Tidak tersedia",
+            elongation: elongation !== "Tidak tersedia" ? elongation.toFixed(2) : "Tidak tersedia",
+            moonAge: moonAgeHours !== null ? moonAgeHours.toFixed(2) : "Tidak diketahui",
+            conjunction: conjunctionOccurred
+        }
     };
 }

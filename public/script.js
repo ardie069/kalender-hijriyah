@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function fetchLocationAndHijriDate() {
         elements.loadingText.style.display = "block";
-        elements.hijriDateText.textContent = "📅🕌 Menghitung hasil tanggal Hijriyah... 🔍";
+        elements.hijriDateText.textContent = "📅 Menghitung hasil tanggal Hijriyah... 🔍";
         elements.hijriEndPrediction.innerHTML = "📅 Menunggu prediksi akhir bulan... ⏳";
 
         if ("geolocation" in navigator) {
@@ -105,15 +105,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 elements.hijriDateText.textContent = "⚠️ Gagal mendapatkan data.";
             }
 
-            if (endMonthData?.hijri) {
+            if (endMonthData?.estimatedEndOfMonth) {
                 const {
+                    hijri: estimatedHijri,
                     moonAltitude,
                     elongation,
                     sunAltitude,
                     moonAge,
                     conjunction,
                     explanation
-                } = endMonthData;
+                } = endMonthData.estimatedEndOfMonth;
 
                 const formattedMoonAltitude = moonAltitude !== "Tidak tersedia" ? parseFloat(moonAltitude).toFixed(2) : "Tidak tersedia";
                 const formattedElongation = elongation !== "Tidak tersedia" ? parseFloat(elongation).toFixed(2) : "Tidak tersedia";
@@ -133,7 +134,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 elements.hijriEndPrediction.innerHTML = `
-                    <p><strong>🕌 Prediksi Akhir Bulan:</strong> ${explanation}</p>
+                    <div class="bg-gray-100 p-2 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold">📅 Informasi Tanggal Hijriyah</h3>
+                        <div class="mt-4">
+                            <p class="text-gray-700"><strong>🗓️ Hari Ini:</strong> <span class="text-blue-600">${dateData.hijriDate.day} ${getHijriMonthName(dateData.hijriDate.month)} ${dateData.hijriDate.year} H</span></p>
+                            <p class="text-gray-700"><strong>🔮 Perkiraan Akhir Bulan:</strong> <span class="text-green-600">${estimatedHijri.day} ${getHijriMonthName(estimatedHijri.month)} ${estimatedHijri.year} H</span></p>
+                        </div>
+                    </div>
+                    <br>
+                    <p><strong>📆 Perkiraan Durasi Bulan:</strong> ${explanation}</p>
                     <br>
                     <p><strong>🌙 Posisi Bulan:</strong></p>
                     <ul>
@@ -149,14 +158,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     <p><strong>🔭 Konjungsi Terjadi:</strong> ${conjunction ? "Ya" : "Tidak"}</p>
                     <p><strong>⏳ Usia Bulan:</strong> ${formattedMoonAge}</p>
                     <br>
-                    <p><strong>✅ Metode Imkanur Rukyat:</strong> ${imkanurRukyat}</p>
+                    <p class="mb-4"><strong>✅ Metode Imkanur Rukyat:</strong> ${imkanurRukyat}</p>
                 `;
             } else {
-                elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>Gagal mendapatkan data.</p>";
+                elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>❌ Gagal mendapatkan data.</p>";
             }
         } catch (error) {
             elements.hijriDateText.textContent = "❌ Terjadi kesalahan saat mengambil data.";
-            elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>Gagal mengambil data.</p>";
+            elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>❌ Gagal mengambil data.</p>";
         }
     }
 
