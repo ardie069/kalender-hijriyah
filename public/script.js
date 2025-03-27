@@ -164,7 +164,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     : "Tidak tersedia";
     
                 // Hanya tampilkan prediksi jika hari ini **tanggal 29 Hijriyah atau setelahnya**
-                if (hijriToday.day >= 29) {
+                const now = new Date();
+                const userHour = now.getHours();
+
+                if (hijriToday.day === 29 && userHour >= 6 || hijriToday.day === 30 && userHour < 18) {
                     elements.hijriEndPrediction.innerHTML = `
                         <div class="bg-gray-100 p-2 rounded-lg shadow-md">
                             <h3 class="text-lg font-semibold">📅 Informasi Tanggal Hijriyah</h3>
