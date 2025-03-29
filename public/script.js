@@ -228,9 +228,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function getHijriMonthName(month) {
         const hijriMonths = [
-            "Muharram", "Safar", "Rabi'ul Awal", "Rabi'ul Akhir",
-            "Jumadil Awal", "Jumadil Akhir", "Rajab", "Sya'ban",
-            "Ramadan", "Syawal", "Dzulqa'dah", "Dzulhijjah"
+            "Muharram", "Safar", "Rabiul Awal", "Rabiul Akhir",
+            "Jumadil Awal", "Jumadil Akhir", "Rajab", "Syakban",
+            "Ramadan", "Syawal", "Zulkaidah", "Zulhijah"
         ];
         return hijriMonths[month - 1] || "Tidak diketahui";
     }
