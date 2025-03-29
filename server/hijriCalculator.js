@@ -131,7 +131,7 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
     let effectiveDate;
     if (nowLocal >= sunsetToday && conjunctionJD < sunsetJD) {
         // Sudah Maghrib → Gunakan tanggal hari ini
-        effectiveDate = nowLocal.plus({ days: 1 });
+        effectiveDate = nowLocal.plus({ days: 1 }).startOf('day');
     } else {
         // Belum Maghrib → Gunakan tanggal sebelumnya (kemarin)
         effectiveDate = nowLocal.startOf('day');
