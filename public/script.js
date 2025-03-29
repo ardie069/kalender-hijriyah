@@ -91,26 +91,26 @@ document.addEventListener("DOMContentLoaded", () => {
         const selectedMethod = elements.methodSelect.value;
         const API_URL = `${API_BASE_URL}/hijri-date`;
         const END_MONTH_URL = `${API_BASE_URL}/hijri-end-month`;
-    
+
         if (!lat || !lon || !userTimezone) {
             elements.hijriDateText.textContent = "❌ Lokasi atau zona waktu belum diatur.";
             elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>Data tidak tersedia.</p>";
             return;
         }
-    
+
         try {
             const [dateResponse, endMonthResponse] = await Promise.all([
                 fetch(`${API_URL}?lat=${lat}&lon=${lon}&method=${selectedMethod}&timezone=${userTimezone}`),
                 fetch(`${END_MONTH_URL}?lat=${lat}&lon=${lon}&method=${selectedMethod}&timezone=${userTimezone}`)
             ]);
-    
+
             if (!dateResponse.ok || !endMonthResponse.ok) throw new Error("HTTP Error saat mengambil data.");
-    
+
             const dateData = await dateResponse.json();
             const endMonthData = await endMonthResponse.json();
-    
+
             elements.loadingText.style.display = "none";
-    
+
             // Ambil tanggal Hijriyah hari ini
             let hijriToday;
             if (dateData?.hijriDate) {
@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 elements.hijriDateText.textContent = "⚠️ Gagal mendapatkan data.";
                 return;
             }
-    
+
             // Jika data akhir bulan tersedia
             if (endMonthData?.estimatedEndOfMonth) {
                 const {
@@ -133,41 +133,55 @@ document.addEventListener("DOMContentLoaded", () => {
                     conjunctionBeforeSunset,
                     explanation,
                 } = endMonthData.estimatedEndOfMonth;
-    
+
                 // Pastikan tanggal 29 diambil dari perkiraan akhir bulan
                 const hijri29 = estimatedHijri
                     ? `${estimatedHijri.day} ${getHijriMonthName(estimatedHijri.month)} ${estimatedHijri.year} H`
                     : "Tidak tersedia";
-    
+
                 // Format angka dengan 2 desimal
-                const formattedMoonAltitude = moonAltitude !== "Tidak tersedia" ? parseFloat(moonAltitude).toFixed(2) : "Tidak tersedia";
-                const formattedElongation = elongation !== "Tidak tersedia" ? parseFloat(elongation).toFixed(2) : "Tidak tersedia";
-                const formattedSunAltitude = sunAltitude !== "Tidak tersedia" ? parseFloat(sunAltitude).toFixed(2) : "Tidak tersedia";
-    
+                const formattedMoonAltitude = moonAltitude !== "Tidak tersedia" ? parseFloat(moonAltitude).toFixed(2) + '°' : "Tidak tersedia";
+                const formattedElongation = elongation !== "Tidak tersedia" ? parseFloat(elongation).toFixed(2) + '°' : "Tidak tersedia";
+                const formattedSunAltitude = sunAltitude !== "Tidak tersedia" ? parseFloat(sunAltitude).toFixed(2) + '°' : "Tidak tersedia";
+
                 const parsedMoonAge = parseFloat(moonAge);
                 const formattedMoonAge = !isNaN(parsedMoonAge) && moonAge !== null ? `${parsedMoonAge.toFixed(2)} jam` : "Tidak diketahui";
-    
+
                 // Validasi Imkanur Rukyat
+                let syaratImkanurRukyat = [
+                    { name: "Usia Bulan ≥ 8 jam", value: parsedMoonAge, required: 8 },
+                    { name: "Ketinggian Bulan ≥ 3°", value: parseFloat(moonAltitude), required: 3 },
+                    { name: "Elongasi ≥ 6,4°", value: parseFloat(elongation), required: 6.4 }
+                ];
+
                 let imkanurRukyat = "❌ Tidak memenuhi syarat → Bulan ini 30 hari";
+
                 if (
-                    moonAltitude !== "Tidak tersedia" &&
-                    elongation !== "Tidak tersedia" &&
-                    !isNaN(parsedMoonAge) && parsedMoonAge >= 8 &&
-                    parseFloat(moonAltitude) >= 3 && parseFloat(elongation) >= 6.4
+                    syaratImkanurRukyat.every(syarat => !isNaN(syarat.value) && syarat.value >= syarat.required)
                 ) {
                     imkanurRukyat = `✅ Memenuhi syarat Imkanur Rukyat → ${explanation}`;
                 }
-    
+
+                // 🔍 Menampilkan detail syarat
+                let imkanurRukyatDetails = syaratImkanurRukyat.map(syarat => {
+                    let status = !isNaN(syarat.value) && syarat.value >= syarat.required ? "✅" : "❌";
+                
+                    // Cek apakah ini "Usia Bulan"
+                    let satuan = syarat.name.includes("Usia Bulan") ? " jam" : "°";
+                
+                    return `${status} ${syarat.name}: ${isNaN(syarat.value) ? "Tidak tersedia" : syarat.value.toFixed(2) + satuan}`;
+                }).join("\n");                
+
                 // Format tanggal Gregorian awal bulan Hijriyah jika tersedia
                 const formattedStartGregorian = endMonthData.estimatedStartOfMonth?.gregorian
                     ? formatGregorianDate(endMonthData.estimatedStartOfMonth.gregorian)
                     : "Tidak tersedia";
-    
+
                 // Hanya tampilkan prediksi jika hari ini **tanggal 29 Hijriyah atau setelahnya**
                 const now = new Date();
                 const userHour = now.getHours();
 
-                if (hijriToday.day === 29 && userHour >= 6 || hijriToday.day === 30 && userHour < 18) {
+                if ((hijriToday.day >= 29 && userHour >= 0) || (hijriToday === 30 && userHour < 18)) {
                     elements.hijriEndPrediction.innerHTML = `
                         <div class="bg-gray-100 p-2 rounded-lg shadow-md">
                             <h3 class="text-lg font-semibold">📅 Informasi Tanggal Hijriyah</h3>
@@ -182,19 +196,22 @@ document.addEventListener("DOMContentLoaded", () => {
                         <br>
                         <p><strong>🌙 Posisi Bulan:</strong></p>
                         <ul>
-                            <li>- Ketinggian: ${formattedMoonAltitude}°</li>
-                            <li>- Elongasi: ${formattedElongation}°</li>
+                            <li>- Ketinggian: ${formattedMoonAltitude}</li>
+                            <li>- Elongasi: ${formattedElongation}</li>
                         </ul>
                         <br>
                         <p><strong>☀️ Posisi Matahari:</strong></p>
                         <ul>
-                            <li>- Ketinggian: ${formattedSunAltitude}°</li>
+                            <li>- Ketinggian: ${formattedSunAltitude}</li>
                         </ul>
                         <br>
                         <p><strong>🔭 Konjungsi Terjadi Sebelum Matahari Terbenam:</strong> ${conjunctionBeforeSunset ? "Ya" : "Tidak"}</p>
                         <p><strong>⏳ Usia Bulan:</strong> ${formattedMoonAge}</p>
                         <br>
                         <p class="mb-4"><strong>✅ Validasi Imkanur Rukyat:</strong> ${imkanurRukyat}</p>
+                        <ul class="mb-4">
+                            ${imkanurRukyatDetails.split("\n").map(item => `<li>${item}</li>`).join("")}
+                        </ul>
                     `;
                 } else {
                     // Jika belum tanggal 29, jangan tampilkan prediksi
@@ -207,7 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
             elements.hijriDateText.textContent = "❌ Terjadi kesalahan saat mengambil data.";
             elements.hijriEndPrediction.innerHTML = "<p class='text-red-500'>❌ Gagal mengambil data.</p>";
         }
-    }        
+    }
 
     function getHijriMonthName(month) {
         const hijriMonths = [
