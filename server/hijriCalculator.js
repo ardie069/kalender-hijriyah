@@ -167,27 +167,27 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
     const daysTo29 = hijriToday.day <= 29 ? 29 - hijriToday.day : 0;
     const estimatedDate = nowLuxon.plus({ days: daysTo29 }).startOf('day');
 
-    // Gunakan referensi Arab Saudi untuk metode global
-    const sunsetRefLat = method === "global" ? 21.422487 : lat;
-    const sunsetRefLon = method === "global" ? 39.826206 : lon;
-    const sunsetRefZone = method === "global" ? "Asia/Riyadh" : timezone;
+    // Gunakan referensi Arab Saudi untuk waktu konjungsi jika metode global
+    const refLat = method === "global" ? 21.422487 : lat;
+    const refLon = method === "global" ? 39.826206 : lon;
+    const refZone = method === "global" ? "Asia/Riyadh" : timezone;
 
-    const sunsetTargetUTC = SunCalc.getTimes(estimatedDate.toJSDate(), sunsetRefLat, sunsetRefLon).sunset;
-    const sunsetTarget = DateTime.fromJSDate(sunsetTargetUTC).setZone(sunsetRefZone);
+    const sunsetTargetUTC = SunCalc.getTimes(estimatedDate.toJSDate(), lat, lon).sunset;
+    const sunsetTarget = DateTime.fromJSDate(sunsetTargetUTC).setZone(timezone);
     const sunsetJD = getJulianDate(sunsetTarget.toUTC());
 
-    // Hitung konjungsi
-    const conjunctionJD = getConjunctionTime(sunsetJD);
+    // Hitung konjungsi berdasarkan referensi global jika metode global
+    const conjunctionJD = getConjunctionTime(getJulianDate(DateTime.fromJSDate(SunCalc.getTimes(estimatedDate.toJSDate(), refLat, refLon).sunset).setZone(refZone).toUTC()));
     const conjunctionTime = conjunctionJD
-        ? DateTime.fromJSDate(julianToDate(conjunctionJD)).setZone(sunsetRefZone)
+        ? DateTime.fromJSDate(julianToDate(conjunctionJD)).setZone(refZone)
         : null;
 
     const toleranceJD = 0.02083; // 30 menit dalam hari
     const conjunctionBeforeSunset = conjunctionJD !== null && conjunctionJD < (sunsetJD - toleranceJD);
 
-    // Hitung posisi bulan dan matahari
-    const moonAltitude = getMoonAltitude(sunsetTarget.toJSDate(), sunsetRefLat, sunsetRefLon);
-    const sunAltitude = getSunAltitude(sunsetTarget.toJSDate(), sunsetRefLat, sunsetRefLon);
+    // Hitung posisi bulan dan matahari di lokasi pengguna
+    const moonAltitude = getMoonAltitude(sunsetTarget.toJSDate(), lat, lon);
+    const sunAltitude = getSunAltitude(sunsetTarget.toJSDate(), lat, lon);
     const moonPos = getMoonPosition(sunsetJD) || { ra: 0, dec: 0 };
     const sunPos = getSunPosition(sunsetJD) || { ra: 0, dec: 0 };
     const elongation = getElongation(moonPos, sunPos) || NaN;
