@@ -109,9 +109,18 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
         jd = getJulianDate(nowLocal.toUTC());
     }
 
-    // Ambil waktu matahari terbenam di lokasi pengguna
-    const sunsetTodayUTC = SunCalc.getTimes(nowLocal.toJSDate(), lat, lon).sunset;
-    const sunsetLocal = DateTime.fromJSDate(sunsetTodayUTC).setZone(timezone);
+    // Koordinat Arab Saudi untuk metode global
+    const saudiLat = 21.422487;
+    const saudiLon = 39.826206;
+    const saudiZone = "Asia/Riyadh";
+
+    let sunsetRefLat = method === "global" ? saudiLat : lat;
+    let sunsetRefLon = method === "global" ? saudiLon : lon;
+    let sunsetRefZone = method === "global" ? saudiZone : timezone;
+
+    // Ambil waktu matahari terbenam berdasarkan metode
+    const sunsetTodayUTC = SunCalc.getTimes(nowLocal.toJSDate(), sunsetRefLat, sunsetRefLon).sunset;
+    const sunsetLocal = DateTime.fromJSDate(sunsetTodayUTC).setZone(sunsetRefZone);
     const sunsetJD = getJulianDate(sunsetLocal.toUTC());
 
     // Hitung waktu konjungsi
@@ -119,7 +128,7 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
 
     let effectiveJD = jd;
 
-    // Jika metode global, langsung ubah JD jika konjungsi sebelum Maghrib
+    // Jika metode global, gunakan referensi Arab Saudi
     if (method === "global" && conjunctionJD < sunsetJD) {
         effectiveJD = sunsetJD + 1;
     } else if (nowLocal >= sunsetLocal) {
@@ -135,6 +144,11 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
             }
         }
     }
+
+    console.log("Zona Waktu Pengguna:", timezone);
+    console.log("Waktu Sekarang (Lokal):", nowLocal.toFormat("yyyy-MM-dd HH:mm:ss"));
+    console.log("Waktu Matahari Terbenam:", sunsetLocal.toFormat("yyyy-MM-dd HH:mm:ss"));
+    console.log("Tanggal Hijriyah Global (Setelah Fix):", julianToHijri(effectiveJD));
 
     return julianToHijri(effectiveJD);
 }
@@ -158,28 +172,33 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
     const daysTo29 = hijriToday.day <= 29 ? 29 - hijriToday.day : 0;
     const estimatedDate = nowLuxon.plus({ days: daysTo29 }).startOf('day');
 
-    const sunsetTargetUTC = SunCalc.getTimes(estimatedDate.toJSDate(), lat, lon).sunset;
-    const sunsetTarget = DateTime.fromJSDate(sunsetTargetUTC).setZone(timezone);
+    // Gunakan referensi Arab Saudi untuk metode global
+    const sunsetRefLat = method === "global" ? 21.422487 : lat;
+    const sunsetRefLon = method === "global" ? 39.826206 : lon;
+    const sunsetRefZone = method === "global" ? "Asia/Riyadh" : timezone;
+
+    const sunsetTargetUTC = SunCalc.getTimes(estimatedDate.toJSDate(), sunsetRefLat, sunsetRefLon).sunset;
+    const sunsetTarget = DateTime.fromJSDate(sunsetTargetUTC).setZone(sunsetRefZone);
     const sunsetJD = getJulianDate(sunsetTarget.toUTC());
 
     // Hitung konjungsi
     const conjunctionJD = getConjunctionTime(sunsetJD);
     const conjunctionTime = conjunctionJD
-        ? DateTime.fromJSDate(julianToDate(conjunctionJD)).setZone(timezone)
+        ? DateTime.fromJSDate(julianToDate(conjunctionJD)).setZone(sunsetRefZone)
         : null;
 
-    const toleranceJD = 0.02083; // 30 menit dalam hari (1/24 hari = 1 jam, 1/48 hari = 30 menit)
+    const toleranceJD = 0.02083; // 30 menit dalam hari
     const conjunctionBeforeSunset = conjunctionJD !== null && conjunctionJD < (sunsetJD - toleranceJD);
 
     // Hitung posisi bulan dan matahari
-    const moonAltitude = getMoonAltitude(sunsetTarget.toJSDate(), lat, lon);
-    const sunAltitude = getSunAltitude(sunsetTarget.toJSDate(), lat, lon);
+    const moonAltitude = getMoonAltitude(sunsetTarget.toJSDate(), sunsetRefLat, sunsetRefLon);
+    const sunAltitude = getSunAltitude(sunsetTarget.toJSDate(), sunsetRefLat, sunsetRefLon);
     const moonPos = getMoonPosition(sunsetJD) || { ra: 0, dec: 0 };
     const sunPos = getSunPosition(sunsetJD) || { ra: 0, dec: 0 };
     const elongation = getElongation(moonPos, sunPos) || NaN;
     const moonAgeHours = conjunctionJD !== null ? (sunsetJD - conjunctionJD) * 24 : NaN;
 
-    const memenuhiGlobal = method === "global" || method === "hisab" && conjunctionBeforeSunset;
+    const memenuhiGlobal = method === "global" || (method === "hisab" && conjunctionBeforeSunset);
     const memenuhiRukyat =
         method === "rukyat" &&
         moonAltitude >= 3 &&
@@ -202,6 +221,11 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
     }
 
     const nextHijriStartDate = sunsetTarget.plus({ days: 1 }).toISODate();
+
+    console.log("Konjungsi JD:", conjunctionJD);
+    console.log("Sunset JD:", sunsetJD);
+    console.log("Perbedaan JD (Konjungsi - Sunset):", conjunctionJD - sunsetJD);
+    console.log("Tanggal Hijriyah Global (Sebelum Fix):", julianToHijri(jd));
 
     return {
         today: hijriToday,
