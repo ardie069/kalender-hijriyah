@@ -145,11 +145,6 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
         }
     }
 
-    console.log("Zona Waktu Pengguna:", timezone);
-    console.log("Waktu Sekarang (Lokal):", nowLocal.toFormat("yyyy-MM-dd HH:mm:ss"));
-    console.log("Waktu Matahari Terbenam:", sunsetLocal.toFormat("yyyy-MM-dd HH:mm:ss"));
-    console.log("Tanggal Hijriyah Global (Setelah Fix):", julianToHijri(effectiveJD));
-
     return julianToHijri(effectiveJD);
 }
 
@@ -221,11 +216,6 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
     }
 
     const nextHijriStartDate = sunsetTarget.plus({ days: 1 }).toISODate();
-
-    console.log("Konjungsi JD:", conjunctionJD);
-    console.log("Sunset JD:", sunsetJD);
-    console.log("Perbedaan JD (Konjungsi - Sunset):", conjunctionJD - sunsetJD);
-    console.log("Tanggal Hijriyah Global (Sebelum Fix):", julianToHijri(jd));
 
     return {
         today: hijriToday,
