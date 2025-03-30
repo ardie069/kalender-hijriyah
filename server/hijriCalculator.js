@@ -105,49 +105,38 @@ function julianToHijri(jd) {
 
 export function getHijriDate(lat, lon, method, timezone, jd = null) {
     const nowLocal = DateTime.local().setZone(timezone);
-    const nowUTC = DateTime.utc();  
     if (!jd) {
-        jd = getJulianDate(nowUTC);
+        jd = getJulianDate(nowLocal.toUTC());
     }
-    
-    const yesterdayLocal = nowLocal.minus({ days: 1 });
 
-    // Ambil waktu matahari terbenam kemarin & hari ini
+    // Ambil waktu matahari terbenam di lokasi pengguna
     const sunsetTodayUTC = SunCalc.getTimes(nowLocal.toJSDate(), lat, lon).sunset;
-    const sunsetYesterdayUTC = SunCalc.getTimes(yesterdayLocal.toJSDate(), lat, lon).sunset;
-
-    // Konversi ke waktu lokal sesuai timezone
-    const sunsetToday = DateTime.fromJSDate(sunsetTodayUTC).setZone(timezone);
-    const sunsetYesterday = DateTime.fromJSDate(sunsetYesterdayUTC).setZone(timezone);
-
-    // **Perbaikan Logika Pergantian Hijriyah**
-    const sunsetTargetUTC = SunCalc.getTimes(nowLocal.toJSDate(), lat, lon).sunset;
-    const sunsetTarget = DateTime.fromJSDate(sunsetTargetUTC).setZone(timezone);
-    const sunsetJD = getJulianDate(sunsetTarget.toUTC());
+    const sunsetLocal = DateTime.fromJSDate(sunsetTodayUTC).setZone(timezone);
+    const sunsetJD = getJulianDate(sunsetLocal.toUTC());
 
     // Hitung waktu konjungsi
     const conjunctionJD = getConjunctionTime(sunsetJD);
 
-    let effectiveDate;
-    if (nowLocal >= sunsetToday && conjunctionJD < sunsetJD) {
-        // Sudah Maghrib → Gunakan tanggal hari ini
-        effectiveDate = nowLocal.plus({ days: 1 }).startOf('day');
-    } else {
-        // Belum Maghrib → Gunakan tanggal sebelumnya (kemarin)
-        effectiveDate = nowLocal.startOf('day');
+    let effectiveJD = jd;
+
+    // Jika metode global, langsung ubah JD jika konjungsi sebelum Maghrib
+    if (method === "global" && conjunctionJD < sunsetJD) {
+        effectiveJD = sunsetJD + 1;
+    } else if (nowLocal >= sunsetLocal) {
+        if (method === "hisab" && conjunctionJD < sunsetJD) {
+            effectiveJD += 1;
+        } else if (method === "rukyat") {
+            let moonAltitude = getMoonAltitude(sunsetLocal.toJSDate(), lat, lon);
+            let elongation = getElongation(moonposition.position(sunsetJD), solar.trueEquatorial(sunsetJD));
+            let moonAgeHours = (sunsetJD - conjunctionJD) * 24;
+
+            if (moonAltitude >= 3 && elongation >= 6.4 && moonAgeHours >= 8) {
+                effectiveJD += 1;
+            }
+        }
     }
 
-    jd = getJulianDate(effectiveDate);
-    let hijri = julianToHijri(jd);
-
-    return {
-        ...hijri,
-        method,
-        timezone,
-        localTime: nowLocal.toISO(),
-        sunsetYesterday: sunsetYesterday.toISO(),
-        sunsetToday: sunsetToday.toISO(),
-    };
+    return julianToHijri(effectiveJD);
 }
 
 export function predictEndOfMonth(lat, lon, method, timezone) {
@@ -190,7 +179,7 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
     const elongation = getElongation(moonPos, sunPos) || NaN;
     const moonAgeHours = conjunctionJD !== null ? (sunsetJD - conjunctionJD) * 24 : NaN;
 
-    const memenuhiGlobal = method === "global" || method === "hisab";
+    const memenuhiGlobal = method === "global" || method === "hisab" && conjunctionBeforeSunset;
     const memenuhiRukyat =
         method === "rukyat" &&
         moonAltitude >= 3 &&
