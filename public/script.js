@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const now = new Date();
                 const userHour = now.getHours();
 
-                if ((hijriToday.day >= 29 && userHour >= 0) || (hijriToday === 30 && userHour < 18)) {
+                if (hijriToday.day >= 29 && userHour >= 0) {
                     elements.hijriEndPrediction.innerHTML = `
                         <div class="bg-gray-100 p-2 rounded-lg shadow-md">
                             <h3 class="text-lg font-semibold">📅 Informasi Tanggal Hijriyah</h3>
