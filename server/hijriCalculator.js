@@ -130,11 +130,13 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
 
     // Jika metode global, gunakan referensi Arab Saudi
     if (method === "global" && conjunctionJD < sunsetJD) {
-        effectiveJD = sunsetJD + 1;
+        effectiveJD = sunsetJD + 1; // Pergantian hari Hijriyah setelah matahari terbenam di Mekkah
     } else if (nowLocal >= sunsetLocal) {
+        // Untuk Hisab dan Rukyat, pergantian hari Hijriyah setelah matahari terbenam di lokasi pengguna
         if (method === "hisab" && conjunctionJD < sunsetJD) {
             effectiveJD += 1;
         } else if (method === "rukyat") {
+            // Untuk Rukyat, periksa posisi bulan, elongasi, dan usia bulan
             let moonAltitude = getMoonAltitude(sunsetLocal.toJSDate(), lat, lon);
             let elongation = getElongation(moonposition.position(sunsetJD), solar.trueEquatorial(sunsetJD));
             let moonAgeHours = (sunsetJD - conjunctionJD) * 24;
@@ -142,6 +144,21 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
             if (moonAltitude >= 3 && elongation >= 6.4 && moonAgeHours >= 8) {
                 effectiveJD += 1;
             }
+        }
+    }
+
+    // Periksa apakah sekarang sudah memasuki tanggal 29 Hijriyah, jika ya, validasi konjungsinya
+    const hijriDate = julianToHijri(effectiveJD);
+    if (hijriDate.day === 29) {
+        // Validasi konjungsi untuk semua metode (Global, Hisab, Rukyat)
+        const conjunctionValid = method === "global"
+            ? conjunctionJD < sunsetJD // Global (Ummul Qura): konjungsi sebelum matahari terbenam di Mekkah
+            : method === "hisab"
+            ? conjunctionJD < sunsetJD // Hisab: konjungsi sebelum matahari terbenam di lokasi pengguna
+            : method === "rukyat" && moonAltitude >= 3 && elongation >= 6.4 && moonAgeHours >= 8; // Rukyat
+
+        if (!conjunctionValid) {
+            effectiveJD += 1; // Digenapi jadi 30 hari jika konjungsi tidak memenuhi syarat
         }
     }
 
@@ -167,14 +184,20 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
     const daysTo29 = hijriToday.day <= 29 ? 29 - hijriToday.day : 0;
     const estimatedDate = nowLuxon.plus({ days: daysTo29 }).startOf('day');
 
-    // Gunakan referensi Arab Saudi untuk waktu konjungsi jika metode global
+    // Gunakan referensi Mekkah untuk waktu konjungsi jika metode global
     const refLat = method === "global" ? 21.422487 : lat;
     const refLon = method === "global" ? 39.826206 : lon;
     const refZone = method === "global" ? "Asia/Riyadh" : timezone;
 
+    // Sunset waktu di lokasi pengguna
     const sunsetTargetUTC = SunCalc.getTimes(estimatedDate.toJSDate(), lat, lon).sunset;
     const sunsetTarget = DateTime.fromJSDate(sunsetTargetUTC).setZone(timezone);
     const sunsetJD = getJulianDate(sunsetTarget.toUTC());
+
+    // Sunset waktu di Mekkah untuk metode global
+    const sunsetTargetMekkahUTC = SunCalc.getTimes(estimatedDate.toJSDate(), 21.422487, 39.826206).sunset;
+    const sunsetTargetMekkah = DateTime.fromJSDate(sunsetTargetMekkahUTC).setZone("Asia/Riyadh");
+    const sunsetJDGlobal = getJulianDate(sunsetTargetMekkah.toUTC());
 
     // Hitung konjungsi berdasarkan referensi global jika metode global
     const conjunctionJD = getConjunctionTime(getJulianDate(DateTime.fromJSDate(SunCalc.getTimes(estimatedDate.toJSDate(), refLat, refLon).sunset).setZone(refZone).toUTC()));
@@ -183,7 +206,10 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
         : null;
 
     const toleranceJD = 0.02083; // 30 menit dalam hari
-    const conjunctionBeforeSunset = conjunctionJD !== null && conjunctionJD < (sunsetJD - toleranceJD);
+
+    // Cek konjungsi sebelum matahari terbenam di Mekkah (untuk global) atau di lokasi pengguna (untuk Hisab)
+    const conjunctionBeforeSunsetGlobal = conjunctionJD !== null && conjunctionJD < (sunsetJDGlobal - toleranceJD);
+    const conjunctionBeforeSunsetUser = conjunctionJD !== null && conjunctionJD < (sunsetJD - toleranceJD);
 
     // Hitung posisi bulan dan matahari di lokasi pengguna
     const moonAltitude = getMoonAltitude(sunsetTarget.toJSDate(), lat, lon);
@@ -193,7 +219,9 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
     const elongation = getElongation(moonPos, sunPos) || NaN;
     const moonAgeHours = conjunctionJD !== null ? (sunsetJD - conjunctionJD) * 24 : NaN;
 
-    const memenuhiGlobal = method === "global" || (method === "hisab" && conjunctionBeforeSunset);
+    // Validasi untuk metode Global dan Rukyat
+    const memenuhiGlobal = method === "global" && conjunctionBeforeSunsetGlobal;
+    const memenuhiHisab = method === "hisab" && conjunctionBeforeSunsetUser;
     const memenuhiRukyat =
         method === "rukyat" &&
         moonAltitude >= 3 &&
@@ -203,9 +231,10 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
     let isEndOfMonth = "30 hari";
     let hijriEnd = { day: 30, month: hijriTarget.month, year: hijriTarget.year };
 
-    if (!conjunctionBeforeSunset) {
+    // Tentukan apakah bulan baru dimulai berdasarkan konjungsi
+    if (!conjunctionBeforeSunsetGlobal && !conjunctionBeforeSunsetUser) {
         isEndOfMonth = "30 hari";
-    } else if (memenuhiGlobal || memenuhiRukyat) {
+    } else if (memenuhiGlobal || memenuhiHisab || memenuhiRukyat) {
         hijriEnd = { day: 1, month: hijriTarget.month + 1, year: hijriTarget.year };
         isEndOfMonth = "29 hari";
     }
@@ -226,7 +255,8 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
             sunAltitude: isNaN(sunAltitude) ? "Tidak tersedia" : sunAltitude.toFixed(2),
             elongation: isNaN(elongation) ? "Tidak tersedia" : elongation.toFixed(2),
             moonAge: isNaN(moonAgeHours) ? "Tidak diketahui" : moonAgeHours.toFixed(2),
-            conjunctionBeforeSunset: conjunctionBeforeSunset,
+            conjunctionBeforeSunsetGlobal: conjunctionBeforeSunsetGlobal,
+            conjunctionBeforeSunsetUser: conjunctionBeforeSunsetUser,
             conjunctionTime: conjunctionTime
                 ? conjunctionTime.toFormat("yyyy-MM-dd HH:mm:ss")
                 : "Tidak diketahui",
