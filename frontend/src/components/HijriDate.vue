@@ -80,8 +80,8 @@ export default {
                 const END_MONTH_URL = `${this.API_BASE_URL}/hijri-end-month`;
 
                 const [dateResponse, endMonthResponse] = await Promise.all([
-                    fetch(`${API_URL}?lat=${this.lat}&lon=${this.lon}&method=${this.selectedMethod}&timezone=${this.userTimezone}`, { mode: 'cors' }),
-                    fetch(`${END_MONTH_URL}?lat=${this.lat}&lon=${this.lon}&method=${this.selectedMethod}&timezone=${this.userTimezone}`, { mode: 'cors' })
+                    fetch(`${API_URL}?lat=${this.lat}&lon=${this.lon}&method=${this.selectedMethod}&timezone=${this.userTimezone}`),
+                    fetch(`${END_MONTH_URL}?lat=${this.lat}&lon=${this.lon}&method=${this.selectedMethod}&timezone=${this.userTimezone}`)
                 ]);
 
                 const dateData = await dateResponse.json();
