@@ -11,7 +11,6 @@
   "description": "",
   "type": "module",
   "dependencies": {
-    "@tailwindcss/cli": "^4.0.15",
     "astronomia": "^4.1.1",
     "axios": "^1.8.4",
     "cors": "^2.8.5",
