@@ -1,7 +1,7 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/api/hijri-date", "dest": "/api/hijri-date.js" },
-    { "src": "/api/hijri-end-month", "dest": "/api/hijri-date.js" }
+    { "src": "/api/hijri-date", "dest": "/pages/api/hijri-date.js" },
+    { "src": "/api/hijri-end-month", "dest": "/pages/api/hijri-date.js" }
   ]
 }
