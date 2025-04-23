@@ -4,6 +4,7 @@
   "main": "api/index.js",
   "scripts": {
     "dev": "nodemon backend/server.js",
+    "start": "node backend/server.js",
     "build-css": "npx tailwindcss/cli -i ./public/style/input.css -o ./public/style/output.css --minify",
     "watch-css": "npx tailwindcss/cli -i ./public/style/input.css -o ./public/style/output.css --watch"
   },
