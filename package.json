@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "nodemon backend/server.js",
     "start": "node backend/server.js",
+    "build": "cd frontend && npm install && npm run build && cp -r dist ../public",
     "build-css": "npx tailwindcss/cli -i ./public/style/input.css -o ./public/style/output.css --minify",
     "watch-css": "npx tailwindcss/cli -i ./public/style/input.css -o ./public/style/output.css --watch"
   },
@@ -22,6 +23,7 @@
     "express": "^4.21.2",
     "luxon": "^3.6.1",
     "readline-sync": "^1.4.10",
+    "serverless-http": "^3.2.0",
     "suncalc": "^1.9.0"
   },
   "devDependencies": {

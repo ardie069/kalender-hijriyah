@@ -2,10 +2,6 @@
     "version": 2,
     "builds": [
         {
-            "src": "frontend/vite.config.js",
-            "use": "@vercel/vite"
-        },
-        {
             "src": "api/index.js",
             "use": "@vercel/node"
         }
@@ -17,7 +13,7 @@
         },
         {
             "src": "/(.*)",
-            "dest": "/frontend/dist/index.html"
+            "dest": "/public/$1"
         }
     ]
 }
