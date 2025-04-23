@@ -4,9 +4,8 @@
             <!-- Menggunakan Komponen Header -->
             <Header :darkMode="darkMode" :themeToggleText="themeToggleText" :toggleTheme="toggleTheme" />
 
-            <!-- Waktu Real-Time & Zona Waktu -->
-            <p class="text-lg font-medium mb-2">{{ currentTime }}</p>
-            <p class="text-sm text-gray-400 mb-4">{{ timezone }}</p>
+            <!-- Memanggil komponen Clock -->
+            <Clock />
 
             <!-- Dropdown untuk Metode -->
             <div class="mb-4 text-left">
@@ -47,10 +46,12 @@
 
 <script>
 import Header from './Header.vue';
+import Clock from './Clock.vue';
 
 export default {
     components: {
-        Header
+        Header,
+        Clock
     },
     data() {
         return {
