@@ -16,7 +16,7 @@ const HIJRI_METHOD = process.env.HIJRI_METHOD || 'global';
 const TIMEZONE = process.env.TIMEZONE || 'UTC';
 
 app.use(cors({
-    origin: 'http://localhost:5173', // Sesuaikan dengan origin frontend kamu
+    origin: ['http://localhost:5173', 'https://kalender-hijriyah.vercel.app'], // Sesuaikan dengan origin frontend kamu
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type'],
 }));

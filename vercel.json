@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://kalender-hijriyah.vercel.app/$1"
+      "destination": "https://kalender-hijriyah.vercel.app/api/$1"
     }
   ]
 }
