@@ -21,10 +21,10 @@
 </template>
 
 <script>
-import Header from './Header.vue';
-import Clock from './Clock.vue';
-import Method from './Method.vue';
-import HijriDate from './HijriDate.vue';
+import Header from '../components/Header.vue';
+import Clock from '../components/Clock.vue';
+import Method from '../components/Method.vue';
+import HijriDate from '../components/HijriDate.vue';
 
 export default {
     components: {
@@ -43,7 +43,7 @@ export default {
             lat: 0,
             lon: 0,
             darkMode: true,
-            API_BASE_URL: window.location.hostname.includes("localhost") ? "http://localhost:3000" : "https://kalender-hijriyah.vercel.app/api",
+            API_BASE_URL: "http://localhost:3000",
         };
     },
     computed: {
