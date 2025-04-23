@@ -45,10 +45,8 @@ app.get("/api/hijri-date", (req, res) => {
 
     try {
         const hijriDate = getHijriDate(lat, lon, method, timezone);
-        console.log("📅 Hijri date:", hijriDate);
         res.json({ hijriDate });
     } catch (error) {
-        console.error("❌ Gagal mengambil tanggal Hijriyah:", error);
         res.status(500).json({ error: "Terjadi kesalahan pada server" });
     }
 });
