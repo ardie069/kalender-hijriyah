@@ -1,17 +1,17 @@
 <template>
     <div>
         <p class="text-lg font-medium mb-2">{{ currentTime }}</p>
-        <p class="text-sm text-gray-400 mb-4">{{ timezone }}</p>
+        <p :class="[darkMode ? 'text-gray-400' : 'text-gray-600', 'text-sm mb-4']">{{ timezone }}</p>
     </div>
 </template>
 
 <script>
 export default {
+    props: ['darkMode', 'userTimezone'],
     data() {
         return {
             currentTime: "🕒 Memuat Waktu...",
             timezone: "🌍 Zona Waktu: -",
-            userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
         };
     },
     mounted() {
