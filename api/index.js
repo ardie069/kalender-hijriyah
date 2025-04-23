@@ -8,8 +8,10 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.use(express.json());
+// Middleware untuk melayani file statis
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
+// API Endpoint
 app.get("/api/hijri-date", (req, res) => {
   const lat = parseFloat(req.query.lat) || 0;
   const lon = parseFloat(req.query.lon) || 0;
@@ -30,6 +32,7 @@ app.get("/api/hijri-date", (req, res) => {
   }
 });
 
+// API Endpoint untuk prediksi akhir bulan Hijriyah
 app.get("/api/hijri-end-month", (req, res) => {
   const lat = parseFloat(req.query.lat) || 0;
   const lon = parseFloat(req.query.lon) || 0;
@@ -45,9 +48,9 @@ app.get("/api/hijri-end-month", (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
+// Fallback untuk SPA (Single Page Application)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
 });
 
 export default app;
