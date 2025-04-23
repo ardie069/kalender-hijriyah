@@ -1,6 +1,6 @@
 import express from 'express';
 import serverless from 'serverless-http';
-import { getHijriDate, predictEndOfMonth } from '../hijriCalculator.js';
+import { getHijriDate, predictEndOfMonth } from '../backend/hijriCalculator.js';
 
 const app = express();
 
