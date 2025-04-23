@@ -1,7 +1,8 @@
 {
-  "version": 2,
-  "routes": [
-    { "src": "/api/hijri-date", "dest": "/api/hijri-date.js" },
-    { "src": "/api/hijri-end-month", "dest": "/api/hijri-date.js" }
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://kalender-hijriyah.vercel.app/$1"
+    }
   ]
 }
