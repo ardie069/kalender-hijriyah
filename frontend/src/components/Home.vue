@@ -43,7 +43,7 @@ export default {
             lat: 0,
             lon: 0,
             darkMode: true,
-            API_BASE_URL: window.location.hostname.includes("localhost") ? "http://localhost:3000" : "/api",
+            API_BASE_URL: window.location.hostname.includes("localhost") ? "http://localhost:3000" : "https://kalender-hijriyah.vercel.app",
         };
     },
     computed: {
