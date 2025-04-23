@@ -1,56 +1,40 @@
 import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { getHijriDate, predictEndOfMonth } from '../backend/hijriCalculator.js';
+import { getHijriDate, predictEndOfMonth } from '../hijriCalculator.js';
+import serverless from 'serverless-http';
 
 const app = express();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const DEFAULT_LAT = 0;
+const DEFAULT_LON = 0;
+const HIJRI_METHOD = 'global';
+const TIMEZONE = 'UTC';
 
-// Middleware untuk melayani file statis
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-
-// API Endpoint
-app.get("/api/hijri-date", (req, res) => {
-  const lat = parseFloat(req.query.lat) || 0;
-  const lon = parseFloat(req.query.lon) || 0;
-  const method = req.query.method || "global";
-  const timezone = req.query.timezone || "UTC";
-
-  if (isNaN(lat) || isNaN(lon)) {
-    return res.status(400).json({ error: "Lokasi tidak valid" });
-  }
+app.get('/api/hijri-date', (req, res) => {
+  const lat = parseFloat(req.query.lat) || DEFAULT_LAT;
+  const lon = parseFloat(req.query.lon) || DEFAULT_LON;
+  const method = req.query.method || HIJRI_METHOD;
+  const timezone = req.query.timezone || TIMEZONE;
 
   try {
     const hijriDate = getHijriDate(lat, lon, method, timezone);
-    console.log("📅 Hijri date:", hijriDate);
     res.json({ hijriDate });
   } catch (error) {
-    console.error("❌ Gagal mengambil tanggal Hijriyah:", error);
     res.status(500).json({ error: "Terjadi kesalahan pada server" });
   }
 });
 
-// API Endpoint untuk prediksi akhir bulan Hijriyah
-app.get("/api/hijri-end-month", (req, res) => {
-  const lat = parseFloat(req.query.lat) || 0;
-  const lon = parseFloat(req.query.lon) || 0;
-  const method = req.query.method || "global";
-  const timezone = req.query.timezone || "UTC";
+app.get('/api/hijri-end-month', (req, res) => {
+  const lat = parseFloat(req.query.lat) || DEFAULT_LAT;
+  const lon = parseFloat(req.query.lon) || DEFAULT_LON;
+  const method = req.query.method || HIJRI_METHOD;
+  const timezone = req.query.timezone || TIMEZONE;
 
   try {
     const prediction = predictEndOfMonth(lat, lon, method, timezone);
     res.json(prediction);
   } catch (error) {
-    console.error("❌ Gagal prediksi akhir bulan:", error);
     res.status(500).json({ error: "Terjadi kesalahan saat memprediksi akhir bulan" });
   }
 });
 
-// Fallback untuk SPA (Single Page Application)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
-});
-
-export default app;
+export default serverless(app);
