@@ -43,7 +43,7 @@ export default {
             lat: 0,
             lon: 0,
             darkMode: true,
-            API_BASE_URL: "http://localhost:3000",
+            API_BASE_URL: "http://127.0.0.1:3000",
         };
     },
     computed: {
