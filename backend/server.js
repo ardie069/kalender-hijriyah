@@ -15,8 +15,9 @@ const DEFAULT_LON = parseFloat(process.env.DEFAULT_LON) || 0;
 const HIJRI_METHOD = process.env.HIJRI_METHOD || 'global';
 const TIMEZONE = process.env.TIMEZONE || 'UTC';
 
+// Konfigurasi CORS untuk mengizinkan permintaan dari frontend lokal
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: 'http://127.0.0.1:5173', // Pastikan URL frontend yang benar
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type'],
 }));
@@ -32,13 +33,16 @@ app.use((req, res, next) => {
     next();
 });
 
+// Menyajikan file statis frontend (apabila dibuild)
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
+// Menyajikan index.html ketika diakses di luar API
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
 });
 
-app.get("/hijri-date", (req, res) => {
+// Endpoint untuk mendapatkan tanggal Hijriyah
+app.get("/api/hijri-date", (req, res) => {
     const lat = parseFloat(req.query.lat) || 0;
     const lon = parseFloat(req.query.lon) || 0;
     const method = req.query.method || "global";
@@ -48,11 +52,16 @@ app.get("/hijri-date", (req, res) => {
         return res.status(400).json({ error: "Lokasi tidak valid" });
     }
 
-    const hijriDate = getHijriDate(lat, lon, method, timezone);
-    res.json({ hijriDate });
+    try {
+        const hijriDate = getHijriDate(lat, lon, method, timezone);
+        res.json({ hijriDate });
+    } catch (error) {
+        res.status(500).json({ error: "Terjadi kesalahan pada server" });
+    }
 });
 
-app.get("/hijri-end-month", (req, res) => {
+// Endpoint untuk memprediksi akhir bulan Hijriyah
+app.get("/api/hijri-end-month", (req, res) => {
     const lat = parseFloat(req.query.lat) || DEFAULT_LAT;
     const lon = parseFloat(req.query.lon) || DEFAULT_LON;
     const method = req.query.method || HIJRI_METHOD;
@@ -62,6 +71,7 @@ app.get("/hijri-end-month", (req, res) => {
     res.json(prediction);
 });
 
+// Menjalankan server di port yang telah ditentukan
 app.listen(PORT, () => {
     console.log(`Server berjalan di http://localhost:${PORT}/`);
 });
