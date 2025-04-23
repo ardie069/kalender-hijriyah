@@ -147,8 +147,8 @@ export default {
         },
         getHijriMonthName(month) {
             const months = [
-                "Muharram", "Safar", "Rabiul Awal", "Rabiul Akhir", "Jumadil Awal", "Jumadil Akhir",
-                "Rajab", "Syaban", "Ramadhan", "Syawal", "Zulkaidah", "Zulhijah"
+                "Muharam", "Safar", "Rabiulawal", "Rabiulakhir", "Jumadilawal", "Jumadilakhir",
+                "Rajab", "Syakban", "Ramadan", "Syawal", "Zulkaidah", "Zulhijah"
             ];
             return months[month - 1] || "Tidak diketahui";
         },
