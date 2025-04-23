@@ -1,12 +1,13 @@
 <template>
     <div :class="themeClass" class="flex justify-center items-center min-h-screen transition-colors duration-300">
-        <div id="box" class="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-6 text-center">
+        <div id="box" :class="themeClass" class="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-6 text-center">
             <!-- Header dengan Toggle Mode -->
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-2xl font-bold">🕌 Kalender Hijriyah</h1>
-                <button @click="toggleTheme"
-                    class="bg-gray-700 text-white px-3 py-1 rounded-lg transition-all hover:bg-gray-600 focus:ring-2 focus:ring-gray-500"
-                    aria-label="Ganti Tema">
+                <button @click="toggleTheme" :class="[
+                    darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-black',
+                    'px-3 py-1 rounded-lg transition-all focus:ring-2 focus:ring-gray-500'
+                ]" aria-label="Ganti Tema">
                     {{ themeToggleText }}
                 </button>
             </div>
@@ -18,8 +19,11 @@
             <!-- Dropdown untuk Metode -->
             <div class="mb-4 text-left">
                 <label for="method" class="block text-sm font-medium text-gray-300">Metode Perhitungan:</label>
-                <select id="method" v-model="selectedMethod" @change="fetchHijriData"
-                    class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white focus:ring-2 focus:ring-gray-500 focus:outline-none">
+                <select id="method" v-model="selectedMethod" @change="fetchHijriData" :class="[
+                    methodClass,
+                    'mt-1 block w-full rounded-lg p-2 pl-2 pr-8 focus:ring-2 focus:outline-none appearance-none',
+                    darkMode ? 'border-gray-600 focus:ring-gray-500' : 'border-gray-400 focus:ring-gray-300'
+                ]">
                     <option value="global">Global</option>
                     <option value="hisab">Hisab</option>
                     <option value="rukyat">Rukyat</option>
@@ -27,15 +31,24 @@
             </div>
 
             <!-- Indikator Loading -->
-            <p v-if="loading" class="text-yellow-400 font-semibold">📍 Menunggu lokasi...</p>
+            <p v-if="loading" :class="darkMode ? 'text-yellow-400' : 'text-brown-600'" class="font-semibold">
+                📍 Menunggu lokasi...
+            </p>
 
             <!-- Tanggal Masehi & Hijriyah -->
-            <div class="mt-4 p-4 bg-gray-700 rounded-lg">
+            <div :class="[
+                hijriDateClass,
+                'mt-4 p-4 rounded-lg',
+                darkMode ? 'bg-gray-700' : 'bg-gray-200'
+            ]">
                 <p><strong>🕌 Tanggal Hijriyah:</strong> <span>{{ hijriDateText }}</span></p>
             </div>
 
-            <!-- Prediksi Akhir Bulan -->
-            <div class="mt-4 p-4 bg-gray-700 rounded-lg" v-html="hijriEndPrediction"></div>
+            <div :class="[
+                hijriEndPredictionClass,
+                'mt-4 p-4 rounded-lg',
+                darkMode ? 'bg-gray-700' : 'bg-gray-200'
+            ]" v-html="hijriEndPrediction"></div>
         </div>
     </div>
 </template>
@@ -59,7 +72,16 @@ export default {
     },
     computed: {
         themeClass() {
-            return this.darkMode ? "bg-gray-900 text-white" : "bg-white text-black";
+            return this.darkMode ? "bg-gray-700 text-white" : "bg-white text-black";
+        },
+        methodClass() {
+            return this.darkMode ? "bg-gray-700 text-white" : "bg-gray-300 text-black";
+        },
+        hijriDateClass() {
+            return this.darkMode ? "text-white" : "text-black";
+        },
+        hijriEndPredictionClass() {
+            return this.darkMode ? "text-white" : "text-black";
         },
         themeToggleText() {
             return this.darkMode ? "🌞 Light Mode" : "🌙 Dark Mode";
