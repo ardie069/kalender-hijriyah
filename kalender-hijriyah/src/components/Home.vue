@@ -1,16 +1,8 @@
 <template>
     <div :class="themeClass" class="flex justify-center items-center min-h-screen transition-colors duration-300">
         <div id="box" :class="themeClass" class="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-6 text-center">
-            <!-- Header dengan Toggle Mode -->
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-2xl font-bold">🕌 Kalender Hijriyah</h1>
-                <button @click="toggleTheme" :class="[
-                    darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-black',
-                    'px-3 py-1 rounded-lg transition-all focus:ring-2 focus:ring-gray-500'
-                ]" aria-label="Ganti Tema">
-                    {{ themeToggleText }}
-                </button>
-            </div>
+            <!-- Menggunakan Komponen Header -->
+            <Header :darkMode="darkMode" :themeToggleText="themeToggleText" :toggleTheme="toggleTheme" />
 
             <!-- Waktu Real-Time & Zona Waktu -->
             <p class="text-lg font-medium mb-2">{{ currentTime }}</p>
@@ -54,7 +46,12 @@
 </template>
 
 <script>
+import Header from './Header.vue';
+
 export default {
+    components: {
+        Header
+    },
     data() {
         return {
             currentTime: "🕒 Memuat Waktu...",
