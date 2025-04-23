@@ -1,63 +1,225 @@
 <template>
-    <div class="bg-gray-900 text-white flex justify-center items-center min-h-screen transition-all duration-300">
-        <div class="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-6 text-center transition-all duration-300">
+    <div :class="themeClass" class="flex justify-center items-center min-h-screen transition-colors duration-300">
+        <div id="box" class="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-6 text-center">
             <!-- Header dengan Toggle Mode -->
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-2xl font-bold">🕌 Kalender Hijriyah</h1>
                 <button @click="toggleTheme"
                     class="bg-gray-700 text-white px-3 py-1 rounded-lg transition-all hover:bg-gray-600 focus:ring-2 focus:ring-gray-500"
                     aria-label="Ganti Tema">
-                    {{ isDark ? '🌞 Light Mode' : '🌙 Dark Mode' }}
+                    {{ themeToggleText }}
                 </button>
+            </div>
+
+            <!-- Waktu Real-Time & Zona Waktu -->
+            <p class="text-lg font-medium mb-2">{{ currentTime }}</p>
+            <p class="text-sm text-gray-400 mb-4">{{ timezone }}</p>
+
+            <!-- Dropdown untuk Metode -->
+            <div class="mb-4 text-left">
+                <label for="method" class="block text-sm font-medium text-gray-300">Metode Perhitungan:</label>
+                <select id="method" v-model="selectedMethod" @change="fetchHijriData"
+                    class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white focus:ring-2 focus:ring-gray-500 focus:outline-none">
+                    <option value="global">Global</option>
+                    <option value="hisab">Hisab</option>
+                    <option value="rukyat">Rukyat</option>
+                </select>
             </div>
 
             <!-- Indikator Loading -->
             <p v-if="loading" class="text-yellow-400 font-semibold">📍 Menunggu lokasi...</p>
 
-            <!-- Kalender Hijriyah -->
-            <Calendar :method="method" :timezone="timezone" v-if="!loading" /> <!-- Hanya tampilkan setelah loading selesai -->
+            <!-- Tanggal Masehi & Hijriyah -->
+            <div class="mt-4 p-4 bg-gray-700 rounded-lg">
+                <p><strong>🕌 Tanggal Hijriyah:</strong> <span>{{ hijriDateText }}</span></p>
+            </div>
+
+            <!-- Prediksi Akhir Bulan -->
+            <div class="mt-4 p-4 bg-gray-700 rounded-lg" v-html="hijriEndPrediction"></div>
         </div>
     </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue';
-import Calendar from './Calendar.vue'; // Impor Calendar.vue
+<script>
+export default {
+    data() {
+        return {
+            currentTime: "🕒 Memuat Waktu...",
+            timezone: "🌍 Zona Waktu: -",
+            userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            hijriDateText: "",
+            hijriEndPrediction: "",
+            selectedMethod: "global",
+            loading: true,
+            lat: 0,
+            lon: 0,
+            darkMode: true,
+            API_BASE_URL: window.location.hostname.includes("localhost") ? "http://localhost:3000" : "/api",
+        };
+    },
+    computed: {
+        themeClass() {
+            return this.darkMode ? "bg-gray-900 text-white" : "bg-white text-black";
+        },
+        themeToggleText() {
+            return this.darkMode ? "🌞 Light Mode" : "🌙 Dark Mode";
+        }
+    },
+    mounted() {
+        this.applySavedTheme();
+        this.updateRealTime();
+        this.fetchLocationAndHijriDate();
+    },
+    methods: {
+        applySavedTheme() {
+            const saved = localStorage.getItem("theme");
+            this.darkMode = saved !== "light"; // default to dark
+        },
+        toggleTheme() {
+            this.darkMode = !this.darkMode;
+            localStorage.setItem("theme", this.darkMode ? "dark" : "light");
+        },
+        updateRealTime() {
+            setInterval(() => {
+                const now = new Date();
+                const offset = now.getTimezoneOffset() / -60;
+                this.currentTime = `🕒 ${now.toLocaleString("id-ID", {
+                    weekday: "long", year: "numeric", month: "long", day: "numeric",
+                    hour: "2-digit", minute: "2-digit", second: "2-digit"
+                })}`;
+                this.timezone = `🌍 Zona Waktu: ${this.userTimezone} (UTC${offset >= 0 ? "+" : ""}${offset})`;
+            }, 1000);
+        },
+        async fetchLocationAndHijriDate() {
+            this.hijriDateText = "📅 Menghitung hasil tanggal Hijriyah... 🔍";
+            this.hijriEndPrediction = "📅 Menunggu prediksi akhir bulan... ⏳";
 
-const isDark = ref(true);
-const currentTime = ref('🕒 Loading waktu...');
-const timezone = ref('-');
-const method = ref('global');
-const hijriDate = ref('-');
-const predictionText = ref('📅 Menunggu prediksi akhir bulan...');
-const loading = ref(true);
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    this.lat = position.coords.latitude;
+                    this.lon = position.coords.longitude;
+                    await this.fetchHijriData();
+                }, async () => {
+                    await this.fetchLocationByIP();
+                });
+            } else {
+                await this.fetchLocationByIP();
+            }
+        },
+        async fetchLocationByIP() {
+            try {
+                const response = await fetch("https://ip-api.com/json");
+                const data = await response.json();
+                if (data.lat && data.lon) {
+                    this.lat = data.lat;
+                    this.lon = data.lon;
+                    await this.fetchHijriData();
+                } else {
+                    this.hijriDateText = "⚠️ Gagal mendapatkan lokasi.";
+                    this.loading = false;
+                }
+            } catch {
+                this.hijriDateText = "❌ Gagal mendapatkan lokasi.";
+                this.loading = false;
+            }
+        },
+        getHijriMonthName(month) {
+            const months = [
+                "Muharram", "Safar", "Rabiul Awal", "Rabiul Akhir", "Jumadil Awal", "Jumadil Akhir",
+                "Rajab", "Syaban", "Ramadhan", "Syawal", "Zulkaidah", "Zulhijah"
+            ];
+            return months[month - 1] || "Tidak diketahui";
+        },
+        formatGregorianDate({ day, month, year }) {
+            const months = [
+                "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+            ];
+            return `${day} ${months[month - 1]} ${year}`;
+        },
+        async fetchHijriData() {
+            if (!this.lat || !this.lon || !this.userTimezone) {
+                this.hijriDateText = "❌ Lokasi atau zona waktu belum diatur.";
+                this.hijriEndPrediction = "<p class='text-red-500'>Data tidak tersedia.</p>";
+                this.loading = false;
+                return;
+            }
 
-// Fungsi untuk Toggle Mode Tema
-const toggleTheme = () => {
-    isDark.value = !isDark.value;
-    document.documentElement.classList.toggle('dark', isDark.value);
-    localStorage.setItem('theme', isDark.value ? 'dark' : 'light');
+            try {
+                const API_URL = `${this.API_BASE_URL}/hijri-date`;
+                const END_MONTH_URL = `${this.API_BASE_URL}/hijri-end-month`;
+
+                const [dateResponse, endMonthResponse] = await Promise.all([
+                    fetch(`${API_URL}?lat=${this.lat}&lon=${this.lon}&method=${this.selectedMethod}&timezone=${this.userTimezone}`),
+                    fetch(`${END_MONTH_URL}?lat=${this.lat}&lon=${this.lon}&method=${this.selectedMethod}&timezone=${this.userTimezone}`)
+                ]);
+
+                const dateData = await dateResponse.json();
+                const endMonthData = await endMonthResponse.json();
+
+                this.loading = false;
+
+                if (dateData?.hijriDate) {
+                    const hijriToday = dateData.hijriDate;
+                    this.hijriDateText = `${hijriToday.day} ${this.getHijriMonthName(hijriToday.month)} ${hijriToday.year} H`;
+
+                    if (endMonthData?.estimatedEndOfMonth) {
+                        const {
+                            hijri: estimatedHijri, moonAltitude, elongation, sunAltitude,
+                            moonAge, conjunctionBeforeSunset, explanation
+                        } = endMonthData.estimatedEndOfMonth;
+
+                        const hijri29 = estimatedHijri
+                            ? `${estimatedHijri.day} ${this.getHijriMonthName(estimatedHijri.month)} ${estimatedHijri.year} H`
+                            : "Tidak tersedia";
+
+                        const formattedStartGregorian = endMonthData.estimatedStartOfMonth?.gregorian
+                            ? this.formatGregorianDate(endMonthData.estimatedStartOfMonth.gregorian)
+                            : "Tidak tersedia";
+
+                        const parsedMoonAge = parseFloat(moonAge);
+                        const syaratImkanurRukyat = [
+                            { name: "Usia Bulan ≥ 8 jam", value: parsedMoonAge, required: 8 },
+                            { name: "Ketinggian Bulan ≥ 3°", value: parseFloat(moonAltitude), required: 3 },
+                            { name: "Elongasi ≥ 6,4°", value: parseFloat(elongation), required: 6.4 }
+                        ];
+
+                        const imkanurRukyat = syaratImkanurRukyat.every(s => !isNaN(s.value) && s.value >= s.required)
+                            ? `✅ Memenuhi syarat Imkanur Rukyat → ${explanation}`
+                            : "❌ Tidak memenuhi syarat → Bulan ini 30 hari";
+
+                        const imkanurRukyatDetails = syaratImkanurRukyat.map(s => {
+                            const satuan = s.name.includes("jam") ? " jam" : "°";
+                            const status = !isNaN(s.value) && s.value >= s.required ? "✅" : "❌";
+                            return `${status} ${s.name}: ${isNaN(s.value) ? "Tidak tersedia" : s.value.toFixed(2) + satuan}`;
+                        }).join("<li>");
+
+                        const now = new Date();
+                        if (hijriToday.day >= 29 && now.getHours() >= 0) {
+                            this.hijriEndPrediction = `
+                  <div class="bg-gray-100 text-gray-800 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-2">📅 Informasi Tanggal Hijriyah</h3>
+                    <p><strong>🗓️ Hari Ini:</strong> ${this.hijriDateText}</p>
+                    <p><strong>🔮 Perkiraan Akhir Bulan:</strong> ${hijri29}</p>
+                    <p><strong>🌙 Awal Bulan Baru:</strong> ${formattedStartGregorian}</p>
+                    <br>
+                    <p><strong>✅ Validasi Imkanur Rukyat:</strong> ${imkanurRukyat}</p>
+                    <ul><li>${imkanurRukyatDetails}</li></ul>
+                  </div>
+                `;
+                        } else {
+                            this.hijriEndPrediction = `<p class="text-gray-500">🔍 Prediksi hilal hanya tersedia saat tanggal 29 Hijriyah.</p>`;
+                        }
+                    }
+                } else {
+                    this.hijriDateText = "⚠️ Gagal mendapatkan data.";
+                }
+            } catch (error) {
+                this.hijriDateText = "❌ Terjadi kesalahan saat mengambil data.";
+                this.hijriEndPrediction = "<p class='text-red-500'>❌ Gagal mengambil data.</p>";
+                this.loading = false;
+            }
+        }
+    }
 };
-
-// Fungsi untuk memperbarui waktu setiap detik
-const updateTime = () => {
-    currentTime.value = new Date().toLocaleTimeString();
-};
-
-// Memperbarui waktu setiap detik menggunakan setInterval
-onMounted(() => {
-    timezone.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    setInterval(updateTime, 1000); // Update setiap detik
-    loading.value = false;
-
-    // Simulasi data
-    hijriDate.value = '29 Syawal 1446 H';
-    predictionText.value = '🌙 Menunggu visibilitas hilal...';
-});
 </script>
-
-<style scoped>
-html.dark {
-    background-color: #111827;
-}
-</style>
