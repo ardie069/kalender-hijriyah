@@ -1,13 +1,9 @@
 {
   "name": "kalender-hijriyah",
   "version": "2.1.0",
-  "main": "api/index.js",
+  "main": "backend/server.js",
   "scripts": {
-    "dev": "nodemon backend/server.js",
-    "start": "node backend/server.js",
-    "build": "cd frontend && npm install && npm run build && cp -r dist ../public",
-    "build-css": "npx tailwindcss/cli -i ./public/style/input.css -o ./public/style/output.css --minify",
-    "watch-css": "npx tailwindcss/cli -i ./public/style/input.css -o ./public/style/output.css --watch"
+    "dev": "nodemon backend/server.js"
   },
   "keywords": [],
   "author": "",
