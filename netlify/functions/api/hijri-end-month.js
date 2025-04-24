@@ -1,4 +1,4 @@
-const { predictEndOfMonth } = require('../../apps/backend/hijriCalculator.js'); // Sesuaikan dengan path jika perlu
+const { predictEndOfMonth } = require('../../../apps/backend/hijriCalculator.js'); // Sesuaikan dengan path jika perlu
 
 exports.handler = async (event, context) => {
     const lat = parseFloat(event.queryStringParameters.lat) || 0;

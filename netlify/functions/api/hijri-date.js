@@ -1,4 +1,4 @@
-const { getHijriDate } = require('../../apps/backend/hijriCalculator');
+const { getHijriDate } = require('../../../apps/backend/hijriCalculator');
 
 exports.handler = async (event, context) => {
     const lat = parseFloat(event.queryStringParameters.lat) || 0;
