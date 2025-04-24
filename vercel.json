@@ -1,0 +1,23 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "apps/frontend/package.json",
+            "use": "@vercel/vite"
+        },
+        {
+            "src": "apps/backend/server.js",
+            "use": "@vercel/node"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "apps/backend/server.js"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "apps/frontend/dist/$1"
+        }
+    ]
+}
