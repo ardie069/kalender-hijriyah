@@ -1,4 +1,4 @@
-import { predictEndOfMonth } from "../../apps/backend/hijriCalculator";
+import { predictEndOfMonth } from "../../../apps/backend/hijriCalculator";
 
 exports.handler = async (event, context) => {
     const lat = parseFloat(event.queryStringParameters.lat) || 0;

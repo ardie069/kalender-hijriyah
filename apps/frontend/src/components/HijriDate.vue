@@ -76,8 +76,8 @@ export default {
             }
 
             try {
-                const API_URL = `${this.API_BASE_URL}/hijri-date`;
-                const END_MONTH_URL = `${this.API_BASE_URL}/hijri-end-month`;
+                const API_URL = `${this.API_BASE_URL}/api/hijri-date`;
+                const END_MONTH_URL = `${this.API_BASE_URL}/api/hijri-end-month`;
 
                 const [dateResponse, endMonthResponse] = await Promise.all([
                     fetch(`${API_URL}?lat=${this.lat}&lon=${this.lon}&method=${this.selectedMethod}&timezone=${this.userTimezone}`),
