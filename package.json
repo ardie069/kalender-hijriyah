@@ -1,24 +1,21 @@
 {
   "name": "kalender-hijriyah",
+  "private": true,
   "version": "2.1.0",
-  "main": "backend/server.js",
+  "description": "Kalender Hijriyah Sederhana merupakan aplikasi web sederhana yang menampilkan **tanggal Hijriyah secara real-time** berdasarkan lokasi pengguna dan metode perhitungan yang dipilih.",
+  "workspaces": [
+    "apps/frontend",
+    "apps/backend"
+  ],
   "scripts": {
-    "dev": "nodemon backend/server.js"
+    "dev:frontend": "npm --workspace apps/frontend run dev",
+    "dev:backend": "npm --workspace apps/backend run dev",
+    "dev": "concurrently \"npm:dev:frontend\" \"npm:dev:backend\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
-  "type": "module",
-  "dependencies": {
-    "astronomia": "^4.1.1",
-    "axios": "^1.8.4",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "luxon": "^3.6.1",
-    "readline-sync": "^1.4.10",
-    "serverless-http": "^3.2.0",
-    "suncalc": "^1.9.0"
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }
