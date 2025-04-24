@@ -33,7 +33,7 @@ app.use((req, res, next) => {
 });
 
 // Endpoint: Tanggal Hijriyah hari ini
-app.get("/api/hijri-date", (req, res) => {
+app.get("/hijri-date", (req, res) => {
     const lat = parseFloat(req.query.lat) || DEFAULT_LAT;
     const lon = parseFloat(req.query.lon) || DEFAULT_LON;
     const method = req.query.method || HIJRI_METHOD;
@@ -52,7 +52,7 @@ app.get("/api/hijri-date", (req, res) => {
 });
 
 // Endpoint: Prediksi akhir bulan Hijriyah
-app.get("/api/hijri-end-month", (req, res) => {
+app.get("/hijri-end-month", (req, res) => {
     const lat = parseFloat(req.query.lat) || DEFAULT_LAT;
     const lon = parseFloat(req.query.lon) || DEFAULT_LON;
     const method = req.query.method || HIJRI_METHOD;
