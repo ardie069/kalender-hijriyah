@@ -1,4 +1,4 @@
-import { getHijriDate } from "../../../apps/backend/hijriCalculator.js";
+import { getHijriDate } from "../../apps/backend/hijriCalculator.js";
 
 exports.handler = async (event, context) => {
     const lat = parseFloat(event.queryStringParameters.lat) || 0;
