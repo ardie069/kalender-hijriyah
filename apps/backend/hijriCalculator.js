@@ -182,9 +182,12 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
 
     const hijriToday = getHijriDate(lat, lon, method, timezone, jd);
 
-    // Validasi hanya menghitung jika tanggal Hijriyah adalah 29
     if (hijriToday.day !== 29) {
-        return { message: "Hari ini bukan tanggal 29 Hijriyah. Tidak ada pergantian bulan." };
+        return {
+            today: hijriToday,
+            estimatedEndOfMonth: null,
+            message: "Prediksi hilal hanya tersedia saat tanggal 29 Hijriyah."
+        };
     }
 
     // Melanjutkan perhitungan jika tanggal Hijriyah adalah 29

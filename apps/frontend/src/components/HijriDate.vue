@@ -1,6 +1,5 @@
 <template>
-    <!-- Indikator Loading -->
-    <p v-if="loading" :class="darkMode ? 'text-yellow-400' : 'text-yellow-800'" class="font-semibold">
+    <p v-if="loading" :class="loadingClass" class="font-semibold">
         📍 Menunggu lokasi...
     </p>
 
@@ -11,9 +10,8 @@
     </div>
 
     <div v-if="hijriEndPrediction"
-        :class="[hijriEndPredictionClass, 'mt-4 p-4 rounded-lg', darkMode ? 'bg-gray-700' : 'bg-gray-200']">
-        <div v-html="hijriEndPrediction"></div>
-    </div>
+        :class="[hijriEndPredictionClass, 'mt-4 p-4 rounded-lg', darkMode ? 'bg-gray-700' : 'bg-gray-200']"
+        v-html="hijriEndPrediction" />
 </template>
 
 <script>
@@ -29,6 +27,11 @@ export default {
         API_BASE_URL: String,
         userTimezone: String
     },
+    computed: {
+        loadingClass() {
+            return this.darkMode ? 'text-yellow-400' : 'text-yellow-800';
+        }
+    },
     mounted() {
         this.fetchLocationAndHijriDate();
     },
@@ -39,112 +42,43 @@ export default {
             this.$emit('update:hijriEndPrediction', "📅 Menunggu prediksi akhir bulan... ⏳");
 
             if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(async (position) => {
-                    this.lat = position.coords.latitude;
-                    this.lon = position.coords.longitude;
-                    await this.fetchHijriData();
-                }, async () => {
-                    await this.fetchLocationByIP();
-                });
+                navigator.geolocation.getCurrentPosition(
+                    async ({ coords }) => {
+                        this.lat = coords.latitude;
+                        this.lon = coords.longitude;
+                        await this.fetchHijriData();
+                    },
+                    async () => {
+                        await this.fetchLocationByIP();
+                    }
+                );
             } else {
                 await this.fetchLocationByIP();
             }
         },
+
         async fetchLocationByIP() {
             try {
-                const response = await fetch("https://ip-api.com/json");
-                const data = await response.json();
-                if (data.lat && data.lon) {
-                    this.lat = data.lat;
-                    this.lon = data.lon;
+                const res = await fetch("https://ip-api.com/json");
+                const { lat, lon } = await res.json();
+                if (lat && lon) {
+                    this.lat = lat;
+                    this.lon = lon;
                     await this.fetchHijriData();
                 } else {
-                    this.$emit('update:hijriDateText', "⚠️ Gagal mendapatkan lokasi.");
-                    this.$emit('update:loading', false);
+                    this.showError("⚠️ Gagal mendapatkan lokasi.");
                 }
             } catch {
-                this.$emit('update:hijriDateText', "❌ Gagal mendapatkan lokasi.");
-                this.$emit('update:loading', false);
+                this.showError("❌ Gagal mendapatkan lokasi.");
             }
         },
-        async fetchHijriData() {
-            if (!this.lat || !this.lon || !this.userTimezone) {
-                this.$emit('update:hijriDateText', "❌ Lokasi atau zona waktu belum diatur.");
-                this.$emit('update:hijriEndPrediction', "<p class='text-red-500'>Data tidak tersedia.</p>");
-                this.$emit('update:loading', false);
-                return;
-            }
 
-            try {
-                const API_URL = `${this.API_BASE_URL}/hijri-date`;
-                const END_MONTH_URL = `${this.API_BASE_URL}/hijri-end-month`;
-
-                const [dateResponse, endMonthResponse] = await Promise.all([
-                    fetch(`${API_URL}?lat=${this.lat}&lon=${this.lon}&method=${this.selectedMethod}&timezone=${this.userTimezone}`),
-                    fetch(`${END_MONTH_URL}?lat=${this.lat}&lon=${this.lon}&method=${this.selectedMethod}&timezone=${this.userTimezone}`)
-                ]);
-
-                const dateData = await dateResponse.json();
-                const endMonthData = await endMonthResponse.json();
-
-                this.$emit('update:loading', false);
-
-                if (dateData?.hijriDate) {
-                    const hijriToday = dateData.hijriDate;
-                    const hijriText = `${hijriToday.day} ${this.getHijriMonthName(hijriToday.month)} ${hijriToday.year} H`;
-                    this.$emit('update:hijriDateText', hijriText);
-
-                    if (endMonthData?.estimatedEndOfMonth) {
-                        const { hijri: estimatedHijri, moonAltitude, elongation, sunAltitude, moonAge, conjunctionBeforeSunset, explanation } = endMonthData.estimatedEndOfMonth;
-
-                        const hijri29 = estimatedHijri ? `${estimatedHijri.day} ${this.getHijriMonthName(estimatedHijri.month)} ${estimatedHijri.year} H` : "Tidak tersedia";
-                        const formattedStartGregorian = endMonthData.estimatedStartOfMonth?.gregorian ? this.formatGregorianDate(endMonthData.estimatedStartOfMonth.gregorian) : "Tidak tersedia";
-
-                        const parsedMoonAge = parseFloat(moonAge);
-                        const syaratImkanurRukyat = [
-                            { name: "Usia Bulan ≥ 8 jam", value: parsedMoonAge, required: 8 },
-                            { name: "Ketinggian Bulan ≥ 3°", value: parseFloat(moonAltitude), required: 3 },
-                            { name: "Elongasi ≥ 6,4°", value: parseFloat(elongation), required: 6.4 }
-                        ];
-
-                        const imkanurRukyat = syaratImkanurRukyat.every(s => !isNaN(s.value) && s.value >= s.required)
-                            ? `✅ Memenuhi syarat Imkanur Rukyat → ${explanation}`
-                            : "❌ Tidak memenuhi syarat → Bulan ini 30 hari";
-
-                        const imkanurRukyatDetails = syaratImkanurRukyat.map(s => {
-                            const satuan = s.name.includes("jam") ? " jam" : "°";
-                            const status = !isNaN(s.value) && s.value >= s.required ? "✅" : "❌";
-                            return `${status} ${s.name}: ${isNaN(s.value) ? "Tidak tersedia" : s.value.toFixed(2) + satuan}`;
-                        }).join("<li>");
-
-                        const now = new Date();
-                        const showEndPrediction = hijriToday.day >= 29 && now.getHours() >= 0;
-
-                        const predictionContent = showEndPrediction
-                            ? `
-                          <div class="bg-gray-100 text-gray-800 p-4 rounded-lg">
-                              <h3 class="text-lg font-semibold mb-2">📅 Informasi Tanggal Hijriyah</h3>
-                              <p><strong>🗓️ Hari Ini:</strong> ${hijriText}</p>
-                              <p><strong>🔮 Perkiraan Akhir Bulan:</strong> ${hijri29}</p>
-                              <p><strong>🌙 Awal Bulan Baru:</strong> ${formattedStartGregorian}</p>
-                              <br>
-                              <p><strong>✅ Validasi Imkanur Rukyat:</strong> ${imkanurRukyat}</p>
-                              <ul><li>${imkanurRukyatDetails}</li></ul>
-                          </div>
-                          `
-                            : `<p class="text-gray-500">🔍 Prediksi hilal hanya tersedia saat tanggal 29 Hijriyah.</p>`;
-
-                        this.$emit('update:hijriEndPrediction', predictionContent);
-                    }
-                } else {
-                    this.$emit('update:hijriDateText', "⚠️ Gagal mendapatkan data.");
-                }
-            } catch (error) {
-                this.$emit('update:hijriDateText', "❌ Terjadi kesalahan saat mengambil data.");
-                this.$emit('update:hijriEndPrediction', "<p class='text-red-500'>❌ Gagal mengambil data.</p>");
-                this.$emit('update:loading', false);
-            }
+        showError(message) {
+            this.$emit('update:hijriDateText', message);
+            this.$emit('update:hijriEndPrediction', "<p class='text-red-500'>Data tidak tersedia.</p>");
+            this.$emit('update:loading', false);
         },
+
         getHijriMonthName(month) {
             const months = [
                 "Muharam", "Safar", "Rabiulawal", "Rabiulakhir", "Jumadilawal", "Jumadilakhir",
@@ -152,12 +86,100 @@ export default {
             ];
             return months[month - 1] || "Tidak diketahui";
         },
+
         formatGregorianDate({ day, month, year }) {
             const months = [
                 "Januari", "Februari", "Maret", "April", "Mei", "Juni",
                 "Juli", "Agustus", "September", "Oktober", "November", "Desember"
             ];
             return `${day} ${months[month - 1]} ${year}`;
+        },
+
+        checkImkanurRukyat({ moonAge, moonAltitude, elongation }) {
+            const criteria = [
+                { name: "Usia Bulan ≥ 8 jam", value: parseFloat(moonAge), required: 8 },
+                { name: "Ketinggian Bulan ≥ 3°", value: parseFloat(moonAltitude), required: 3 },
+                { name: "Elongasi ≥ 6,4°", value: parseFloat(elongation), required: 6.4 }
+            ];
+
+            const isValid = criteria.every(c => !isNaN(c.value) && c.value >= c.required);
+            const summary = isValid ? "✅ Memenuhi syarat Imkanur Rukyat" : "❌ Tidak memenuhi syarat → Bulan ini 30 hari";
+
+            const details = criteria.map(c => {
+                const satuan = c.name.includes("jam") ? " jam" : "°";
+                const status = !isNaN(c.value) && c.value >= c.required ? "✅" : "❌";
+                return `${status} ${c.name}: ${isNaN(c.value) ? "Tidak tersedia" : c.value.toFixed(2) + satuan}`;
+            }).join("<li>");
+
+            return { summary, details };
+        },
+
+        async fetchHijriData() {
+            if (!this.lat || !this.lon || !this.userTimezone) {
+                this.showError("❌ Lokasi atau zona waktu belum diatur.");
+                return;
+            }
+
+            try {
+                const params = `lat=${this.lat}&lon=${this.lon}&method=${this.selectedMethod}&timezone=${this.userTimezone}`;
+                const [dateRes, endRes] = await Promise.all([
+                    fetch(`${this.API_BASE_URL}/hijri-date?${params}`),
+                    fetch(`${this.API_BASE_URL}/hijri-end-month?${params}`)
+                ]);
+
+                const dateData = await dateRes.json();
+                const endMonthData = await endRes.json();
+
+                this.$emit('update:loading', false);
+
+                if (!dateData?.hijriDate) {
+                    return this.showError("⚠️ Gagal mendapatkan data.");
+                }
+
+                const hijriToday = dateData.hijriDate;
+                const hijriText = `${hijriToday.day} ${this.getHijriMonthName(hijriToday.month)} ${hijriToday.year} H`;
+                this.$emit('update:hijriDateText', hijriText);
+
+                if (!endMonthData) return;
+
+                const { message, estimatedEndOfMonth, estimatedStartOfMonth } = endMonthData;
+
+                if (message) {
+                    this.$emit('update:hijriEndPrediction', `<p class="text-gray-500">🔍 ${message}</p>`);
+                    return;
+                }
+
+                const showPrediction = hijriToday.day >= 29;
+                if (!showPrediction) {
+                    this.$emit('update:hijriEndPrediction', `<p class="text-gray-500">⚠️ Prediksi hilal hanya tersedia saat tanggal 29 Hijriyah.</p>`);
+                    return;
+                }
+
+                const hijri29 = estimatedEndOfMonth?.hijri
+                    ? `${estimatedEndOfMonth.hijri.day} ${this.getHijriMonthName(estimatedEndOfMonth.hijri.month)} ${estimatedEndOfMonth.hijri.year} H`
+                    : "Tidak tersedia";
+
+                const formattedStartGregorian = estimatedStartOfMonth?.gregorian
+                    ? this.formatGregorianDate(estimatedStartOfMonth.gregorian)
+                    : "Tidak tersedia";
+
+                const { summary, details } = this.checkImkanurRukyat(estimatedEndOfMonth);
+
+                const predictionContent = `
+            <div class="bg-gray-100 text-gray-800 p-4 rounded-lg">
+              <h3 class="text-lg font-semibold mb-2">📅 Informasi Tanggal Hijriyah</h3>
+              <p><strong>🗓️ Hari Ini:</strong> ${hijriText}</p>
+              <p><strong>🔮 Perkiraan Akhir Bulan:</strong> ${hijri29}</p>
+              <p><strong>🌙 Awal Bulan Baru:</strong> ${formattedStartGregorian}</p>
+              <br>
+              <p><strong>✅ Validasi Imkanur Rukyat:</strong> ${summary}</p>
+              <ul><li>${details}</li></ul>
+            </div>
+          `;
+                this.$emit('update:hijriEndPrediction', predictionContent);
+            } catch (err) {
+                this.showError("❌ Terjadi kesalahan saat mengambil data.");
+            }
         }
     },
     watch: {
