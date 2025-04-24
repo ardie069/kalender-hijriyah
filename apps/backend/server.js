@@ -71,10 +71,7 @@ app.get("/hijri-end-month", (req, res) => {
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Catch-all: fallback ke index.html untuk SPA
-app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api')) {
-        return res.status(404).json({ error: 'API route tidak ditemukan' });
-    }
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
 });
 
