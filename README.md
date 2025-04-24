@@ -1,47 +1,85 @@
 # 📅 Kalender Hijriyah Sederhana 🌙
 
-Kalender Hijriyah Sederhana merupakan aplikasi web sederhana yang menampilkan **tanggal Hijriyah secara real-time** berdasarkan lokasi pengguna dan metode perhitungan yang dipilih.
+Kalender Hijriyah Sederhana adalah aplikasi web yang menampilkan **tanggal Hijriyah secara real-time** berdasarkan lokasi pengguna, perhitungan astronomis, dan metode yang dipilih. Kini dimigrasikan sepenuhnya ke **Vue 3** dengan dukungan **Express.js** pada backend.
 
 ## ✨ Fitur Utama
 
-- ✅ **Konversi Kalender Hijriyah** dari Masehi menggunakan metode **Hisab, Rukyat, atau Imkanur Rukyat**
-- ✅ **Pemilihan Metode Perhitungan** langsung dari UI
-- ✅ **Tema Dark & Light Mode** dengan tombol toggle
-- ✅ **Tanggal Otomatis Berganti** setelah matahari terbenam sesuai lokasi pengguna
-- ✅ **Realtime Clock** menampilkan waktu saat ini dalam format **HH.mm.ss**
-- ✅ **Tanggal Masehi dan Hijriyah ditampilkan bersamaan**
+- ✅ **Konversi Kalender Hijriyah** dari Masehi secara real-time
+- ✅ **Pilihan Metode Perhitungan**: Global, Hisab, Rukyat
+- ✅ **Tema Dark & Light Mode** yang dapat diganti
+- ✅ **Penyesuaian Otomatis** tanggal Hijriyah setelah matahari terbenam
+- ✅ **Jam Realtime** dengan zona waktu lokal
+- ✅ **Deteksi Lokasi** otomatis melalui Geolocation API
+- ✅ **Prediksi Akhir Bulan Hijriyah** yang di mana setiap metode perhitungan akan divalidasi dengan **Imkanur Rukyat**
+
+## 🔧 Teknologi yang Digunakan
+
+- 🌐 **Vue 3** + Vite (Frontend)
+- 🛠️ **Express.js** (Backend)
+- 🎨 **Tailwind CSS** (Styling)
+- 🧮 **Luxon**, **SunCalc**, **Astronomia** untuk kalkulasi Hijriyah dan posisi matahari
 
 ## 🚀 Cara Menjalankan
 
-### **1. Clone repository ini**
+### 1. Clone repository ini
 ```sh
 git clone https://github.com/ardie069/kalender-hijriyah.git
 ```
 
-### **2. Masuk ke folder proyek**
+### 2. Masuk ke folder proyek
 ```sh
 cd kalender-hijriyah
 ```
 
-### **3. Instal dependensi (jika menggunakan Node.js)**
+### 3. Instalasi dependensi
 ```sh
 npm install
 ```
 
-### **4. Jalankan server lokal**
+### 4. Jalankan backend
 ```sh
 node server/server.js
 ```
 
-### **5. Buka di browser:**
-```
-http://localhost:3000
+### 5. Jalankan frontend (development)
+```sh
+cd frontend
+npm run dev
 ```
 
-## 🔧 Teknologi yang Digunakan
-- HTML, CSS, JavaScript (Frontend)
-- Node.js (Backend)
-- SunCalc dan Astronomia untuk perhitungan astronomi
+### 6. Akses di browser:
+```
+http://localhost:5173
+```
+
+> 🧪 Untuk produksi, frontend akan dibuild dan disajikan oleh backend dari folder `dist`.
+
+## 📁 Struktur Proyek
+
+```
+kalender-hijriyah/
+├── apps/       
+│   ├── backend/                # Backend Express
+│   │    ├── server.js
+│   │    └── hijriCalculator.js
+│   │ 
+│   └── frontend/               # Frontend Vue
+│       ├── index.html
+│       ├── vite.config.js
+│       ├── src/
+│       ├── App.vue
+│       ├── main.js
+│       ├── components/
+│       │    └── HijriDate.vue
+│       └── .env     
+└── cli/                        # mode cli atau terminal
+```
 
 ## 📝 Lisensi
+
 MIT License. Silakan digunakan dan dikembangkan lebih lanjut! 🚀
+
+---
+
+Dikembangkan oleh [@ardie069](https://github.com/ardie069) 💫
+
