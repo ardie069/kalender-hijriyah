@@ -1,7 +1,7 @@
 [build]
   functions = "netlify/functions"
-  publish = "frontend/dist"
+  publish = "apps/frontend/dist"
 
 [dev]
   functions = "netlify/functions"
-  publish = "frontend/dist"
+  publish = "apps/frontend/dist"
