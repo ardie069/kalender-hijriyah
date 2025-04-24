@@ -154,8 +154,8 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
         const conjunctionValid = method === "global"
             ? conjunctionJD < sunsetJD // Global (Ummul Qura): konjungsi sebelum matahari terbenam di Mekkah
             : method === "hisab"
-            ? conjunctionJD < sunsetJD // Hisab: konjungsi sebelum matahari terbenam di lokasi pengguna
-            : method === "rukyat" && moonAltitude >= 3 && elongation >= 6.4 && moonAgeHours >= 8; // Rukyat
+                ? conjunctionJD < sunsetJD // Hisab: konjungsi sebelum matahari terbenam di lokasi pengguna
+                : method === "rukyat" && moonAltitude >= 3 && elongation >= 6.4 && moonAgeHours >= 8; // Rukyat
 
         if (!conjunctionValid) {
             effectiveJD += 1; // Digenapi jadi 30 hari jika konjungsi tidak memenuhi syarat
@@ -175,11 +175,19 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
         return new Date(timestamp);
     }
 
+    // Mendapatkan tanggal Hijriyah hari ini
     const nowLuxon = DateTime.now().setZone(timezone);
     const nowUTC = DateTime.utc();
     const jd = getJulianDate(nowUTC);
 
     const hijriToday = getHijriDate(lat, lon, method, timezone, jd);
+
+    // Validasi hanya menghitung jika tanggal Hijriyah adalah 29
+    if (hijriToday.day !== 29) {
+        return { message: "Hari ini bukan tanggal 29 Hijriyah. Tidak ada pergantian bulan." };
+    }
+
+    // Melanjutkan perhitungan jika tanggal Hijriyah adalah 29
     const hijriTarget = { day: 29, month: hijriToday.month, year: hijriToday.year };
     const daysTo29 = hijriToday.day <= 29 ? 29 - hijriToday.day : 0;
     const estimatedDate = nowLuxon.plus({ days: daysTo29 }).startOf('day');
@@ -239,13 +247,16 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
         isEndOfMonth = "29 hari";
     }
 
+    // Jika bulan lebih dari 12 (Zulhijjah), maka harus roll over ke tahun baru
     if (hijriEnd.month > 12) {
         hijriEnd.month = 1;
         hijriEnd.year++;
     }
 
+    // Tentukan tanggal mulai bulan baru
     const nextHijriStartDate = sunsetTarget.plus({ days: 1 }).toISODate();
 
+    // Return hasil perhitungan hanya jika tanggal Hijriyah adalah 29
     return {
         today: hijriToday,
         estimatedEndOfMonth: {
@@ -261,9 +272,8 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
                 ? conjunctionTime.toFormat("yyyy-MM-dd HH:mm:ss")
                 : "Tidak diketahui",
         },
-        estimatedStartOfMonth: {
-            hijri: { day: 1, month: hijriEnd.month, year: hijriEnd.year },
-            gregorian: nextHijriStartDate,
-        },
+        estimatedStartOfMonth: hijriEnd.month === 12
+            ? { hijri: { day: 1, month: 1, year: hijriEnd.year + 1 }, gregorian: nextHijriStartDate }
+            : { hijri: { day: 1, month: hijriEnd.month + 1, year: hijriEnd.year }, gregorian: nextHijriStartDate },
     };
 }
