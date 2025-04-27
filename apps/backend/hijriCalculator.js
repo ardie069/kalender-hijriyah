@@ -258,6 +258,9 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
 
     // Tentukan tanggal mulai bulan baru
     const nextHijriStartDate = sunsetTarget.plus({ days: 1 }).toISODate();
+    
+    // Parsing tanggal Hijriyah ke format Gregorian
+    const nextHijriStartDateParsed = DateTime.fromISO(nextHijriStartDate).setZone(timezone);
 
     // Return hasil perhitungan hanya jika tanggal Hijriyah adalah 29
     return {
@@ -276,7 +279,19 @@ export function predictEndOfMonth(lat, lon, method, timezone) {
                 : "Tidak diketahui",
         },
         estimatedStartOfMonth: hijriEnd.month === 12
-            ? { hijri: { day: 1, month: 1, year: hijriEnd.year + 1 }, gregorian: nextHijriStartDate }
-            : { hijri: { day: 1, month: hijriEnd.month + 1, year: hijriEnd.year }, gregorian: nextHijriStartDate },
+            ? {
+                hijri: { day: 1, month: 1, year: hijriEnd.year + 1 }, gregorian: {
+                    day: nextHijriStartDateParsed.day,
+                    month: nextHijriStartDateParsed.month,
+                    year: nextHijriStartDateParsed.year
+                }
+            }
+            : {
+                hijri: { day: 1, month: hijriEnd.month + 1, year: hijriEnd.year }, gregorian: {
+                    day: nextHijriStartDateParsed.day,
+                    month: nextHijriStartDateParsed.month,
+                    year: nextHijriStartDateParsed.year
+                }
+            },
     };
 }
