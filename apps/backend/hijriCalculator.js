@@ -1,5 +1,5 @@
 import SunCalc from 'suncalc';
-import { solar, moonposition, conjunction } from 'astronomia';
+import { solar, moonposition } from 'astronomia';
 import { DateTime } from 'luxon';
 
 function angularSeparation(ra1, dec1, ra2, dec2) {
@@ -155,7 +155,10 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
             ? conjunctionJD < sunsetJD // Global (Ummul Qura): konjungsi sebelum matahari terbenam di Mekkah
             : method === "hisab"
                 ? conjunctionJD < sunsetJD // Hisab: konjungsi sebelum matahari terbenam di lokasi pengguna
-                : method === "rukyat" && moonAltitude >= 3 && elongation >= 6.4 && moonAgeHours >= 8; // Rukyat
+                : method === "rukyat" && 
+                  getMoonAltitude(sunsetLocal.toJSDate(), lat, lon) >= 3 && 
+                  getElongation(moonposition.position(sunsetJD), solar.trueEquatorial(sunsetJD)) >= 6.4 && 
+                  moonAgeHours >= 8; // Rukyat
 
         if (!conjunctionValid) {
             effectiveJD += 1; // Digenapi jadi 30 hari jika konjungsi tidak memenuhi syarat
