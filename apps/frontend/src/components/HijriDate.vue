@@ -17,10 +17,6 @@
     </div>
   </div>
 
-  <div v-if="showWeton && !loading" class="mt-2 text-sm text-gray-600">
-    🌾 Weton: <strong>{{ wetonText }}</strong>
-  </div>
-
   <div
     v-if="hijriEndPrediction"
     :class="[
