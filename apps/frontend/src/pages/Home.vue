@@ -96,7 +96,11 @@ export default {
   methods: {
     applySavedTheme() {
       const saved = localStorage.getItem("theme");
-      this.darkMode = saved !== "light";
+      if (saved) {
+        this.darkMode = saved === "dark";
+      } else {
+        this.darkMode = true; // default ke darkMode jika tidak ada tema yang disimpan
+      }
     },
     toggleTheme() {
       this.darkMode = !this.darkMode;
