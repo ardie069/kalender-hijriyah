@@ -52,7 +52,9 @@ export function useHijriDate(selectedMethod, userTimezone, API_BASE_URL) {
   const checkAndSetWeton = () => {
     if (isLocationInJava(lat.value, lon.value)) {
       showWeton.value = true;
-      wetonText.value = getWeton(new Date());
+      wetonText.value = `${new Date().toLocaleDateString("id-ID", {
+        weekday: "long",
+      })} ${getWeton(new Date())}`;
     } else {
       showWeton.value = false;
       wetonText.value = "";
@@ -61,16 +63,36 @@ export function useHijriDate(selectedMethod, userTimezone, API_BASE_URL) {
 
   const getHijriMonthName = (month) => {
     const months = [
-      "Muharam", "Safar", "Rabiulawal", "Rabiulakhir", "Jumadilawal", "Jumadilakhir",
-      "Rajab", "Syakban", "Ramadan", "Syawal", "Zulkaidah", "Zulhijah",
+      "Muharam",
+      "Safar",
+      "Rabiulawal",
+      "Rabiulakhir",
+      "Jumadilawal",
+      "Jumadilakhir",
+      "Rajab",
+      "Syakban",
+      "Ramadan",
+      "Syawal",
+      "Zulkaidah",
+      "Zulhijah",
     ];
     return months[month - 1] || "Tidak diketahui";
   };
 
   const formatGregorianDate = ({ day, month, year }) => {
     const months = [
-      "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus",
-      "September", "Oktober", "November", "Desember",
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
     ];
     return `${day} ${months[month - 1]} ${year}`;
   };
@@ -78,27 +100,38 @@ export function useHijriDate(selectedMethod, userTimezone, API_BASE_URL) {
   const checkImkanurRukyat = ({ moonAge, moonAltitude, elongation }) => {
     const criteria = [
       { name: "Usia Bulan ≥ 8 jam", value: parseFloat(moonAge), required: 8 },
-      { name: "Ketinggian Bulan ≥ 3°", value: parseFloat(moonAltitude), required: 3 },
+      {
+        name: "Ketinggian Bulan ≥ 3°",
+        value: parseFloat(moonAltitude),
+        required: 3,
+      },
       { name: "Elongasi ≥ 6,4°", value: parseFloat(elongation), required: 6.4 },
     ];
 
-    const isValid = criteria.every(c => !isNaN(c.value) && c.value >= c.required);
+    const isValid = criteria.every(
+      (c) => !isNaN(c.value) && c.value >= c.required
+    );
     const summary = isValid
       ? "✅ Memenuhi syarat Imkanur Rukyat"
       : "❌ Tidak memenuhi syarat → Bulan ini 30 hari";
 
-    const details = criteria.map(c => {
-      const satuan = c.name.includes("jam") ? " jam" : "°";
-      const status = !isNaN(c.value) && c.value >= c.required ? "✅" : "❌";
-      return `${status} ${c.name}: ${isNaN(c.value) ? "Tidak tersedia" : c.value.toFixed(2) + satuan}`;
-    }).join("<li>");
+    const details = criteria
+      .map((c) => {
+        const satuan = c.name.includes("jam") ? " jam" : "°";
+        const status = !isNaN(c.value) && c.value >= c.required ? "✅" : "❌";
+        return `${status} ${c.name}: ${
+          isNaN(c.value) ? "Tidak tersedia" : c.value.toFixed(2) + satuan
+        }`;
+      })
+      .join("<li>");
 
     return { summary, details };
   };
 
   const showError = (message) => {
     hijriDateText.value = message;
-    hijriEndPrediction.value = "<p class='text-red-500'>Data tidak tersedia.</p>";
+    hijriEndPrediction.value =
+      "<p class='text-red-500'>Data tidak tersedia.</p>";
     loading.value = false;
   };
 
@@ -128,12 +161,15 @@ export function useHijriDate(selectedMethod, userTimezone, API_BASE_URL) {
       }
 
       const hijriToday = dateData.hijriDate;
-      const hijriText = `${hijriToday.day} ${getHijriMonthName(hijriToday.month)} ${hijriToday.year} H`;
+      const hijriText = `${hijriToday.day} ${getHijriMonthName(
+        hijriToday.month
+      )} ${hijriToday.year} H`;
       hijriDateText.value = hijriText;
 
       if (!endMonthData) return;
 
-      const { message, estimatedEndOfMonth, estimatedStartOfMonth } = endMonthData;
+      const { message, estimatedEndOfMonth, estimatedStartOfMonth } =
+        endMonthData;
 
       const showPrediction = hijriToday.day >= 29;
       if (message) {
@@ -146,7 +182,9 @@ export function useHijriDate(selectedMethod, userTimezone, API_BASE_URL) {
       }
 
       const hijri29 = estimatedEndOfMonth?.hijri
-        ? `${estimatedEndOfMonth.hijri.day} ${getHijriMonthName(estimatedEndOfMonth.hijri.month)} ${estimatedEndOfMonth.hijri.year} H`
+        ? `${estimatedEndOfMonth.hijri.day} ${getHijriMonthName(
+            estimatedEndOfMonth.hijri.month
+          )} ${estimatedEndOfMonth.hijri.year} H`
         : "Tidak tersedia";
 
       const formattedStartGregorian = estimatedStartOfMonth?.gregorian

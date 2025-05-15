@@ -4,8 +4,13 @@
     <span class="font-semibold text-accent">📍 Menunggu lokasi...</span>
   </div>
 
-  <HijriInfoCard :hijriDateText="hijriDateText" :darkMode="darkMode" />
-  <WetonInfo :showWeton="showWeton" :wetonText="wetonText" :darkMode="darkMode" />
+  <HijriInfoCard
+    :hijriDateText="hijriDateText"
+    :darkMode="darkMode"
+    :showWeton="showWeton"
+    :wetonText="wetonText"
+    :weekdayText="weekdayText"
+  />
   <HijriPrediction
     :hijriEndPrediction="hijriEndPrediction"
     :darkMode="darkMode"
@@ -16,8 +21,21 @@
 import { ref, computed, watch } from "vue";
 import HijriInfoCard from "./HijriInfoCard.vue";
 import HijriPrediction from "./HijriPrediction.vue";
-import WetonInfo from "./WetonInfo.vue";
 import { useHijriDate } from "../composables/useHijriDate";
+
+const dayMap = {
+  Minggu: "Ahad",
+  Senin: "Senin",
+  Selasa: "Selasa",
+  Rabu: "Rabu",
+  Kamis: "Kamis",
+  Jumat: "Jumat",
+  Sabtu: "Sabtu",
+};
+
+const now = new Date();
+const day = now.toLocaleDateString("id-ID", { weekday: "long" });
+const weekdayText = dayMap[day] || day;
 
 // props dari parent
 const props = defineProps({
