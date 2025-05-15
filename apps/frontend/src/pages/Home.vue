@@ -19,8 +19,6 @@
       <Clock
         :darkMode="darkMode"
         :userTimezone="userTimezone"
-        :lat="lat"
-        :lon="lon"
       />
 
       <!-- Memanggil Komponen Metode -->
@@ -65,8 +63,6 @@ export default {
       hijriEndPrediction: "",
       selectedMethod: "global",
       loading: true,
-      lat: 0,
-      lon: 0,
       darkMode: true,
       API_BASE_URL: import.meta.env.VITE_APP_API_BASE_URL,
     };
@@ -87,7 +83,7 @@ export default {
       return this.darkMode ? "text-white" : "text-black";
     },
     themeToggleText() {
-      return this.darkMode ? "🌞 Light Mode" : "🌙 Dark Mode";
+      return this.darkMode ? "🌙 Dark Mode" : "🌞 Light Mode";
     },
   },
   mounted() {
@@ -99,16 +95,12 @@ export default {
       if (saved) {
         this.darkMode = saved === "dark";
       } else {
-        this.darkMode = true; // default ke darkMode jika tidak ada tema yang disimpan
+        this.darkMode = true;
       }
     },
     toggleTheme() {
       this.darkMode = !this.darkMode;
       localStorage.setItem("theme", this.darkMode ? "dark" : "light");
-    },
-    updateLocation(lat, lon) {
-      this.lat = lat;
-      this.lon = lon;
     },
   },
 };
