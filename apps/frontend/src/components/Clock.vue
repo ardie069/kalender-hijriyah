@@ -15,10 +15,18 @@
 </template>
 
 <script>
-import { isLocationInJava, getWeton } from "../utils/weton.js";
+const dayMap = {
+  Minggu: "Ahad",
+  Senin: "Senin",
+  Selasa: "Selasa",
+  Rabu: "Rabu",
+  Kamis: "Kamis",
+  Jumat: "Jumat",
+  Sabtu: "Sabtu",
+};
 
 export default {
-  props: ["darkMode", "userTimezone", "lat", "lon"],
+  props: ["darkMode", "userTimezone"],
   data() {
     return {
       currentTime: "🕒 Memuat Waktu...",
@@ -28,48 +36,37 @@ export default {
   },
   mounted() {
     this.updateRealTime();
-    this.checkAndSetWeton();
-  },
-  watch: {
-    lat: "checkAndSetWeton",
-    lon: "checkAndSetWeton",
   },
   beforeUnmount() {
     clearInterval(this.intervalId);
   },
   methods: {
     updateRealTime() {
-      clearInterval(this.intervalId); // Bersihkan sebelumnya untuk mencegah dobel timer
+      clearInterval(this.intervalId);
       this.intervalId = setInterval(() => {
         const now = new Date();
         const offset = now.getTimezoneOffset() / -60;
-        const weton = getWeton(now);
 
-        const formattedDate = now.toLocaleString("id-ID", {
-          weekday: "long",
+        const day = now.toLocaleDateString("id-ID", { weekday: "long" });
+        const correctedDay = dayMap[day] || day;
+
+        const rest = now.toLocaleDateString("id-ID", {
           year: "numeric",
           month: "long",
           day: "numeric",
+        });
+
+        const time = now.toLocaleTimeString("id-ID", {
           hour: "2-digit",
           minute: "2-digit",
           second: "2-digit",
         });
 
-        const parts = formattedDate.split(", ");
-        if (parts.length >= 2) {
-          parts[0] += ` ${weton}`;
-        }
-
-        this.currentTime = `🕒 ${parts.join(", ")}`;
+        this.currentTime = `🕒 ${correctedDay}, ${rest}, ${time}`;
         this.timezone = `🌍 Zona Waktu: ${this.userTimezone} (UTC${
           offset >= 0 ? "+" : ""
         }${offset})`;
       }, 1000);
-    },
-    checkAndSetWeton() {
-      if (this.lat && this.lon && isLocationInJava(this.lat, this.lon)) {
-        this.updateRealTime();
-      }
     },
   },
 };
