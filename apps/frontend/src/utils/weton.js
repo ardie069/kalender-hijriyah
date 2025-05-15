@@ -1,9 +1,7 @@
 export function isLocationInJava(lat, lon) {
-  const minLat = -9.5,
-    maxLat = -5.5;
-  const minLon = 105.5,
-    maxLon = 114.0;
-  return lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon;
+  const inJava = lat >= -9.5 && lat <= -5.5 && lon >= 105.5 && lon <= 114.0;
+  const isJakartaOrBanten = lon < 107.0;
+  return inJava && !isJakartaOrBanten;
 }
 
 export function getWeton(gregDate = new Date()) {
