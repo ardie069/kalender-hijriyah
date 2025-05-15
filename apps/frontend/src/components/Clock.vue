@@ -1,7 +1,14 @@
 <template>
-  <div>
-    <p class="text-lg font-medium mb-2">{{ currentTime }}</p>
-    <p :class="[darkMode ? 'text-gray-400' : 'text-gray-600', 'text-sm mb-4']">
+  <div
+    class="p-4 rounded-lg border shadow-sm mb-3"
+    :class="
+      darkMode
+        ? 'bg-gray-800 border-gray-700 text-white'
+        : 'bg-white border-gray-200 text-gray-800'
+    "
+  >
+    <p class="text-xl font-semibold mb-1">{{ currentTime }}</p>
+    <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
       {{ timezone }}
     </p>
   </div>
@@ -21,21 +28,21 @@ export default {
   },
   mounted() {
     this.updateRealTime();
-    this.checkAndSetWeton(); // Pastikan untuk memeriksa lokasi dan weton saat pertama kali komponen dimuat
+    this.checkAndSetWeton();
   },
   watch: {
-    lat: "checkAndSetWeton", // Menambahkan watcher jika lat berubah
-    lon: "checkAndSetWeton", // Menambahkan watcher jika lon berubah
+    lat: "checkAndSetWeton",
+    lon: "checkAndSetWeton",
   },
   beforeUnmount() {
     clearInterval(this.intervalId);
   },
   methods: {
     updateRealTime() {
+      clearInterval(this.intervalId); // Bersihkan sebelumnya untuk mencegah dobel timer
       this.intervalId = setInterval(() => {
         const now = new Date();
         const offset = now.getTimezoneOffset() / -60;
-
         const weton = getWeton(now);
 
         const formattedDate = now.toLocaleString("id-ID", {
@@ -48,23 +55,20 @@ export default {
           second: "2-digit",
         });
 
-        // Sisipkan weton setelah hari
         const parts = formattedDate.split(", ");
         if (parts.length >= 2) {
-          // Menambahkan weton setelah hari dalam formattedDate
           parts[0] += ` ${weton}`;
         }
 
-        this.currentTime = `🕒 ${parts.join(", ")}`; // Memperbarui currentTime dengan weton di dalamnya
+        this.currentTime = `🕒 ${parts.join(", ")}`;
         this.timezone = `🌍 Zona Waktu: ${this.userTimezone} (UTC${
           offset >= 0 ? "+" : ""
         }${offset})`;
       }, 1000);
     },
     checkAndSetWeton() {
-      // Pastikan lat dan lon ada, dan lokasi berada di Jawa
       if (this.lat && this.lon && isLocationInJava(this.lat, this.lon)) {
-        this.updateRealTime(); // Memperbarui waktu dan menambahkan weton saat lokasi berada di Jawa
+        this.updateRealTime();
       }
     },
   },
