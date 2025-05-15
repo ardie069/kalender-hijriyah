@@ -1,300 +1,347 @@
-import SunCalc from 'suncalc';
-import { solar, moonposition } from 'astronomia';
-import { DateTime } from 'luxon';
+import SunCalc from "suncalc";
+import { solar, moonposition } from "astronomia";
+import { DateTime } from "luxon";
 
 function angularSeparation(ra1, dec1, ra2, dec2) {
-    const rad = Math.PI / 180;
-    const cosTheta = Math.sin(dec1 * rad) * Math.sin(dec2 * rad) +
-        Math.cos(dec1 * rad) * Math.cos(dec2 * rad) * Math.cos((ra1 - ra2) * rad);
-    return Math.acos(cosTheta) / rad;
+  const rad = Math.PI / 180;
+  const cosTheta =
+    Math.sin(dec1 * rad) * Math.sin(dec2 * rad) +
+    Math.cos(dec1 * rad) * Math.cos(dec2 * rad) * Math.cos((ra1 - ra2) * rad);
+  return Math.acos(cosTheta) / rad;
 }
 
 function getJulianDate(date) {
-    return date.toMillis() / 86400000.0 + 2440587.5;
+  return date.toMillis() / 86400000.0 + 2440587.5;
 }
 
 function getElongation(moon, sun) {
-    return angularSeparation(moon.ra, moon.dec, sun.ra, sun.dec);
+  return angularSeparation(moon.ra, moon.dec, sun.ra, sun.dec);
 }
 
 function getMoonPosition(jd) {
-    let pos = moonposition.position(jd);
-    return { ra: pos.ra, dec: pos.dec };
+  let pos = moonposition.position(jd);
+  return { ra: pos.ra, dec: pos.dec };
 }
 
 function getSunPosition(jd) {
-    let pos = solar.trueEquatorial(jd); // lebih akurat dibanding apparentEquatorial
-    return { ra: pos.ra, dec: pos.dec };
+  let pos = solar.trueEquatorial(jd); // lebih akurat dibanding apparentEquatorial
+  return { ra: pos.ra, dec: pos.dec };
 }
 
 function getConjunctionTime(jd) {
-    let step = 0.01; // Perbesar langkah awal untuk cakupan luas (~86 detik)
-    let limit = jd + 2; // Pencarian lebih luas dalam 2 hari setelah sunset
-    let minDiff = Infinity;
-    let bestJD = null;
+  let step = 0.01; // Perbesar langkah awal untuk cakupan luas (~86 detik)
+  let limit = jd + 2; // Pencarian lebih luas dalam 2 hari setelah sunset
+  let minDiff = Infinity;
+  let bestJD = null;
 
-    while (jd < limit) {
-        let moonPos = getMoonPosition(jd);
-        let sunPos = getSunPosition(jd);
-        let diff = Math.abs(moonPos.ra - sunPos.ra);
+  while (jd < limit) {
+    let moonPos = getMoonPosition(jd);
+    let sunPos = getSunPosition(jd);
+    let diff = Math.abs(moonPos.ra - sunPos.ra);
 
-        if (diff < minDiff) {
-            minDiff = diff;
-            bestJD = jd;
-        }
-
-        jd += step;
+    if (diff < minDiff) {
+      minDiff = diff;
+      bestJD = jd;
     }
 
-    // **Refinement dengan Pencarian Biner**
-    let left = bestJD - step;
-    let right = bestJD + step;
-    let precision = 0.00001; // Refinement tinggi (~0.86 detik)
+    jd += step;
+  }
 
-    while ((right - left) > precision) {
-        let mid = (left + right) / 2;
-        let moonPos = getMoonPosition(mid);
-        let sunPos = getSunPosition(mid);
-        let diff = Math.abs(moonPos.ra - sunPos.ra);
+  // **Refinement dengan Pencarian Biner**
+  let left = bestJD - step;
+  let right = bestJD + step;
+  let precision = 0.00001; // Refinement tinggi (~0.86 detik)
 
-        if (diff < minDiff) {
-            minDiff = diff;
-            bestJD = mid;
-        }
+  while (right - left > precision) {
+    let mid = (left + right) / 2;
+    let moonPos = getMoonPosition(mid);
+    let sunPos = getSunPosition(mid);
+    let diff = Math.abs(moonPos.ra - sunPos.ra);
 
-        if (moonPos.ra > sunPos.ra) {
-            right = mid;
-        } else {
-            left = mid;
-        }
+    if (diff < minDiff) {
+      minDiff = diff;
+      bestJD = mid;
     }
 
-    return bestJD;
+    if (moonPos.ra > sunPos.ra) {
+      right = mid;
+    } else {
+      left = mid;
+    }
+  }
+
+  return bestJD;
 }
 
 function getMoonAltitude(date, lat, lon) {
-    const moonPos = SunCalc.getMoonPosition(date, lat, lon);
-    return moonPos.altitude * (180 / Math.PI);
+  const moonPos = SunCalc.getMoonPosition(date, lat, lon);
+  return moonPos.altitude * (180 / Math.PI);
 }
 
 function getSunAltitude(date, lat, lon) {
-    const sunPos = SunCalc.getPosition(date, lat, lon);
-    return sunPos.altitude * (180 / Math.PI);
+  const sunPos = SunCalc.getPosition(date, lat, lon);
+  return sunPos.altitude * (180 / Math.PI);
 }
 
 function julianToHijri(jd) {
-    const jdEpoch = 1948439.5;
-    const daysSinceEpoch = Math.floor(jd - jdEpoch);
+  const jdEpoch = 1948439.5;
+  const daysSinceEpoch = Math.floor(jd - jdEpoch);
 
-    let hijriYear = Math.floor((30 * daysSinceEpoch + 10646) / 10631);
-    const startYearJD = jdEpoch + Math.floor((10631 * hijriYear) / 30);
-    let remainingDays = Math.floor(jd - startYearJD);
+  let hijriYear = Math.floor((30 * daysSinceEpoch + 10646) / 10631);
+  const startYearJD = jdEpoch + Math.floor((10631 * hijriYear) / 30);
+  let remainingDays = Math.floor(jd - startYearJD);
 
-    if (remainingDays < 0) remainingDays += 354;
+  if (remainingDays < 0) remainingDays += 354;
 
-    let hijriMonth = Math.floor(remainingDays / 29.5) + 1;
-    let hijriDay = Math.floor(remainingDays - (29.5 * (hijriMonth - 1))) + 1;
+  let hijriMonth = Math.floor(remainingDays / 29.5) + 1;
+  let hijriDay = Math.floor(remainingDays - 29.5 * (hijriMonth - 1)) + 1;
 
-    if (hijriMonth > 12) {
-        hijriMonth = 1;
-        hijriYear++;
-    }
+  if (hijriMonth > 12) {
+    hijriMonth = 1;
+    hijriYear++;
+  }
 
-    return { year: hijriYear, month: hijriMonth, day: hijriDay };
+  return { year: hijriYear, month: hijriMonth, day: hijriDay };
 }
 
 export function getHijriDate(lat, lon, method, timezone, jd = null) {
-    const nowLocal = DateTime.local().setZone(timezone);
-    if (!jd) {
-        jd = getJulianDate(nowLocal.toUTC());
+  const nowLocal = DateTime.local().setZone(timezone);
+  if (!jd) {
+    jd = getJulianDate(nowLocal.toUTC());
+  }
+
+  // Lokasi referensi Arab Saudi untuk metode global
+  const saudiLat = 21.422487;
+  const saudiLon = 39.826206;
+  const saudiZone = "Asia/Riyadh";
+
+  // Lokasi acuan matahari terbenam
+  const refLat = method === "global" ? saudiLat : lat;
+  const refLon = method === "global" ? saudiLon : lon;
+  const refZone = method === "global" ? saudiZone : timezone;
+
+  // Waktu matahari terbenam lokal
+  const sunsetTodayUTC = SunCalc.getTimes(
+    nowLocal.toJSDate(),
+    refLat,
+    refLon
+  ).sunset;
+  const sunsetLocal = DateTime.fromJSDate(sunsetTodayUTC).setZone(refZone);
+  const sunsetJD = getJulianDate(sunsetLocal.toUTC());
+
+  // Hitung waktu konjungsi bulan
+  const conjunctionJD = getConjunctionTime(sunsetJD);
+
+  // Mulai dengan Julian Day saat ini
+  let effectiveJD = jd;
+
+  // Pastikan pergantian hari hanya dilakukan setelah matahari terbenam
+  const afterSunset = nowLocal >= sunsetLocal;
+
+  if (afterSunset) {
+    // Tambahkan 1 hari setelah matahari terbenam
+    effectiveJD += 1;
+  }
+
+  // Konversi ke tanggal Hijriyah sementara
+  let hijriDate = julianToHijri(effectiveJD);
+
+  // Logika tanggal 29 Hijriyah
+  if (hijriDate.day === 29) {
+    let conjunctionValid = false;
+
+    if (method === "global") {
+      // Konjungsi sebelum maghrib Mekkah
+      conjunctionValid = conjunctionJD < sunsetJD;
+    } else if (method === "hisab") {
+      // Konjungsi sebelum maghrib lokal
+      conjunctionValid = conjunctionJD < sunsetJD;
+    } else if (method === "rukyat") {
+      // Validasi rukyat: posisi bulan saat maghrib lokal
+      const moonAltitude = getMoonAltitude(sunsetLocal.toJSDate(), lat, lon);
+      const elongation = getElongation(
+        moonposition.position(sunsetJD),
+        solar.trueEquatorial(sunsetJD)
+      );
+      const moonAgeHours = (sunsetJD - conjunctionJD) * 24;
+
+      conjunctionValid =
+        moonAltitude >= 3 && elongation >= 6.4 && moonAgeHours >= 8;
     }
 
-    // Koordinat Arab Saudi untuk metode global
-    const saudiLat = 21.422487;
-    const saudiLon = 39.826206;
-    const saudiZone = "Asia/Riyadh";
-
-    let sunsetRefLat = method === "global" ? saudiLat : lat;
-    let sunsetRefLon = method === "global" ? saudiLon : lon;
-    let sunsetRefZone = method === "global" ? saudiZone : timezone;
-
-    // Ambil waktu matahari terbenam berdasarkan metode
-    const sunsetTodayUTC = SunCalc.getTimes(nowLocal.toJSDate(), sunsetRefLat, sunsetRefLon).sunset;
-    const sunsetLocal = DateTime.fromJSDate(sunsetTodayUTC).setZone(sunsetRefZone);
-    const sunsetJD = getJulianDate(sunsetLocal.toUTC());
-
-    // Hitung waktu konjungsi
-    const conjunctionJD = getConjunctionTime(sunsetJD);
-
-    let effectiveJD = jd;
-
-    // Jika metode global, gunakan referensi Arab Saudi
-    if (method === "global" && conjunctionJD < sunsetJD) {
-        effectiveJD = sunsetJD + 1; // Pergantian hari Hijriyah setelah matahari terbenam di Mekkah
-    } else if (nowLocal >= sunsetLocal) {
-        // Untuk Hisab dan Rukyat, pergantian hari Hijriyah setelah matahari terbenam di lokasi pengguna
-        if (method === "hisab" && conjunctionJD < sunsetJD) {
-            effectiveJD += 1;
-        } else if (method === "rukyat") {
-            // Untuk Rukyat, periksa posisi bulan, elongasi, dan usia bulan
-            let moonAltitude = getMoonAltitude(sunsetLocal.toJSDate(), lat, lon);
-            let elongation = getElongation(moonposition.position(sunsetJD), solar.trueEquatorial(sunsetJD));
-            let moonAgeHours = (sunsetJD - conjunctionJD) * 24;
-
-            if (moonAltitude >= 3 && elongation >= 6.4 && moonAgeHours >= 8) {
-                effectiveJD += 1;
-            }
-        }
+    // Jika konjungsi tidak valid saat 29 Hijriyah, maka digenapkan jadi 30 hari
+    if (!conjunctionValid && afterSunset) {
+      effectiveJD += 1;
     }
+  }
 
-    // Periksa apakah sekarang sudah memasuki tanggal 29 Hijriyah, jika ya, validasi konjungsinya
-    const hijriDate = julianToHijri(effectiveJD);
-    if (hijriDate.day === 29) {
-        // Validasi konjungsi untuk semua metode (Global, Hisab, Rukyat)
-        const conjunctionValid = method === "global"
-            ? conjunctionJD < sunsetJD // Global (Ummul Qura): konjungsi sebelum matahari terbenam di Mekkah
-            : method === "hisab"
-                ? conjunctionJD < sunsetJD // Hisab: konjungsi sebelum matahari terbenam di lokasi pengguna
-                : method === "rukyat" && 
-                  getMoonAltitude(sunsetLocal.toJSDate(), lat, lon) >= 3 && 
-                  getElongation(moonposition.position(sunsetJD), solar.trueEquatorial(sunsetJD)) >= 6.4 && 
-                  moonAgeHours >= 8; // Rukyat
-
-        if (!conjunctionValid) {
-            effectiveJD += 1; // Digenapi jadi 30 hari jika konjungsi tidak memenuhi syarat
-        }
-    }
-
-    return julianToHijri(effectiveJD);
+  return julianToHijri(effectiveJD);
 }
 
 export function predictEndOfMonth(lat, lon, method, timezone) {
-    function julianToDate(jd) {
-        const J2000 = 2451545.0;
-        const SECONDS_IN_DAY = 86400;
-        const MILLISECONDS_IN_SECOND = 1000;
+  function julianToDate(jd) {
+    const J2000 = 2451545.0;
+    const SECONDS_IN_DAY = 86400;
+    const MILLISECONDS_IN_SECOND = 1000;
 
-        let timestamp = (jd - J2000) * SECONDS_IN_DAY * MILLISECONDS_IN_SECOND + Date.UTC(2000, 0, 1, 12);
-        return new Date(timestamp);
-    }
+    let timestamp =
+      (jd - J2000) * SECONDS_IN_DAY * MILLISECONDS_IN_SECOND +
+      Date.UTC(2000, 0, 1, 12);
+    return new Date(timestamp);
+  }
 
-    // Mendapatkan tanggal Hijriyah hari ini
-    const nowLuxon = DateTime.now().setZone(timezone);
-    const nowUTC = DateTime.utc();
-    const jd = getJulianDate(nowUTC);
+  // Mendapatkan tanggal Hijriyah hari ini
+  const nowLuxon = DateTime.now().setZone(timezone);
+  const nowUTC = DateTime.utc();
+  const jd = getJulianDate(nowUTC);
 
-    const hijriToday = getHijriDate(lat, lon, method, timezone, jd);
+  const hijriToday = getHijriDate(lat, lon, method, timezone, jd);
 
-    if (hijriToday.day !== 29) {
-        return {
-            today: hijriToday,
-            estimatedEndOfMonth: null,
-            message: "Prediksi hilal hanya tersedia saat tanggal 29 Hijriyah."
-        };
-    }
-
-    // Melanjutkan perhitungan jika tanggal Hijriyah adalah 29
-    const hijriTarget = { day: 29, month: hijriToday.month, year: hijriToday.year };
-    const daysTo29 = hijriToday.day <= 29 ? 29 - hijriToday.day : 0;
-    const estimatedDate = nowLuxon.plus({ days: daysTo29 }).startOf('day');
-
-    // Gunakan referensi Mekkah untuk waktu konjungsi jika metode global
-    const refLat = method === "global" ? 21.422487 : lat;
-    const refLon = method === "global" ? 39.826206 : lon;
-    const refZone = method === "global" ? "Asia/Riyadh" : timezone;
-
-    // Sunset waktu di lokasi pengguna
-    const sunsetTargetUTC = SunCalc.getTimes(estimatedDate.toJSDate(), lat, lon).sunset;
-    const sunsetTarget = DateTime.fromJSDate(sunsetTargetUTC).setZone(timezone);
-    const sunsetJD = getJulianDate(sunsetTarget.toUTC());
-
-    // Sunset waktu di Mekkah untuk metode global
-    const sunsetTargetMekkahUTC = SunCalc.getTimes(estimatedDate.toJSDate(), 21.422487, 39.826206).sunset;
-    const sunsetTargetMekkah = DateTime.fromJSDate(sunsetTargetMekkahUTC).setZone("Asia/Riyadh");
-    const sunsetJDGlobal = getJulianDate(sunsetTargetMekkah.toUTC());
-
-    // Hitung konjungsi berdasarkan referensi global jika metode global
-    const conjunctionJD = getConjunctionTime(getJulianDate(DateTime.fromJSDate(SunCalc.getTimes(estimatedDate.toJSDate(), refLat, refLon).sunset).setZone(refZone).toUTC()));
-    const conjunctionTime = conjunctionJD
-        ? DateTime.fromJSDate(julianToDate(conjunctionJD)).setZone(refZone)
-        : null;
-
-    const toleranceJD = 0.02083; // 30 menit dalam hari
-
-    // Cek konjungsi sebelum matahari terbenam di Mekkah (untuk global) atau di lokasi pengguna (untuk Hisab)
-    const conjunctionBeforeSunsetGlobal = conjunctionJD !== null && conjunctionJD < (sunsetJDGlobal - toleranceJD);
-    const conjunctionBeforeSunsetUser = conjunctionJD !== null && conjunctionJD < (sunsetJD - toleranceJD);
-
-    // Hitung posisi bulan dan matahari di lokasi pengguna
-    const moonAltitude = getMoonAltitude(sunsetTarget.toJSDate(), lat, lon);
-    const sunAltitude = getSunAltitude(sunsetTarget.toJSDate(), lat, lon);
-    const moonPos = getMoonPosition(sunsetJD) || { ra: 0, dec: 0 };
-    const sunPos = getSunPosition(sunsetJD) || { ra: 0, dec: 0 };
-    const elongation = getElongation(moonPos, sunPos) || NaN;
-    const moonAgeHours = conjunctionJD !== null ? (sunsetJD - conjunctionJD) * 24 : NaN;
-
-    // Validasi untuk metode Global dan Rukyat
-    const memenuhiGlobal = method === "global" && conjunctionBeforeSunsetGlobal;
-    const memenuhiHisab = method === "hisab" && conjunctionBeforeSunsetUser;
-    const memenuhiRukyat =
-        method === "rukyat" &&
-        moonAltitude >= 3 &&
-        elongation >= 6.4 &&
-        moonAgeHours >= 8;
-
-    let isEndOfMonth = "30 hari";
-    let hijriEnd = { day: 30, month: hijriTarget.month, year: hijriTarget.year };
-
-    // Tentukan apakah bulan baru dimulai berdasarkan konjungsi
-    if (!conjunctionBeforeSunsetGlobal && !conjunctionBeforeSunsetUser) {
-        isEndOfMonth = "30 hari";
-    } else if (memenuhiGlobal || memenuhiHisab || memenuhiRukyat) {
-        hijriEnd = { day: 1, month: hijriTarget.month + 1, year: hijriTarget.year };
-        isEndOfMonth = "29 hari";
-    }
-
-    // Jika bulan lebih dari 12 (Zulhijjah), maka harus roll over ke tahun baru
-    if (hijriEnd.month > 12) {
-        hijriEnd.month = 1;
-        hijriEnd.year++;
-    }
-
-    // Tentukan tanggal mulai bulan baru
-    const nextHijriStartDate = sunsetTarget.plus({ days: 1 }).toISODate();
-    
-    // Parsing tanggal Hijriyah ke format Gregorian
-    const nextHijriStartDateParsed = DateTime.fromISO(nextHijriStartDate).setZone(timezone);
-
-    // Return hasil perhitungan hanya jika tanggal Hijriyah adalah 29
+  if (hijriToday.day !== 29) {
     return {
-        today: hijriToday,
-        estimatedEndOfMonth: {
-            hijri: hijriEnd,
-            explanation: `Bulan ini berjumlah ${isEndOfMonth} berdasarkan metode ${method}.`,
-            moonAltitude: isNaN(moonAltitude) ? "Tidak tersedia" : moonAltitude.toFixed(2),
-            sunAltitude: isNaN(sunAltitude) ? "Tidak tersedia" : sunAltitude.toFixed(2),
-            elongation: isNaN(elongation) ? "Tidak tersedia" : elongation.toFixed(2),
-            moonAge: isNaN(moonAgeHours) ? "Tidak diketahui" : moonAgeHours.toFixed(2),
-            conjunctionBeforeSunsetGlobal: conjunctionBeforeSunsetGlobal,
-            conjunctionBeforeSunsetUser: conjunctionBeforeSunsetUser,
-            conjunctionTime: conjunctionTime
-                ? conjunctionTime.toFormat("yyyy-MM-dd HH:mm:ss")
-                : "Tidak diketahui",
-        },
-        estimatedStartOfMonth: hijriEnd.month === 12
-            ? {
-                hijri: { day: 1, month: 1, year: hijriEnd.year + 1 }, gregorian: {
-                    day: nextHijriStartDateParsed.day,
-                    month: nextHijriStartDateParsed.month,
-                    year: nextHijriStartDateParsed.year
-                }
-            }
-            : {
-                hijri: { day: 1, month: hijriEnd.month + 1, year: hijriEnd.year }, gregorian: {
-                    day: nextHijriStartDateParsed.day,
-                    month: nextHijriStartDateParsed.month,
-                    year: nextHijriStartDateParsed.year
-                }
-            },
+      today: hijriToday,
+      estimatedEndOfMonth: null,
+      message: "Prediksi hilal hanya tersedia saat tanggal 29 Hijriyah.",
     };
+  }
+
+  // Melanjutkan perhitungan jika tanggal Hijriyah adalah 29
+  const hijriTarget = {
+    day: 29,
+    month: hijriToday.month,
+    year: hijriToday.year,
+  };
+  const daysTo29 = hijriToday.day <= 29 ? 29 - hijriToday.day : 0;
+  const estimatedDate = nowLuxon.plus({ days: daysTo29 }).startOf("day");
+
+  // Gunakan referensi Mekkah untuk waktu konjungsi jika metode global
+  const refLat = method === "global" ? 21.422487 : lat;
+  const refLon = method === "global" ? 39.826206 : lon;
+  const refZone = method === "global" ? "Asia/Riyadh" : timezone;
+
+  // Sunset waktu di lokasi pengguna
+  const sunsetTargetUTC = SunCalc.getTimes(
+    estimatedDate.toJSDate(),
+    lat,
+    lon
+  ).sunset;
+  const sunsetTarget = DateTime.fromJSDate(sunsetTargetUTC).setZone(timezone);
+  const sunsetJD = getJulianDate(sunsetTarget.toUTC());
+
+  // Sunset waktu di Mekkah untuk metode global
+  const sunsetTargetMekkahUTC = SunCalc.getTimes(
+    estimatedDate.toJSDate(),
+    21.422487,
+    39.826206
+  ).sunset;
+  const sunsetTargetMekkah = DateTime.fromJSDate(sunsetTargetMekkahUTC).setZone(
+    "Asia/Riyadh"
+  );
+  const sunsetJDGlobal = getJulianDate(sunsetTargetMekkah.toUTC());
+
+  // Hitung konjungsi berdasarkan referensi global jika metode global
+  const conjunctionJD = getConjunctionTime(
+    getJulianDate(
+      DateTime.fromJSDate(
+        SunCalc.getTimes(estimatedDate.toJSDate(), refLat, refLon).sunset
+      )
+        .setZone(refZone)
+        .toUTC()
+    )
+  );
+  const conjunctionTime = conjunctionJD
+    ? DateTime.fromJSDate(julianToDate(conjunctionJD)).setZone(refZone)
+    : null;
+
+  const toleranceJD = 0.02083; // 30 menit dalam hari
+
+  // Cek konjungsi sebelum matahari terbenam di Mekkah (untuk global) atau di lokasi pengguna (untuk Hisab)
+  const conjunctionBeforeSunsetGlobal =
+    conjunctionJD !== null && conjunctionJD < sunsetJDGlobal - toleranceJD;
+  const conjunctionBeforeSunsetUser =
+    conjunctionJD !== null && conjunctionJD < sunsetJD - toleranceJD;
+
+  // Hitung posisi bulan dan matahari di lokasi pengguna
+  const moonAltitude = getMoonAltitude(sunsetTarget.toJSDate(), lat, lon);
+  const sunAltitude = getSunAltitude(sunsetTarget.toJSDate(), lat, lon);
+  const moonPos = getMoonPosition(sunsetJD) || { ra: 0, dec: 0 };
+  const sunPos = getSunPosition(sunsetJD) || { ra: 0, dec: 0 };
+  const elongation = getElongation(moonPos, sunPos) || NaN;
+  const moonAgeHours =
+    conjunctionJD !== null ? (sunsetJD - conjunctionJD) * 24 : NaN;
+
+  // Validasi untuk metode Global dan Rukyat
+  const memenuhiGlobal = method === "global" && conjunctionBeforeSunsetGlobal;
+  const memenuhiHisab = method === "hisab" && conjunctionBeforeSunsetUser;
+  const memenuhiRukyat =
+    method === "rukyat" &&
+    moonAltitude >= 3 &&
+    elongation >= 6.4 &&
+    moonAgeHours >= 8;
+
+  let isEndOfMonth = "30 hari";
+  let hijriEnd = { day: 30, month: hijriTarget.month, year: hijriTarget.year };
+
+  // Tentukan apakah bulan baru dimulai berdasarkan konjungsi
+  if (!conjunctionBeforeSunsetGlobal && !conjunctionBeforeSunsetUser) {
+    isEndOfMonth = "30 hari";
+  } else if (memenuhiGlobal || memenuhiHisab || memenuhiRukyat) {
+    hijriEnd = { day: 1, month: hijriTarget.month + 1, year: hijriTarget.year };
+    isEndOfMonth = "29 hari";
+  }
+
+  // Jika bulan lebih dari 12 (Zulhijjah), maka harus roll over ke tahun baru
+  if (hijriEnd.month > 12) {
+    hijriEnd.month = 1;
+    hijriEnd.year++;
+  }
+
+  // Tentukan tanggal mulai bulan baru
+  const nextHijriStartDate = sunsetTarget.plus({ days: 1 }).toISODate();
+
+  // Parsing tanggal Hijriyah ke format Gregorian
+  const nextHijriStartDateParsed =
+    DateTime.fromISO(nextHijriStartDate).setZone(timezone);
+
+  // Return hasil perhitungan hanya jika tanggal Hijriyah adalah 29
+  return {
+    today: hijriToday,
+    estimatedEndOfMonth: {
+      hijri: hijriEnd,
+      explanation: `Bulan ini berjumlah ${isEndOfMonth} berdasarkan metode ${method}.`,
+      moonAltitude: isNaN(moonAltitude)
+        ? "Tidak tersedia"
+        : moonAltitude.toFixed(2),
+      sunAltitude: isNaN(sunAltitude)
+        ? "Tidak tersedia"
+        : sunAltitude.toFixed(2),
+      elongation: isNaN(elongation) ? "Tidak tersedia" : elongation.toFixed(2),
+      moonAge: isNaN(moonAgeHours)
+        ? "Tidak diketahui"
+        : moonAgeHours.toFixed(2),
+      conjunctionBeforeSunsetGlobal: conjunctionBeforeSunsetGlobal,
+      conjunctionBeforeSunsetUser: conjunctionBeforeSunsetUser,
+      conjunctionTime: conjunctionTime
+        ? conjunctionTime.toFormat("yyyy-MM-dd HH:mm:ss")
+        : "Tidak diketahui",
+    },
+    estimatedStartOfMonth:
+      hijriEnd.month === 12
+        ? {
+            hijri: { day: 1, month: 1, year: hijriEnd.year + 1 },
+            gregorian: {
+              day: nextHijriStartDateParsed.day,
+              month: nextHijriStartDateParsed.month,
+              year: nextHijriStartDateParsed.year,
+            },
+          }
+        : {
+            hijri: { day: 1, month: hijriEnd.month + 1, year: hijriEnd.year },
+            gregorian: {
+              day: nextHijriStartDateParsed.day,
+              month: nextHijriStartDateParsed.month,
+              year: nextHijriStartDateParsed.year,
+            },
+          },
+  };
 }
