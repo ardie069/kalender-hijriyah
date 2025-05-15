@@ -209,8 +209,8 @@ export default {
       try {
         const params = `lat=${this.lat}&lon=${this.lon}&method=${this.selectedMethod}&timezone=${this.userTimezone}`;
         const [dateRes, endRes] = await Promise.all([
-        //   fetch(`http://localhost:3000/api/hijri-date?${params}`), // development
-        //   fetch(`http://localhost:3000/api/hijri-end-month?${params}`), // development
+          // fetch(`http://localhost:3000/api/hijri-date?${params}`), // development
+          // fetch(`http://localhost:3000/api/hijri-end-month?${params}`), // development
           fetch(`${this.API_BASE_URL}/hijri-date?${params}`), // production
           fetch(`${this.API_BASE_URL}/hijri-end-month?${params}`), // production
         ]);
