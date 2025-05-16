@@ -12,8 +12,8 @@ export function useHijriDate(selectedMethod, userTimezone, API_BASE_URL) {
 
   const fetchLocationAndHijriDate = async () => {
     loading.value = true;
-    hijriDateText.value = "📅 Menghitung hasil tanggal Hijriyah... 🔍";
-    hijriEndPrediction.value = "📅 Menunggu prediksi akhir bulan... ⏳";
+    hijriDateText.value = `<p class="text-sm text-gray-500">📅 Menghitung hasil tanggal Hijriyah... 🔍</p>`;
+    hijriEndPrediction.value = `<p class="text-sm text-gray-500">📅 Menunggu prediksi akhir bulan... ⏳</p>`;
 
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -194,7 +194,7 @@ export function useHijriDate(selectedMethod, userTimezone, API_BASE_URL) {
       const { summary, details } = checkImkanurRukyat(estimatedEndOfMonth);
 
       hijriEndPrediction.value = `
-        <div class="bg-gray-100 text-gray-800 p-4 rounded-lg">
+        <div>
           <h3 class="text-lg font-semibold mb-2">📅 Informasi Tanggal Hijriyah</h3>
           <p><strong>🗓️ Hari Ini:</strong> ${hijriText}</p>
           <p><strong>🔮 Perkiraan Akhir Bulan:</strong> ${hijri29}</p>
