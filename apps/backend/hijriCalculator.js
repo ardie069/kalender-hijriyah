@@ -106,9 +106,6 @@ function julianToHijri(jd) {
 
 export function getHijriDate(lat, lon, method, timezone, jd = null) {
   const nowLocal = DateTime.local().setZone(timezone);
-  if (!jd) {
-    jd = getJulianDate(nowLocal.toUTC());
-  }
 
   // Lokasi referensi Arab Saudi untuk metode global
   const saudiLat = 21.422487;
@@ -120,7 +117,7 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
   const refLon = method === "global" ? saudiLon : lon;
   const refZone = method === "global" ? saudiZone : timezone;
 
-  // Waktu matahari terbenam lokal
+  // Hitung waktu matahari terbenam lokal
   const sunsetTodayUTC = SunCalc.getTimes(
     nowLocal.toJSDate(),
     refLat,
@@ -129,35 +126,27 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
   const sunsetLocal = DateTime.fromJSDate(sunsetTodayUTC).setZone(refZone);
   const sunsetJD = getJulianDate(sunsetLocal.toUTC());
 
-  // Hitung waktu konjungsi bulan
-  const conjunctionJD = getConjunctionTime(sunsetJD);
+  // Bandingkan dengan waktu sekarang (dalam zona referensi)
+  const nowRef = nowLocal.setZone(refZone);
+  const afterSunset = nowRef >= sunsetLocal;
 
-  // Mulai dengan Julian Day saat ini
-  let effectiveJD = jd;
-
-  // Pastikan pergantian hari hanya dilakukan setelah matahari terbenam
-  const afterSunset = nowLocal >= sunsetLocal;
-
+  // Gunakan JD saat maghrib, dan tambah 1 jika waktu sudah lewat maghrib
+  let effectiveJD = sunsetJD;
   if (afterSunset) {
-    // Tambahkan 1 hari setelah matahari terbenam
     effectiveJD += 1;
   }
 
   // Konversi ke tanggal Hijriyah sementara
   let hijriDate = julianToHijri(effectiveJD);
 
-  // Logika tanggal 29 Hijriyah
+  // Logika tanggal 29 Hijriyah (penentuan apakah digenapkan jadi 30)
   if (hijriDate.day === 29) {
+    const conjunctionJD = getConjunctionTime(effectiveJD - 1);
     let conjunctionValid = false;
 
-    if (method === "global") {
-      // Konjungsi sebelum maghrib Mekkah
-      conjunctionValid = conjunctionJD < sunsetJD;
-    } else if (method === "hisab") {
-      // Konjungsi sebelum maghrib lokal
+    if (method === "global" || method === "hisab") {
       conjunctionValid = conjunctionJD < sunsetJD;
     } else if (method === "rukyat") {
-      // Validasi rukyat: posisi bulan saat maghrib lokal
       const moonAltitude = getMoonAltitude(sunsetLocal.toJSDate(), lat, lon);
       const elongation = getElongation(
         moonposition.position(sunsetJD),
@@ -169,7 +158,7 @@ export function getHijriDate(lat, lon, method, timezone, jd = null) {
         moonAltitude >= 3 && elongation >= 6.4 && moonAgeHours >= 8;
     }
 
-    // Jika konjungsi tidak valid saat 29 Hijriyah, maka digenapkan jadi 30 hari
+    // Jika hilal belum dianggap terlihat → genapkan jadi 30
     if (!conjunctionValid && afterSunset) {
       effectiveJD += 1;
     }
