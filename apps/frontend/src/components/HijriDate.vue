@@ -1,7 +1,7 @@
 <template>
-  <div v-if="loading" class="flex items-center mt-4">
-    <span class="loading loading-spinner text-accent mr-2"></span>
-    <span class="font-semibold text-accent">📍 Menunggu lokasi...</span>
+  <div v-if="loading" class="flex items-center justify-center mt-4">
+    <span :class="['loading loading-spinner mr-2', loadingClass]"></span>
+    <span :class="['font-semibold', loadingClass]">📍 Menunggu lokasi...</span>
   </div>
 
   <HijriInfoCard
@@ -10,6 +10,7 @@
     :showWeton="showWeton"
     :wetonText="wetonText"
     :weekdayText="weekdayText"
+    :loading="loading"
   />
   <HijriPrediction
     :hijriEndPrediction="hijriEndPrediction"
