@@ -15,16 +15,6 @@
 </template>
 
 <script>
-const dayMap = {
-  Minggu: "Ahad",
-  Senin: "Senin",
-  Selasa: "Selasa",
-  Rabu: "Rabu",
-  Kamis: "Kamis",
-  Jumat: "Jumat",
-  Sabtu: "Sabtu",
-};
-
 export default {
   props: ["darkMode", "userTimezone"],
   data() {
@@ -47,8 +37,13 @@ export default {
         const now = new Date();
         const offset = now.getTimezoneOffset() / -60;
 
-        const day = now.toLocaleDateString("id-ID", { weekday: "long" });
-        const correctedDay = dayMap[day] || day;
+        // Mengambil nama hari dan mengubah "Minggu" menjadi "Ahad" jika perlu
+        let day = now.toLocaleDateString("id-ID", { weekday: "long" });
+
+        // Ubah "Minggu" menjadi "Ahad"
+        if (day === "Minggu") {
+          day = "Ahad";
+        }
 
         const rest = now.toLocaleDateString("id-ID", {
           year: "numeric",
@@ -62,7 +57,7 @@ export default {
           second: "2-digit",
         });
 
-        this.currentTime = `🕒 ${correctedDay}, ${rest}, ${time}`;
+        this.currentTime = `🕒 ${day}, ${rest}, ${time}`;
         this.timezone = `🌍 Zona Waktu: ${this.userTimezone} (UTC${
           offset >= 0 ? "+" : ""
         }${offset})`;

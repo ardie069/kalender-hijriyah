@@ -9,7 +9,6 @@
     :darkMode="darkMode"
     :showWeton="showWeton"
     :wetonText="wetonText"
-    :weekdayText="weekdayText"
     :loading="loading"
   />
   <HijriPrediction
@@ -23,20 +22,6 @@ import { ref, computed, watch } from "vue";
 import HijriInfoCard from "./HijriInfoCard.vue";
 import HijriPrediction from "./HijriPrediction.vue";
 import { useHijriDate } from "../composables/useHijriDate";
-
-const dayMap = {
-  Minggu: "Ahad",
-  Senin: "Senin",
-  Selasa: "Selasa",
-  Rabu: "Rabu",
-  Kamis: "Kamis",
-  Jumat: "Jumat",
-  Sabtu: "Sabtu",
-};
-
-const now = new Date();
-const day = now.toLocaleDateString("id-ID", { weekday: "long" });
-const weekdayText = dayMap[day] || day;
 
 // props dari parent
 const props = defineProps({

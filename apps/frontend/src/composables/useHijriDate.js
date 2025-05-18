@@ -52,9 +52,14 @@ export function useHijriDate(selectedMethod, userTimezone, API_BASE_URL) {
   const checkAndSetWeton = () => {
     if (isLocationInJava(lat.value, lon.value)) {
       showWeton.value = true;
-      wetonText.value = `${new Date().toLocaleDateString("id-ID", {
-        weekday: "long",
-      })} ${getWeton(new Date())}`;
+      // Ambil nama hari dan ganti "Minggu" menjadi "Ahad"
+      let day = new Date().toLocaleDateString("id-ID", { weekday: "long" });
+      if (day === "Minggu") {
+        day = "Ahad";
+      }
+
+      // Gabungkan nama hari dengan weton
+      wetonText.value = `${day} ${getWeton(new Date())}`;
     } else {
       showWeton.value = false;
       wetonText.value = "";
