@@ -9,6 +9,11 @@ export default defineConfig({
     target: 'esnext',
     minify: 'esbuild',
   },
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
   server: {
     proxy: {
       '/api': {
