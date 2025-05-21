@@ -27,16 +27,19 @@
   </div>
 </template>
 
-<script>
-export default {
-  props: {
-    darkMode: Boolean,
-    selectedMethod: String,
-  },
-  methods: {
-    onMethodChange(event) {
-      this.$emit("update:selectedMethod", event.target.value);
-    },
-  },
-};
+<script setup>
+import { storeToRefs } from "pinia";
+import { useThemeStore } from "@/stores/themeStore";
+
+const themeStore = useThemeStore();
+const { darkMode } = storeToRefs(themeStore);
+
+defineProps({
+  selectedMethod: String,
+});
+const emit = defineEmits(["update:selectedMethod"]);
+
+function onMethodChange(event) {
+  emit("update:selectedMethod", event.target.value);
+}
 </script>

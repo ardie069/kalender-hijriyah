@@ -1,68 +1,64 @@
 <template>
   <div
-    class="p-4 rounded-lg border shadow-sm mb-3"
-    :class="
-      darkMode
-        ? 'bg-gray-800 border-gray-700 text-white'
-        : 'bg-white border-gray-200 text-gray-800'
-    "
+    class="p-4 rounded-lg border shadow-sm mb-3 transition-colors duration-300"
+    :class="containerClass"
   >
     <p class="text-xl font-semibold mb-1">{{ currentTime }}</p>
-    <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
+    <p class="text-sm" :class="timezoneClass">
       {{ timezone }}
     </p>
   </div>
 </template>
 
-<script>
-export default {
-  props: ["darkMode", "userTimezone"],
-  data() {
-    return {
-      currentTime: "🕒 Memuat Waktu...",
-      timezone: "🌍 Zona Waktu: -",
-      intervalId: null,
-    };
-  },
-  mounted() {
-    this.updateRealTime();
-  },
-  beforeUnmount() {
-    clearInterval(this.intervalId);
-  },
-  methods: {
-    updateRealTime() {
-      clearInterval(this.intervalId);
-      this.intervalId = setInterval(() => {
-        const now = new Date();
-        const offset = now.getTimezoneOffset() / -60;
+<script setup>
+import { computed, onMounted, onBeforeUnmount, ref } from "vue";
+import { useThemeStore } from "@/stores/themeStore";
 
-        // Mengambil nama hari dan mengubah "Minggu" menjadi "Ahad" jika perlu
-        let day = now.toLocaleDateString("id-ID", { weekday: "long" });
+const props = defineProps(["userTimezone"]);
+const theme = useThemeStore();
 
-        // Ubah "Minggu" menjadi "Ahad"
-        if (day === "Minggu") {
-          day = "Ahad";
-        }
+const currentTime = ref("🕒 Memuat Waktu...");
+const timezone = ref("🌍 Zona Waktu: -");
+let intervalId = null;
 
-        const rest = now.toLocaleDateString("id-ID", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
+const containerClass = computed(() =>
+  theme.darkMode
+    ? "bg-gray-800 border-gray-700 text-white"
+    : "bg-white border-gray-200 text-gray-800"
+);
 
-        const time = now.toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        });
+const timezoneClass = computed(() =>
+  theme.darkMode ? "text-gray-400" : "text-gray-600"
+);
 
-        this.currentTime = `🕒 ${day}, ${rest}, ${time}`;
-        this.timezone = `🌍 Zona Waktu: ${this.userTimezone} (UTC${
-          offset >= 0 ? "+" : ""
-        }${offset})`;
-      }, 1000);
-    },
-  },
+const updateRealTime = () => {
+  clearInterval(intervalId);
+  intervalId = setInterval(() => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() / -60;
+
+    let day = now.toLocaleDateString("id-ID", { weekday: "long" });
+    if (day === "Minggu") day = "Ahad";
+
+    const date = now.toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const time = now.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+    currentTime.value = `🕒 ${day}, ${date}, ${time}`;
+    timezone.value = `🌍 Zona Waktu: ${props.userTimezone} (UTC${
+      offset >= 0 ? "+" : ""
+    }${offset})`;
+  }, 1000);
 };
+
+onMounted(updateRealTime);
+onBeforeUnmount(() => clearInterval(intervalId));
 </script>

@@ -1,34 +1,40 @@
 <template>
-  <div v-if="loading" class="flex items-center justify-center mt-4">
-    <span :class="['loading loading-spinner mr-2', loadingClass]"></span>
-    <span :class="['font-semibold', loadingClass]">📍 Menunggu lokasi...</span>
-  </div>
+  <div :class="{ dark: darkMode }">
+    <!-- Menambahkan class dark pada elemen root -->
+    <div v-if="loading" class="flex items-center justify-center mt-4">
+      <span :class="['loading loading-spinner mr-2', loadingClass]"></span>
+      <span :class="['font-semibold', loadingClass]">
+        📍 Menunggu lokasi...
+      </span>
+    </div>
 
-  <HijriInfoCard
-    :hijriDateText="hijriDateText"
-    :darkMode="darkMode"
-    :showWeton="showWeton"
-    :wetonText="wetonText"
-    :loading="loading"
-  />
-  <HijriPrediction
-    :hijriEndPrediction="hijriEndPrediction"
-    :darkMode="darkMode"
-  />
+    <HijriInfoCard
+      :hijriDateText="hijriDateText"
+      :showWeton="showWeton"
+      :wetonText="wetonText"
+      :loading="loading"
+    />
+    <HijriPrediction
+      :hijriEndPrediction="hijriEndPrediction"
+    />
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from "vue";
+import { useThemeStore } from "@/stores/themeStore";
 import HijriInfoCard from "./HijriInfoCard.vue";
 import HijriPrediction from "./HijriPrediction.vue";
 import { useHijriDate } from "../composables/useHijriDate";
+
+const themeStore = useThemeStore();
+const darkMode = computed(() => themeStore.darkMode);
 
 // props dari parent
 const props = defineProps({
   selectedMethod: String,
   userTimezone: String,
   API_BASE_URL: String,
-  darkMode: Boolean,
 });
 
 // reactive props
@@ -47,7 +53,7 @@ const {
 
 // styling loading
 const loadingClass = computed(() =>
-  props.darkMode ? "text-yellow-400" : "text-yellow-800"
+  darkMode.value ? "text-yellow-400" : "text-yellow-800"
 );
 
 // fetch saat mounted

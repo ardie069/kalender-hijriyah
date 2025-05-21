@@ -8,31 +8,24 @@
       :class="themeClass"
       class="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-6 text-center"
     >
-      <!-- Menggunakan Komponen Header -->
-      <Header
-        :darkMode="darkMode"
-        :themeToggleText="themeToggleText"
-        :toggleTheme="toggleTheme"
-      />
+      <!-- Judul Halaman -->
+      <h1 class="text-2xl font-bold mb-4">🕌 Kalender Hijriyah Hari Ini</h1>
+      <p class="mb-6 text-sm opacity-80">
+        Menampilkan tanggal Hijriyah saat ini berdasarkan lokasi dan metode
+        perhitungan.
+      </p>
 
-      <!-- Memanggil komponen Clock dan mengirimkan lat, lon -->
-      <Clock
-        :darkMode="darkMode"
-        :userTimezone="userTimezone"
-      />
+      <!-- Komponen Clock -->
+      <Clock :userTimezone="userTimezone" />
 
-      <!-- Memanggil Komponen Metode -->
-      <Method :darkMode="darkMode" v-model:selectedMethod="selectedMethod" />
+      <!-- Komponen Metode -->
+      <Method v-model:selectedMethod="selectedMethod" />
 
-      <!-- Memanggil Komponen Hijri Date -->
+      <!-- Komponen Hijri Date -->
       <HijriDate
         :hijriDateText="hijriDateText"
-        @update:hijriDateText="hijriDateText = $event"
         :hijriEndPrediction="hijriEndPrediction"
-        @update:hijriEndPrediction="hijriEndPrediction = $event"
         :loading="loading"
-        @update:loading="loading = $event"
-        :darkMode="darkMode"
         :hijriDateClass="hijriDateClass"
         :hijriEndPredictionClass="hijriEndPredictionClass"
         :selectedMethod="selectedMethod"
@@ -44,64 +37,56 @@
 </template>
 
 <script>
-import Header from "../components/Header.vue";
-import Clock from "../components/Clock.vue";
-import Method from "../components/Method.vue";
-import HijriDate from "../components/HijriDate.vue";
+import { useThemeStore } from "@/stores/themeStore";
+import { computed, ref, watch } from "vue";
+import Clock from "@/components/Clock.vue";
+import Method from "@/components/Method.vue";
+import HijriDate from "@/components/HijriDate.vue";
 
 export default {
   components: {
-    Header,
     Clock,
     Method,
     HijriDate,
   },
-  data() {
+  setup() {
+    const themeStore = useThemeStore();
+    const userTimezone = ref(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    const selectedMethod = ref("global");
+    const hijriDateText = ref("");
+    const hijriEndPrediction = ref("");
+    const loading = ref(true);
+    const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL;
+
+    // Menggunakan store untuk tema
+    const themeClass = computed(() =>
+      themeStore.darkMode ? "bg-gray-700 text-white" : "bg-white text-black"
+    );
+    const hijriDateClass = computed(() =>
+      themeStore.darkMode ? "text-white" : "text-black"
+    );
+    const hijriEndPredictionClass = computed(() =>
+      themeStore.darkMode ? "text-white" : "text-black"
+    );
+
+    // Watchers untuk memperbarui data jika props berubah
+    watch([selectedMethod, userTimezone], () => {
+      loading.value = true;
+      // Logika untuk fetch data hijri berdasarkan selectedMethod dan userTimezone
+      // Set hijriDateText, hijriEndPrediction dan loading menjadi false setelah data diterima
+    });
+
     return {
-      userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      hijriDateText: "",
-      hijriEndPrediction: "",
-      selectedMethod: "global",
-      loading: true,
-      darkMode: true,
-      API_BASE_URL: import.meta.env.VITE_APP_API_BASE_URL,
+      userTimezone,
+      selectedMethod,
+      hijriDateText,
+      hijriEndPrediction,
+      loading,
+      API_BASE_URL,
+      themeClass,
+      hijriDateClass,
+      hijriEndPredictionClass,
     };
-  },
-  computed: {
-    themeClass() {
-      return this.darkMode ? "bg-gray-700 text-white" : "bg-white text-black";
-    },
-    methodClass() {
-      return this.darkMode
-        ? "bg-gray-700 text-white"
-        : "bg-gray-300 text-black";
-    },
-    hijriDateClass() {
-      return this.darkMode ? "text-white" : "text-black";
-    },
-    hijriEndPredictionClass() {
-      return this.darkMode ? "text-white" : "text-black";
-    },
-    themeToggleText() {
-      return this.darkMode ? "🌙 Dark Mode" : "🌞 Light Mode";
-    },
-  },
-  mounted() {
-    this.applySavedTheme();
-  },
-  methods: {
-    applySavedTheme() {
-      const saved = localStorage.getItem("theme");
-      if (saved) {
-        this.darkMode = saved === "dark";
-      } else {
-        this.darkMode = true;
-      }
-    },
-    toggleTheme() {
-      this.darkMode = !this.darkMode;
-      localStorage.setItem("theme", this.darkMode ? "dark" : "light");
-    },
   },
 };
 </script>
