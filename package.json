@@ -4,13 +4,11 @@
   "version": "2.1.0",
   "description": "Kalender Hijriyah Sederhana merupakan aplikasi web sederhana yang menampilkan **tanggal Hijriyah secara real-time** berdasarkan lokasi pengguna dan metode perhitungan yang dipilih.",
   "workspaces": [
-    "apps/frontend",
-    "apps/backend"
+    "apps/frontend"
   ],
   "scripts": {
     "dev:frontend": "npm --workspace apps/frontend run dev",
-    "dev:backend": "npm --workspace apps/backend run dev",
-    "dev": "concurrently \"npm:dev:frontend\" \"npm:dev:backend\""
+    "dev": "concurrently \"npm:dev:frontend\""
   },
   "keywords": [],
   "author": "",
