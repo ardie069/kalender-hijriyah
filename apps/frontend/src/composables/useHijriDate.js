@@ -151,8 +151,8 @@ export function useHijriDate(selectedMethod, userTimezone, API_BASE_URL) {
       const [dateRes, endRes] = await Promise.all([
         // fetch(`${API_BASE_URL}/hijri-date?${params}`), // production
         // fetch(`${API_BASE_URL}/hijri-end-month?${params}`), // production
-        fetch(`http://localhost:5000/api/hijri-date?${params}`), // development
-        fetch(`http://localhost:5000/api/hijri-end-month?${params}`), // development
+        fetch(`http://127.0.0.1:5000/api/hijri-date?${params}`), // development
+        fetch(`http://127.0.0.1:5000/api/hijri-end-month?${params}`), // development
       ]);
 
       const dateData = await dateRes.json();

@@ -1,6 +1,7 @@
 import os
 from flask import Flask, jsonify, request
 from dotenv import load_dotenv
+from flask import send_from_directory
 from hijri_calculator import get_hijri_date
 from month_predictor import predict_end_of_month
 
@@ -26,7 +27,6 @@ CORS(
     },
 )
 
-
 # Middleware untuk menghindari cache
 @app.after_request
 def add_no_cache_headers(response):
@@ -37,6 +37,13 @@ def add_no_cache_headers(response):
     response.headers["Expires"] = "0"
     return response
 
+@app.route("/")
+def index():
+    return send_from_directory("static", "index.html")
+
+@app.route("/<path:path>")
+def static_proxy(path):
+    return send_from_directory("static", path)
 
 # Endpoint: Tanggal Hijriyah hari ini
 @app.route("/api/hijri-date", methods=["GET"])
