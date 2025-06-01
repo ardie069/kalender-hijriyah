@@ -1,16 +1,19 @@
-# Node.js dependencies
+venv/
+__pycache__/
 node_modules/
 package-lock.json
 
-# Environment files
 .env
 
-# Build output
 dist/
 build/
 
-# Editor/OS files
 .vscode/
 .DS_Store
 Thumbs.db
 .vercel
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
