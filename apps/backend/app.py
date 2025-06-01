@@ -73,7 +73,7 @@ def hijri_end_month():
         return jsonify(
             {
                 "today": prediction["today"],
-                "estimatedEndOfMonth": prediction["estimatedEndOfMonth"],
+                "estimatedEndOfMonth": prediction["estimated_end_of_month"],
                 "message": prediction["message"],
             }
         )

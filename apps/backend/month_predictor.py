@@ -7,8 +7,7 @@ from visibility import evaluate_visibility
 def predict_end_of_month(lat, lon, method, timezone):
     # Tentukan referensi lokasi berdasarkan metode
     if method == 'global':
-        ref_lat, ref_lon = DEFAULT_LOCATION['global']
-        ref_zone = DEFAULT_LOCATION['zone']
+        ref_lat, ref_lon, ref_zone = DEFAULT_LOCATION['global']
     else:
         ref_lat, ref_lon = lat, lon
         ref_zone = timezone
