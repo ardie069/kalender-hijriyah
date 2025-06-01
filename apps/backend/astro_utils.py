@@ -53,6 +53,5 @@ def get_sun_equatorial(jd):
     return astrometric
 
 DEFAULT_LOCATION = {
-    'global': (21.422487, 39.826206),  # Koordinat Mekkah
-    'zone': 'Asia/Riyadh'  # Zona waktu Mekkah
+    "global": (21.4225, 39.8262, "Asia/Riyadh"),
 }
