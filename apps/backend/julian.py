@@ -1,4 +1,5 @@
 # julian.py
+from convertdate import islamic
 from datetime import datetime
 from skyfield.api import load
 from ephemeris import ts
@@ -10,19 +11,13 @@ def jd_from_datetime(dt: datetime):
     t = ts.utc(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
     return t.tt  # Julian Date (termasuk waktu universal)
 
-def julian_to_hijri(jd: float):
-    """
-    Menghitung tanggal Hijriyah dari Julian Date.
-    """
-    # Konversi Julian Date ke Hijriyah
-    # Rumus sederhana, bisa diganti dengan algoritma yang lebih akurat
-    jd_hijri = jd - 1948440 + 10632
-    year = int((jd_hijri - 1) // 354.367)
-    month = int((jd_hijri - 1 - year * 354.367) // 29.5306) + 1
-    day = int(jd_hijri - 1 - year * 354.367 - (month - 1) * 29.5306) + 1
 
+def julian_to_hijri(jd_float: float):
+    """
+    Konversi Julian Date ke tanggal Hijriyah menggunakan convertdate.
+    """
     return {
-        'year': year,
-        'month': month,
-        'day': day
+        "year": islamic.from_jd(jd_float)[0],
+        "month": islamic.from_jd(jd_float)[1],
+        "day": islamic.from_jd(jd_float)[2],
     }
