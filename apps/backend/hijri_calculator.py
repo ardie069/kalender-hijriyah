@@ -7,7 +7,7 @@ from sun_times import get_sunset_time
 from astro_utils import DEFAULT_LOCATION
 
 
-def get_hijri_date(lat, lon, method="global", timezone="Asia/Jakarta", jd=None):
+def get_hijri_date(lat, lon, method="global", timezone="UTC", jd=None):
     tz = pytz.timezone(timezone)
     now_local = datetime.now(tz)
 
@@ -19,6 +19,11 @@ def get_hijri_date(lat, lon, method="global", timezone="Asia/Jakarta", jd=None):
 
     # Hitung waktu matahari terbenam
     sunset_local = get_sunset_time(now_local.date(), ref_lat, ref_lon, ref_zone)
+
+    if sunset_local is None:
+        # Jika waktu matahari terbenam tidak dapat dihitung, kembalikan error atau gunakan waktu default
+        return {"error": "Gagal menghitung waktu matahari terbenam."}
+
     sunset_utc = sunset_local.astimezone(pytz.utc)
     sunset_jd = jd_from_datetime(sunset_utc)
 
@@ -41,6 +46,8 @@ def get_hijri_date(lat, lon, method="global", timezone="Asia/Jakarta", jd=None):
             mekkah_sunset = get_sunset_time(
                 now_local.date(), *DEFAULT_LOCATION["global"], DEFAULT_LOCATION["zone"]
             )
+            if mekkah_sunset is None:
+                return {"error": "Gagal menghitung waktu matahari terbenam di Mekkah."}
             jd_mekkah_sunset = jd_from_datetime(mekkah_sunset.astimezone(pytz.utc))
             is_conj_valid = conj_jd < jd_mekkah_sunset
         elif method == "hisab":
