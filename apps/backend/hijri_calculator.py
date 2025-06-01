@@ -6,13 +6,14 @@ from visibility import evaluate_visibility
 from sun_times import get_sunset_time
 from astro_utils import DEFAULT_LOCATION
 
-def get_hijri_date(lat, lon, method='global', timezone='Asia/Jakarta', jd=None):
+
+def get_hijri_date(lat, lon, method="global", timezone="Asia/Jakarta", jd=None):
     tz = pytz.timezone(timezone)
     now_local = datetime.now(tz)
-    
+
     # Lokasi referensi
-    if method == 'global':
-        ref_lat, ref_lon, ref_zone = DEFAULT_LOCATION['global']
+    if method == "global":
+        ref_lat, ref_lon, ref_zone = DEFAULT_LOCATION["global"]
     else:
         ref_lat, ref_lon, ref_zone = lat, lon, timezone
 
@@ -32,17 +33,19 @@ def get_hijri_date(lat, lon, method='global', timezone='Asia/Jakarta', jd=None):
     hijri_date = julian_to_hijri(effective_jd)
 
     # Jika tanggal 29 → Evaluasi kemungkinan bulan berganti
-    if hijri_date['day'] == 29:
+    if hijri_date["day"] == 29:
         conj_jd = find_conjunction(effective_jd - 1)
         is_conj_valid = False
 
-        if method == 'global':
-            mekkah_sunset = get_sunset_time(now_local.date(), *DEFAULT_LOCATION['global'], DEFAULT_LOCATION['zone'])
+        if method == "global":
+            mekkah_sunset = get_sunset_time(
+                now_local.date(), *DEFAULT_LOCATION["global"], DEFAULT_LOCATION["zone"]
+            )
             jd_mekkah_sunset = jd_from_datetime(mekkah_sunset.astimezone(pytz.utc))
             is_conj_valid = conj_jd < jd_mekkah_sunset
-        elif method == 'hisab':
+        elif method == "hisab":
             is_conj_valid = conj_jd < sunset_jd
-        elif method == 'rukyat':
+        elif method == "rukyat":
             visibility = evaluate_visibility(sunset_utc, lat, lon, conj_jd)
             is_conj_valid = visibility["is_visible"]
 
