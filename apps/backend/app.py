@@ -12,8 +12,8 @@ app = Flask(__name__, static_folder='../frontend/dist', static_url_path='/')
 CORS(app, resources={r"/api/*": {"origins": ["http://127.0.0.1:5173", "http://127.0.0.1:5174"]}})
 
 # Constants from environment or defaults
-DEFAULT_LAT = float(os.getenv("DEFAULT_LAT", "0"))
-DEFAULT_LON = float(os.getenv("DEFAULT_LON", "0"))
+DEFAULT_LAT = float(os.getenv("DEFAULT_LAT", 0))
+DEFAULT_LON = float(os.getenv("DEFAULT_LON", 0))
 HIJRI_METHOD = os.getenv("HIJRI_METHOD", "global")
 TIMEZONE = os.getenv("TIMEZONE", "UTC")
 
