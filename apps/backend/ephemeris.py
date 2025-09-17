@@ -1,7 +1,7 @@
 from skyfield.api import load
 
 # Load efemeris dan timescale sekali saja
-eph = load('data/de421.bsp')
+eph = load('de421.bsp')
 ts = load.timescale()
 
 # Akses benda langit umum

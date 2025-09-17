@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from flask import send_from_directory
 from hijri_calculator import get_hijri_date
 from month_predictor import predict_end_of_month
+from flask_cors import CORS
 
 # Load .env file
 load_dotenv()
@@ -18,14 +19,13 @@ HIJRI_METHOD = os.getenv("HIJRI_METHOD", "global")
 TIMEZONE = os.getenv("TIMEZONE", "UTC")
 
 # CORS (Cross-Origin Resource Sharing) untuk frontend
-from flask_cors import CORS
-
 CORS(
     app,
     resources={
         r"/api/*": {"origins": ["http://127.0.0.1:5173", "http://127.0.0.1:5174"]}
     },
 )
+
 
 # Middleware untuk menghindari cache
 @app.after_request
@@ -37,13 +37,16 @@ def add_no_cache_headers(response):
     response.headers["Expires"] = "0"
     return response
 
+
 @app.route("/")
 def index():
     return send_from_directory("static", "index.html")
 
+
 @app.route("/<path:path>")
 def static_proxy(path):
     return send_from_directory("static", path)
+
 
 # Endpoint: Tanggal Hijriyah hari ini
 @app.route("/api/hijri-date", methods=["GET"])
@@ -87,6 +90,7 @@ def hijri_end_month():
     except Exception as error:
         print(f"❌ Gagal prediksi akhir bulan: {error}")
         return jsonify({"error": "Terjadi kesalahan saat memprediksi akhir bulan"}), 500
+
 
 # Menjalankan aplikasi
 if __name__ == "__main__":

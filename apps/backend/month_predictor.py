@@ -1,72 +1,69 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
-from julian import jd_from_datetime, julian_to_hijri
-from astro_utils import DEFAULT_LOCATION
+from julian import jd_from_datetime
+from hijri_calculator import get_hijri_date
 from visibility import evaluate_visibility
+from conjunction import get_conjunction_time
+from sun_times import get_sunset_time
+
 
 def predict_end_of_month(lat, lon, method, timezone):
-    # Tentukan referensi lokasi berdasarkan metode
-    if method == 'global':
-        ref_lat, ref_lon, ref_zone = DEFAULT_LOCATION['global']
-    else:
-        ref_lat, ref_lon = lat, lon
-        ref_zone = timezone
-    
-    # Mendapatkan tanggal Hijriyah hari ini
+    # Tanggal Hijriyah hari ini
     now_local = datetime.now(pytz.timezone(timezone))
     jd_today = jd_from_datetime(now_local)
+    hijri_today = get_hijri_date(lat, lon, method, timezone)
 
-    # Menghitung tanggal Hijriyah hari ini
-    hijri_today = julian_to_hijri(jd_today)
-
-    # Cek jika hari ini adalah tanggal 29
-    if hijri_today['day'] != 29:
+    # Cek tanggal 29
+    if hijri_today["day"] != 29:
         return {
-            'today': hijri_today,
-            'estimated_end_of_month': None,
-            'message': "Prediksi hilal hanya tersedia saat tanggal 29 Hijriyah."
+            "today": hijri_today,
+            "estimated_end_of_month": None,
+            "message": "Prediksi hilal hanya tersedia saat tanggal 29 Hijriyah.",
         }
 
-    # Perhitungan lanjut untuk tanggal 29 Hijriyah
+    # Default: tetap tanggal 29
     estimated_end = {
-        'day': 29,
-        'month': hijri_today['month'],
-        'year': hijri_today['year']
+        "day": 29,
+        "month": hijri_today["month"],
+        "year": hijri_today["year"],
     }
 
-    # Hitung waktu konjungsi
-    conjunction_jd = find_conjunction(jd_today)
+    # Hitung konjungsi
+    conjunction_jd = get_conjunction_time(jd_today)
 
-    # Tentukan apakah bulan baru dimulai berdasarkan konjungsi
+    # Prediksi akhir bulan
     is_new_month = False
-    if method == 'global':
-        sunset_global = get_sunset_time(now_local.date(), 21.422487, 39.826206, 'Asia/Riyadh')
+    if method == "global":
+        sunset_global = get_sunset_time(
+            now_local.date(), 21.422487, 39.826206, "Asia/Riyadh"
+        )
         sunset_global_jd = jd_from_datetime(sunset_global.astimezone(pytz.utc))
         if conjunction_jd < sunset_global_jd:
             is_new_month = True
-    elif method == 'hisab':
+    elif method == "hisab":
         sunset_user = get_sunset_time(now_local.date(), lat, lon, timezone)
         sunset_user_jd = jd_from_datetime(sunset_user.astimezone(pytz.utc))
         if conjunction_jd < sunset_user_jd:
             is_new_month = True
-    elif method == 'rukyat':
-        visibility = evaluate_visibility(sunset_global, lat, lon, conjunction_jd)
+    elif method == "rukyat":
+        sunset_user = get_sunset_time(now_local.date(), lat, lon, timezone)
+        visibility = evaluate_visibility(sunset_user, lat, lon, conjunction_jd)
         if visibility["is_visible"]:
             is_new_month = True
 
-    # Tentukan hasil akhir bulan Hijriyah
+    # Update jika bulan baru dimulai
     if is_new_month:
         estimated_end = {
-            'day': 1,
-            'month': hijri_today['month'] + 1,
-            'year': hijri_today['year']
+            "day": 1,
+            "month": hijri_today["month"] + 1,
+            "year": hijri_today["year"],
         }
-        if estimated_end['month'] > 12:
-            estimated_end['month'] = 1
-            estimated_end['year'] += 1
+        if estimated_end["month"] > 12:
+            estimated_end["month"] = 1
+            estimated_end["year"] += 1
 
     return {
-        'today': hijri_today,
-        'estimated_end_of_month': estimated_end,
-        'message': f"Prediksi bulan ini berakhir pada {estimated_end['day']}-{estimated_end['month']}-{estimated_end['year']}."
+        "today": hijri_today,
+        "estimated_end_of_month": estimated_end,
+        "message": f"Prediksi bulan ini berakhir pada {estimated_end['day']}-{estimated_end['month']}-{estimated_end['year']}.",
     }
