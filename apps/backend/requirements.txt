@@ -16,3 +16,4 @@ pytz
 sgp4
 skyfield
 Werkzeug
+pytest
