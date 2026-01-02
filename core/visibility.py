@@ -1,6 +1,4 @@
 from skyfield.api import wgs84
-from .astro_utils import angular_separation
-from .astro_accestors import get_moon_equatorial, get_sun_equatorial
 
 
 def get_moon_altitude(dt_utc, lat, lon, ts, moon):
@@ -25,25 +23,52 @@ def evaluate_visibility(
     ts,
     sun,
     moon,
+    earth,
 ):
-    jd_sunset = sunset_dt_utc.timestamp() / 86400.0 + 2440587.5
+    """
+    Evaluate lunar visibility using geometric criteria.
+    All times are UTC calendar times.
+    Astronomical calculations use Skyfield ephemeris (TT internally).
+    """
+    
 
-    moon_pos = get_moon_equatorial(jd_sunset, ts, moon)
-    sun_pos = get_sun_equatorial(jd_sunset, ts, sun)
-
-    elongation = angular_separation(
-        moon_pos.ra.degrees,
-        moon_pos.dec.degrees,
-        sun_pos.ra.degrees,
-        sun_pos.dec.degrees,
+    # Time object
+    t = ts.utc(
+        sunset_dt_utc.year,
+        sunset_dt_utc.month,
+        sunset_dt_utc.day,
+        sunset_dt_utc.hour,
+        sunset_dt_utc.minute,
+        sunset_dt_utc.second,
     )
 
-    moon_alt = get_moon_altitude(sunset_dt_utc, lat, lon, ts, moon)
-    moon_age = (jd_sunset - conjunction_jd) * 24
+    # Topos (lokasi pengamat)
+    topos = wgs84.latlon(
+        latitude_degrees=lat,
+        longitude_degrees=lon,
+    )
+
+    # Observer yang BENAR: earth + topos
+    observer = earth + topos
+
+    # Observasi benda langit (AMAN)
+    moon_app = observer.at(t).observe(moon).apparent()
+    sun_app = observer.at(t).observe(sun).apparent()
+
+    # Altitude bulan
+    alt_moon, _, _ = moon_app.altaz()
+
+    # Elongasi
+    elongation = moon_app.separation_from(sun_app).degrees
+
+    # Usia bulan (jam)
+    moon_age_hours = (t.tt - conjunction_jd) * 24
 
     return {
-        "moon_altitude": moon_alt,
+        "moon_altitude": alt_moon.degrees,
         "elongation": elongation,
-        "moon_age": moon_age,
-        "is_visible": moon_alt >= 3 and elongation >= 6.4 and moon_age >= 8, # type: ignore
+        "moon_age": moon_age_hours,
+        "is_visible": (
+            alt_moon.degrees >= 3 and elongation >= 6.4 and moon_age_hours >= 8
+        ),
     }
