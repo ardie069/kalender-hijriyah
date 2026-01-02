@@ -4,7 +4,7 @@ from skyfield.api import load
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 
-eph = load(DATA_DIR / "de421.bsp")
+eph = load(str(DATA_DIR / "de421.bsp"))
 ts = load.timescale()
 
 earth = eph["earth"]

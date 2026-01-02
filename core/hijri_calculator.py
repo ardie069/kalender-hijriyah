@@ -1,10 +1,10 @@
 from datetime import datetime
 import pytz
-from julian import jd_from_datetime, julian_to_hijri
-from conjunction import get_conjunction_time
-from visibility import evaluate_visibility
-from sun_times import get_sunset_time
-from config import DEFAULT_LOCATION
+from .julian import jd_from_datetime, julian_to_hijri
+from .conjunction import get_conjunction_time
+from .visibility import evaluate_visibility
+from .sun_times import get_sunset_time
+from .config import DEFAULT_LOCATION
 
 
 def get_hijri_date(lat, lon, method, timezone, *, ts, eph, sun, moon, earth):

@@ -1,10 +1,10 @@
 from datetime import datetime
 import pytz
-from julian import jd_from_datetime
-from hijri_calculator import get_hijri_date
-from visibility import evaluate_visibility
-from conjunction import get_conjunction_time
-from sun_times import get_sunset_time
+from .julian import jd_from_datetime
+from .hijri_calculator import get_hijri_date
+from .visibility import evaluate_visibility
+from .conjunction import get_conjunction_time
+from .sun_times import get_sunset_time
 
 
 def predict_end_of_month(lat, lon, method, timezone, *, ts, eph, sun, moon, earth):

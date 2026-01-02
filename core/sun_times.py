@@ -14,7 +14,7 @@ def get_sunset_time(date, lat, lon, timezone, ts, eph):
 
     for ti, ev in zip(times, events):
         if ev == 0:
-            dt_utc = ti.utc_datetime().replace(tzinfo=pytz)
+            dt_utc = ti.utc_datetime().replace(tzinfo=pytz.utc)
             return dt_utc.astimezone(pytz.timezone(timezone))
 
     return None

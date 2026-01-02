@@ -1,6 +1,6 @@
 from skyfield.api import wgs84
-from astro_utils import angular_separation
-from astro_accestors import get_moon_equatorial, get_sun_equatorial
+from .astro_utils import angular_separation
+from .astro_accestors import get_moon_equatorial, get_sun_equatorial
 
 
 def get_moon_altitude(dt_utc, lat, lon, ts, moon):
