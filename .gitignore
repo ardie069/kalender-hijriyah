@@ -6,10 +6,10 @@ __pycache__/
 node_modules/
 package-lock.json
 
-# environment variables
+# Environment variables
 .env
 
-# distribution files and build artifacts
+# Distribution files and build artifacts
 dist/
 build/
 
@@ -24,3 +24,7 @@ Thumbs.db
 *.pyd
 *.log
 *.sqlite3
+
+# Astronomical ephemeris
+*.bsp
+data/*.bsp
