@@ -7,11 +7,11 @@ from conjunction import get_conjunction_time
 from sun_times import get_sunset_time
 
 
-def predict_end_of_month(lat, lon, method, timezone):
+def predict_end_of_month(lat, lon, method, timezone, *, ts, eph, sun, moon, earth):
     # Tanggal Hijriyah hari ini
     now_local = datetime.now(pytz.timezone(timezone))
-    jd_today = jd_from_datetime(now_local)
-    hijri_today = get_hijri_date(lat, lon, method, timezone)
+    jd_today = jd_from_datetime(now_local, ts)
+    hijri_today = get_hijri_date(lat, lon, method, timezone, ts=ts, eph=eph, sun=sun, moon=moon, earth=earth)
 
     # Cek tanggal 29
     if hijri_today["day"] != 29:
@@ -29,25 +29,25 @@ def predict_end_of_month(lat, lon, method, timezone):
     }
 
     # Hitung konjungsi
-    conjunction_jd = get_conjunction_time(jd_today)
+    conjunction_jd = get_conjunction_time(jd_today, ts, earth, sun, moon)
 
     # Prediksi akhir bulan
     is_new_month = False
     if method == "global":
         sunset_global = get_sunset_time(
-            now_local.date(), 21.422487, 39.826206, "Asia/Riyadh"
+            now_local.date(), 21.422487, 39.826206, "Asia/Riyadh", ts, eph
         )
-        sunset_global_jd = jd_from_datetime(sunset_global.astimezone(pytz.utc))
+        sunset_global_jd = jd_from_datetime(sunset_global.astimezone(pytz.utc), ts) # type: ignore
         if conjunction_jd < sunset_global_jd:
             is_new_month = True
     elif method == "hisab":
-        sunset_user = get_sunset_time(now_local.date(), lat, lon, timezone)
-        sunset_user_jd = jd_from_datetime(sunset_user.astimezone(pytz.utc))
+        sunset_user = get_sunset_time(now_local.date(), lat, lon, timezone, ts, eph)
+        sunset_user_jd = jd_from_datetime(sunset_user.astimezone(pytz.utc), ts) # type: ignore
         if conjunction_jd < sunset_user_jd:
             is_new_month = True
     elif method == "rukyat":
-        sunset_user = get_sunset_time(now_local.date(), lat, lon, timezone)
-        visibility = evaluate_visibility(sunset_user, lat, lon, conjunction_jd)
+        sunset_user = get_sunset_time(now_local.date(), lat, lon, timezone, ts, eph)
+        visibility = evaluate_visibility(sunset_user, lat, lon, conjunction_jd, ts, sun, moon)
         if visibility["is_visible"]:
             is_new_month = True
 
@@ -55,7 +55,7 @@ def predict_end_of_month(lat, lon, method, timezone):
     if is_new_month:
         estimated_end = {
             "day": 1,
-            "month": hijri_today["month"] + 1,
+            "month": hijri_today["month"] + 1, # type: ignore
             "year": hijri_today["year"],
         }
         if estimated_end["month"] > 12:

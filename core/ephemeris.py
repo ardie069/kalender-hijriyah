@@ -1,10 +1,12 @@
+from pathlib import Path
 from skyfield.api import load
 
-# Load efemeris dan timescale sekali saja
-eph = load('de421.bsp')
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+
+eph = load(DATA_DIR / "de421.bsp")
 ts = load.timescale()
 
-# Akses benda langit umum
-earth = eph['earth']
-sun = eph['sun']
-moon = eph['moon']
+earth = eph["earth"]
+sun = eph["sun"]
+moon = eph["moon"]
