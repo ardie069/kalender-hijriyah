@@ -1,4 +1,4 @@
-from skyfield.api import wgs84
+from skyfield.api import wgs84 # type: ignore
 
 
 def get_moon_altitude(dt_utc, lat, lon, ts, moon):

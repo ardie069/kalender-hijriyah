@@ -1,5 +1,4 @@
-from convertdate import islamic
-from datetime import datetime
+from convertdate import islamic # type: ignore
 
 
 def jd_from_datetime(dt, ts):

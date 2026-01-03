@@ -1,6 +1,6 @@
-from skyfield import almanac
-from skyfield.api import wgs84
-import pytz
+from skyfield import almanac # type: ignore
+from skyfield.api import wgs84 # type: ignore
+import pytz # type: ignore
 
 
 def get_sunset_time(date, lat, lon, timezone, ts, eph):

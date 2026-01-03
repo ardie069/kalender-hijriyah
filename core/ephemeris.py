@@ -1,5 +1,5 @@
 from pathlib import Path
-from skyfield.api import load
+from skyfield.api import load # type: ignore
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
