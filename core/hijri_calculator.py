@@ -1,4 +1,4 @@
-import pytz # type: ignore
+import pytz  # type: ignore
 from .julian import jd_from_datetime, julian_to_hijri
 from .conjunction import get_conjunction_time
 from .visibility import evaluate_visibility
@@ -86,17 +86,15 @@ def _next_hijri_day(date):
     return {"year": year, "month": month + 1, "day": 1}
 
 
-def evaluate_new_month(
-    method, lat, lon, conj_jd, sunset_utc, *, ts, sun, moon, earth
-):
+def evaluate_new_month(method, lat, lon, conj_jd, sunset_utc, *, ts, sun, moon, earth):
     if method == "hisab":
         jd_sunset = jd_from_datetime(sunset_utc, ts)
         return conj_jd < jd_sunset
-    
+
     if method == "rukyat":
         visibility = evaluate_visibility(
             sunset_utc, lat, lon, conj_jd, ts, sun, moon, earth
         )
         return visibility["is_visible"]
-    
+
     return False
