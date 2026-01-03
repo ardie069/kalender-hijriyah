@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from datetime import datetime
-import pytz # type: ignore
-
+import pytz  # type: ignore
+from app.main import limiter
 from app.core.hijri_calculator import get_hijri_date
 from app.core.month_predictor import predict_end_of_month
 from app.core.hijri_explain import explain_hijri_decision
@@ -11,19 +11,35 @@ router = APIRouter()
 
 
 @router.get("/hijri-date")
+@limiter.limit("30/minute")
 def hijri_date(
+    request: Request,
     lat: float = Query(...),
     lon: float = Query(...),
     method: str = Query("global"),
     timezone: str = Query("UTC"),
 ):
+
+    now_local = datetime.now(pytz.timezone(timezone))
+
     return get_hijri_date(
-        lat, lon, method, timezone, now_local=now_local, ts=ts, eph=eph, sun=sun, moon=moon, earth=earth # type: ignore
+        lat,
+        lon,
+        method,
+        timezone,
+        now_local=now_local,
+        ts=ts,
+        eph=eph,
+        sun=sun,
+        moon=moon,
+        earth=earth,
     )
 
 
 @router.get("/hijri-explain")
+@limiter.limit("10/minute")
 def hijri_explain(
+    request: Request,
     lat: float,
     lon: float,
     method: str,
