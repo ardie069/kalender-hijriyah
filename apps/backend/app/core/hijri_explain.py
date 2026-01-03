@@ -1,12 +1,58 @@
 import pytz  # type: ignore
+from datetime import datetime
+from functools import lru_cache
 from .julian import jd_from_datetime, julian_to_hijri
 from .conjunction import get_conjunction_time
 from .visibility import evaluate_visibility
 from .sun_times import get_sunset_time
 from .config import DEFAULT_LOCATION
 
+_TS = None
+_EPH = None
+_SUN = None
+_MOON = None
+_EARTH = None
 
-def explain_hijri_decision(
+
+def setup_explain_dependencies(ts, eph, sun, moon, earth):
+    global _TS, _EPH, _SUN, _MOON, _EARTH
+    _TS = ts
+    _EPH = eph
+    _SUN = sun
+    _MOON = moon
+    _EARTH = earth
+
+
+@lru_cache(maxsize=512)
+def _cached_explain(
+    year: int,
+    month: int,
+    day: int,
+    lat: float,
+    lon: float,
+    method: str,
+    timezone: str,
+    after_sunset: bool,
+):
+    tz = pytz.timezone(timezone)
+    hour = 20 if after_sunset else 10
+    now_local = tz.localize(datetime(year, month, day, hour, 0))  # type: ignore
+
+    return _explain_hijri_decision_internal(
+        lat,
+        lon,
+        method,
+        timezone,
+        now_local=now_local,
+        ts=_TS,
+        eph=_EPH,
+        sun=_SUN,
+        moon=_MOON,
+        earth=_EARTH,
+    )
+
+
+def _explain_hijri_decision_internal(
     lat,
     lon,
     method,
@@ -153,3 +199,45 @@ def _method_relation_label(method, baseline_day):
             "Pada tanggal ini, hisab dan rukyat menghasilkan tanggal yang sama."
         ),
     }
+
+
+def explain_hijri_decision(
+    lat,
+    lon,
+    method,
+    timezone,
+    *,
+    now_local,
+    ts,
+    eph,
+    sun,
+    moon,
+    earth,
+):
+    if _TS is None:
+        setup_explain_dependencies(ts, eph, sun, moon, earth)
+
+    tz = pytz.timezone(timezone)
+    now_local = now_local.astimezone(tz)
+
+    sunset_local = get_sunset_time(
+        now_local.date(),
+        lat if method != "global" else DEFAULT_LOCATION["global"][0],
+        lon if method != "global" else DEFAULT_LOCATION["global"][1],
+        timezone if method != "global" else DEFAULT_LOCATION["global"][2],
+        ts,
+        eph,
+    )
+
+    after_sunset = sunset_local is not None and now_local >= sunset_local
+
+    return _cached_explain(
+        now_local.year,
+        now_local.month,
+        now_local.day,
+        round(lat, 4),
+        round(lon, 4),
+        method,
+        timezone,
+        after_sunset,
+    )

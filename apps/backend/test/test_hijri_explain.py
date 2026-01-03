@@ -1,6 +1,6 @@
 from datetime import datetime
 import pytz  # type: ignore
-from core.hijri_explain import explain_hijri_decision
+from app.core.hijri_explain import explain_hijri_decision
 
 
 def test_explain_global_structure(astro):
