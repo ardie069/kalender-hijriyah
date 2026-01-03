@@ -1,70 +1,29 @@
 import pytz  # type: ignore
 from datetime import datetime
-from functools import lru_cache
+from typing import Any, Dict
+
 from .julian import jd_from_datetime, julian_to_hijri
 from .conjunction import get_conjunction_time
 from .visibility import evaluate_visibility
 from .sun_times import get_sunset_time
 from .config import DEFAULT_LOCATION
-
-_TS = None
-_EPH = None
-_SUN = None
-_MOON = None
-_EARTH = None
+from .hijri_calculator import get_hijri_date
 
 
-def setup_explain_dependencies(ts, eph, sun, moon, earth):
-    global _TS, _EPH, _SUN, _MOON, _EARTH
-    _TS = ts
-    _EPH = eph
-    _SUN = sun
-    _MOON = moon
-    _EARTH = earth
-
-
-@lru_cache(maxsize=512)
-def _cached_explain(
-    year: int,
-    month: int,
-    day: int,
+def explain_hijri_decision(
     lat: float,
     lon: float,
     method: str,
     timezone: str,
-    after_sunset: bool,
-):
-    tz = pytz.timezone(timezone)
-    hour = 20 if after_sunset else 10
-    now_local = tz.localize(datetime(year, month, day, hour, 0))  # type: ignore
-
-    return _explain_hijri_decision_internal(
-        lat,
-        lon,
-        method,
-        timezone,
-        now_local=now_local,
-        ts=_TS,
-        eph=_EPH,
-        sun=_SUN,
-        moon=_MOON,
-        earth=_EARTH,
-    )
-
-
-def _explain_hijri_decision_internal(
-    lat,
-    lon,
-    method,
-    timezone,
     *,
-    now_local,
-    ts,
-    eph,
-    sun,
-    moon,
-    earth,
-):
+    now_local: datetime,
+    ts: Any,
+    eph: Any,
+    sun: Any,
+    moon: Any,
+    earth: Any,
+) -> Dict[str, Any]:
+
     tz = pytz.timezone(timezone)
     now_local = now_local.astimezone(tz)
 
@@ -78,166 +37,95 @@ def _explain_hijri_decision_internal(
         now_local.date(), ref_lat, ref_lon, ref_zone, ts, eph
     )
 
-    sunset_jd = None
+    if sunset_local is None:
+        return {
+            "error": "sunset_not_available",
+            "method": method,
+        }
 
-    if sunset_local is not None:
-        sunset_utc = sunset_local.astimezone(pytz.utc)
-        sunset_jd = jd_from_datetime(sunset_utc, ts)
-        after_sunset = now_local >= sunset_local
-        effective_jd = sunset_jd + 1 if after_sunset else sunset_jd
-    else:
-        effective_jd = jd_from_datetime(now_local.astimezone(pytz.utc), ts)
-        after_sunset = False
+    after_sunset = now_local >= sunset_local
+    sunset_utc = sunset_local.astimezone(pytz.utc)
+    sunset_jd = jd_from_datetime(sunset_utc, ts)
 
+    # Hari Hijriah dimulai setelah maghrib
+    effective_jd = sunset_jd + 1 if after_sunset else sunset_jd
+
+    # Baseline (tanpa keputusan metode)
     baseline = julian_to_hijri(effective_jd)
 
-    explanation = {
+    # Final date dari engine utama
+    final_date = get_hijri_date(
+        lat,
+        lon,
+        method,
+        timezone,
+        now_local=now_local,
+        ts=ts,
+        eph=eph,
+        sun=sun,
+        moon=moon,
+        earth=earth,
+    )
+
+    explanation: Dict[str, Any] = {
         "method": method,
-        "location": {
-            "lat": lat,
-            "lon": lon,
-            "timezone": timezone,
-        },
-        "baseline_date": baseline,
+        "location": {"lat": lat, "lon": lon, "timezone": timezone},
         "after_sunset": after_sunset,
+        "baseline_date": baseline,
+        "final_hijri_date": final_date,
+        "method_relation": _get_method_note(method),
     }
 
-    # Global tidak dievaluasi lokal
+    # GLOBAL
     if method == "global":
         explanation["decision"] = "global_standard"
-        explanation["final_hijri_date"] = baseline
-        explanation["method_relation"] = _method_relation_label(method, baseline["day"])
         return explanation
 
+    # Evaluasi hanya di hari 29
     if baseline["day"] != 29:
         explanation["decision"] = "no_evaluation_needed"
-        explanation["final_hijri_date"] = baseline
-        explanation["method_relation"] = _method_relation_label(method, baseline["day"])
         return explanation
 
-    # Konjungsi
+    # Konjungsi dicari SEBELUM hari evaluasi
     conj_jd = get_conjunction_time(effective_jd - 1, ts, earth, sun, moon)
     explanation["conjunction"] = {
         "jd": conj_jd,
-        "before_sunset": conj_jd < sunset_jd,  # type: ignore
+        "before_sunset": conj_jd < sunset_jd,
     }
 
-    # Hisab
     if method == "hisab":
-        if conj_jd < sunset_jd:  # type: ignore
-            explanation["decision"] = "new_month_by_hisab"
-            explanation["final_hijri_date"] = {
-                "year": baseline["year"],
-                "month": baseline["month"] + 1 if baseline["month"] < 12 else 1,
-                "day": 1,
-            }
-        else:
-            explanation["decision"] = "istikmal"
-            explanation["final_hijri_date"] = {**baseline, "day": 30}
+        explanation["decision"] = (
+            "new_month_by_hisab" if conj_jd < sunset_jd else "istikmal"
+        )
 
-        explanation["method_relation"] = _method_relation_label(method, baseline["day"])
-        return explanation
-
-    if sunset_jd is None:
-        explanation["decision"] = "sunset_not_available"
-        explanation["final_hijri_date"] = baseline
-        explanation["method_relation"] = _method_relation_label(method, baseline["day"])
-        return explanation
-
-    # Rukyat
-    visibility = evaluate_visibility(
-        sunset_utc, lat, lon, conj_jd, ts, sun, moon, earth
-    )
-
-    explanation["visibility"] = {
-        "moon_altitude_deg": visibility["moon_altitude"],
-        "elongation_deg": visibility["elongation"],
-        "moon_age_hours": visibility["moon_age"],
-        "criteria": {
-            "min_altitude": 3,
-            "min_elongation": 6.4,
-            "min_age_hours": 8,
-        },
-        "is_visible": visibility["is_visible"],
-    }
-
-    if visibility["is_visible"]:
-        explanation["decision"] = "new_month_by_rukyat"
-        explanation["final_hijri_date"] = {
-            "year": baseline["year"],
-            "month": baseline["month"] + 1 if baseline["month"] < 12 else 1,
-            "day": 1,
+    elif method == "rukyat":
+        visibility = evaluate_visibility(
+            sunset_utc, lat, lon, conj_jd, ts, sun, moon, earth
+        )
+        explanation["visibility"] = {
+            "moon_altitude_deg": visibility["moon_altitude"],
+            "elongation_deg": visibility["elongation"],
+            "is_visible": visibility["is_visible"],
         }
-    else:
-        explanation["decision"] = "istikmal"
-        explanation["final_hijri_date"] = {**baseline, "day": 30}
+        explanation["decision"] = (
+            "new_month_by_rukyat" if visibility["is_visible"] else "istikmal"
+        )
 
-    explanation["method_relation"] = _method_relation_label(method, baseline["day"])
     return explanation
 
 
-def _method_relation_label(method, baseline_day):
-    if method == "global":
-        return {
-            "status": "not_applicable",
-            "note": "Metode global menggunakan kalender baku Mekkah.",
-        }
-
-    if baseline_day == 29:
-        return {
-            "status": "diverged",
-            "note": (
-                "Perbedaan metode dapat terjadi pada akhir bulan "
-                "tergantung hasil hisab dan rukyat."
-            ),
-        }
-
+def _get_method_note(method: str) -> Dict[str, str]:
     return {
-        "status": "converged",
-        "note": (
-            "Perbedaan metode terjadi di awal bulan. "
-            "Pada tanggal ini, hisab dan rukyat menghasilkan tanggal yang sama."
-        ),
-    }
-
-
-def explain_hijri_decision(
-    lat,
-    lon,
-    method,
-    timezone,
-    *,
-    now_local,
-    ts,
-    eph,
-    sun,
-    moon,
-    earth,
-):
-    if _TS is None:
-        setup_explain_dependencies(ts, eph, sun, moon, earth)
-
-    tz = pytz.timezone(timezone)
-    now_local = now_local.astimezone(tz)
-
-    sunset_local = get_sunset_time(
-        now_local.date(),
-        lat if method != "global" else DEFAULT_LOCATION["global"][0],
-        lon if method != "global" else DEFAULT_LOCATION["global"][1],
-        timezone if method != "global" else DEFAULT_LOCATION["global"][2],
-        ts,
-        eph,
-    )
-
-    after_sunset = sunset_local is not None and now_local >= sunset_local
-
-    return _cached_explain(
-        now_local.year,
-        now_local.month,
-        now_local.day,
-        round(lat, 4),
-        round(lon, 4),
-        method,
-        timezone,
-        after_sunset,
-    )
+        "global": {
+            "status": "not_applicable",
+            "note": "Kalender baku berbasis standar Mekkah (Umm al-Qura-like).",
+        },
+        "hisab": {
+            "status": "deterministic",
+            "note": "Penentuan bulan berbasis konjungsi astronomis.",
+        },
+        "rukyat": {
+            "status": "observational",
+            "note": "Penentuan bulan berbasis visibilitas hilal.",
+        },
+    }.get(method, {"status": "unknown", "note": ""})
