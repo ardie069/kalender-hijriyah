@@ -1,11 +1,12 @@
 import pytz  # type: ignore
+from datetime import datetime, time
+
 from .julian import jd_from_datetime, julian_to_hijri
 from .conjunction import get_conjunction_time
 from .visibility import evaluate_visibility
 from .sun_times import get_sunset_time
 from .rukyat_epoch import (
     get_rukyat_date,
-    get_rukyat_day,
     get_active_rukyat_epoch,
     RUKYAT_EPOCHS,
     RukyatMonthEpoch,
@@ -33,13 +34,16 @@ def get_hijri_date(
     now_local = now_local.astimezone(tz)
 
     # ==========================
-    # Tentukan sunset & JD
+    # 1. Lokasi referensi
     # ==========================
     if method == "global":
         ref_lat, ref_lon, ref_zone = DEFAULT_LOCATION["global"]
     else:
         ref_lat, ref_lon, ref_zone = lat, lon, timezone
 
+    # ==========================
+    # 2. Sunset hari ini
+    # ==========================
     sunset_local = get_sunset_time(
         now_local.date(), ref_lat, ref_lon, ref_zone, ts, eph
     )
@@ -49,82 +53,111 @@ def get_hijri_date(
     after_sunset = now_local >= sunset_local
     sunset_utc = sunset_local.astimezone(pytz.utc)
     sunset_jd = jd_from_datetime(sunset_utc, ts)
-    effective_jd = sunset_jd + 0.5 if after_sunset else sunset_jd - 0.5
+
+    # ==========================
+    # 3. BASELINE HIJRIYAH (NOON)
+    # ==========================
+    noon_local = tz.localize(datetime.combine(now_local.date(), time(12, 0)))
+    noon_utc = noon_local.astimezone(pytz.utc)
+    noon_jd = jd_from_datetime(noon_utc, ts)
+
+    baseline = julian_to_hijri(noon_jd)
+
+    # Pergantian hari Hijriyah di maghrib
+    if after_sunset:
+        baseline = _increment_hijri_day(baseline)
 
     # ==========================
     # GLOBAL
     # ==========================
     if method == "global":
-        return julian_to_hijri(effective_jd)
+        return baseline
 
     # ==========================
     # HISAB
     # ==========================
     if method == "hisab":
-        raw = julian_to_hijri(effective_jd)
+        if baseline["day"] == 29:
+            conj_jd = get_conjunction_time(sunset_jd, ts, earth, sun, moon)
+            if conj_jd < sunset_jd and after_sunset:
+                return _next_month_day(baseline)
 
-        if raw["day"] == 29:
-            conj_jd = get_conjunction_time(effective_jd - 1, ts, earth, sun, moon)
-            if conj_jd < sunset_jd:
-                return _next_hijri_day(raw)
-            return {**raw, "day": 30}
+            return {**baseline, "day": 30}
 
-        return raw
+        if baseline["day"] == 30:
+            if after_sunset:
+                return _next_month_day(baseline)
+
+        return baseline
 
     # ==========================
-    # RUKYAT (INI YANG PENTING)
+    # RUKYAT
     # ==========================
     if method == "rukyat":
-        # ambil tanggal rukyat dari epoch
-        rukyat_date = get_rukyat_date(effective_jd)
-        day = rukyat_date["day"]
+        rukyat_date = get_rukyat_date(noon_jd)
 
-        # belum hari ke-29 → selesai
-        if day < 29:
+        # sebelum hari 29 → aman
+        if rukyat_date["day"] < 29:
             return rukyat_date
 
-        # hari ke-29 → evaluasi hilal
-        if day == 29:
-            conj_jd = get_conjunction_time(effective_jd - 1, ts, earth, sun, moon)
+        if rukyat_date["day"] == 29 and not after_sunset:
+            return rukyat_date
 
+        # hari 29 → evaluasi
+        if rukyat_date["day"] == 29 and after_sunset:
+            conj_jd = get_conjunction_time(sunset_jd, ts, earth, sun, moon)
             visibility = evaluate_visibility(
                 sunset_utc, lat, lon, conj_jd, ts, sun, moon, earth
             )
 
             if visibility["is_visible"]:
-                # buat epoch bulan baru
-                epoch = get_active_rukyat_epoch(effective_jd)
-                next_year, next_month = _next_month(epoch.year, epoch.month)
+                epoch = get_active_rukyat_epoch(noon_jd)
+                ny, nm = _next_month(epoch.year, epoch.month)
 
-                RUKYAT_EPOCHS[(next_year, next_month)] = RukyatMonthEpoch(
-                    year=next_year,
-                    month=next_month,
+                RUKYAT_EPOCHS[(ny, nm)] = RukyatMonthEpoch(
+                    year=ny,
+                    month=nm,
                     jd_start=sunset_jd,
                 )
 
-                return {"year": next_year, "month": next_month, "day": 1}
+                return {"year": ny, "month": nm, "day": 1}
 
-            # hilal tidak terlihat → tetap 29
-            return rukyat_date
+            # hilal tidak terlihat → ISTIKMAL
+            return {**rukyat_date, "day": 30}
 
-        # hari ke-30 → istikmal otomatis
-        epoch = get_active_rukyat_epoch(effective_jd)
-        next_year, next_month = _next_month(epoch.year, epoch.month)
+        # hari 30 → otomatis bulan baru
+        if rukyat_date["day"] == 30:
+            epoch = get_active_rukyat_epoch(noon_jd)
+            ny, nm = _next_month(epoch.year, epoch.month)
 
-        RUKYAT_EPOCHS[(next_year, next_month)] = RukyatMonthEpoch(
-            year=next_year,
-            month=next_month,
-            jd_start=sunset_jd,
-        )
+            RUKYAT_EPOCHS[(ny, nm)] = RukyatMonthEpoch(
+                year=ny,
+                month=nm,
+                jd_start=sunset_jd,
+            )
 
-        return {"year": next_year, "month": next_month, "day": 1}
+            return {"year": ny, "month": nm, "day": 1}
+
+        return rukyat_date
 
     raise ValueError(f"Unknown method: {method}")
 
 
-def _next_hijri_day(date):
-    year, month = date["year"], date["month"]
-    return _next_month(year, month) | {"day": 1}  # type: ignore
+# ==========================
+# HELPERS
+# ==========================
+
+
+def _increment_hijri_day(date):
+    if date["day"] < 30:
+        return {**date, "day": date["day"] + 1}
+    return _next_month_day(date)
+
+
+def _next_month_day(date):
+    y, m = date["year"], date["month"]
+    ny, nm = _next_month(y, m)
+    return {"year": ny, "month": nm, "day": 1}
 
 
 def _next_month(year, month):
