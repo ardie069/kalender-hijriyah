@@ -1,8 +1,8 @@
 from datetime import datetime
-import pytz
+import pytz # type: ignore
 
-from core.julian import jd_from_datetime
-from core.ephemeris import ts
+from app.core.julian import jd_from_datetime
+from app.deps.astronomy import ts
 
 
 def test_jd_monotonic():

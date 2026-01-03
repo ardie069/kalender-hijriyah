@@ -1,19 +1,18 @@
-astral
-blinker
-certifi
-click
-convertdate
-Flask
-flask-cors
-itsdangerous
-Jinja2
-jplephem
-MarkupSafe
-numpy
-PyMeeus
-python-dotenv
-pytz
-sgp4
+fastapi
+uvicorn[standard]
+
+# Astronomy & calendar libraries
 skyfield
-Werkzeug
+jplephem
+PyMeeus
+sgp4
+numpy
+astral
+convertdate
+
+# time & config
+pytz
+python-dotenv
+
+# unit testing
 pytest

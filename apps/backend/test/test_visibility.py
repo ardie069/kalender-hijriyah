@@ -1,8 +1,8 @@
 from datetime import datetime
-import pytz
+import pytz # type: ignore
 
-from core.visibility import evaluate_visibility
-from core.ephemeris import ts, sun, moon, earth
+from app.core.visibility import evaluate_visibility
+from app.deps.astronomy import ts, sun, moon, earth
 
 
 def test_visibility_structure():

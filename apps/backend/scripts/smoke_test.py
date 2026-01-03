@@ -1,8 +1,8 @@
 from datetime import datetime
 import pytz # type: ignore
 
-from core.ephemeris import ts, eph, sun, moon, earth
-from core.hijri_calculator import get_hijri_date
+from app.deps.astronomy import ts, eph, sun, moon, earth
+from app.core.hijri_calculator import get_hijri_date
 
 now_local = datetime.now(pytz.timezone("Asia/Jakarta"))
 

@@ -1,5 +1,5 @@
-from core.conjunction import get_conjunction_time
-from core.ephemeris import ts, earth, sun, moon
+from app.core.conjunction import get_conjunction_time
+from app.deps.astronomy import ts, earth, sun, moon
 
 
 def test_conjunction_exists():

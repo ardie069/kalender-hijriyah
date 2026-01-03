@@ -1,5 +1,5 @@
 import pytest
-from core.ephemeris import ts, eph, sun, moon, earth
+from app.deps.astronomy import ts, eph, sun, moon, earth
 
 
 @pytest.fixture(scope="session")
