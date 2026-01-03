@@ -1,10 +1,9 @@
-import pytz # type: ignore
+import pytz  # type: ignore
 from .julian import jd_from_datetime, julian_to_hijri
 from .conjunction import get_conjunction_time
 from .visibility import evaluate_visibility
 from .sun_times import get_sunset_time
 from .config import DEFAULT_LOCATION
-
 
 
 def explain_hijri_decision(
@@ -33,11 +32,16 @@ def explain_hijri_decision(
         now_local.date(), ref_lat, ref_lon, ref_zone, ts, eph
     )
 
-    sunset_utc = sunset_local.astimezone(pytz.utc) # type: ignore
-    after_sunset = now_local >= sunset_local
+    sunset_jd = None
 
-    sunset_jd = jd_from_datetime(sunset_utc, ts)
-    effective_jd = sunset_jd + 1 if after_sunset else sunset_jd
+    if sunset_local is not None:
+        sunset_utc = sunset_local.astimezone(pytz.utc)
+        sunset_jd = jd_from_datetime(sunset_utc, ts)
+        after_sunset = now_local >= sunset_local
+        effective_jd = sunset_jd + 1 if after_sunset else sunset_jd
+    else:
+        effective_jd = jd_from_datetime(now_local.astimezone(pytz.utc), ts)
+        after_sunset = False
 
     baseline = julian_to_hijri(effective_jd)
 
@@ -56,23 +60,25 @@ def explain_hijri_decision(
     if method == "global":
         explanation["decision"] = "global_standard"
         explanation["final_hijri_date"] = baseline
+        explanation["method_relation"] = _method_relation_label(method, baseline["day"])
         return explanation
 
     if baseline["day"] != 29:
         explanation["decision"] = "no_evaluation_needed"
         explanation["final_hijri_date"] = baseline
+        explanation["method_relation"] = _method_relation_label(method, baseline["day"])
         return explanation
 
     # Konjungsi
     conj_jd = get_conjunction_time(effective_jd - 1, ts, earth, sun, moon)
     explanation["conjunction"] = {
         "jd": conj_jd,
-        "before_sunset": conj_jd < sunset_jd,
+        "before_sunset": conj_jd < sunset_jd,  # type: ignore
     }
 
     # Hisab
     if method == "hisab":
-        if conj_jd < sunset_jd:
+        if conj_jd < sunset_jd:  # type: ignore
             explanation["decision"] = "new_month_by_hisab"
             explanation["final_hijri_date"] = {
                 "year": baseline["year"],
@@ -83,6 +89,13 @@ def explain_hijri_decision(
             explanation["decision"] = "istikmal"
             explanation["final_hijri_date"] = {**baseline, "day": 30}
 
+        explanation["method_relation"] = _method_relation_label(method, baseline["day"])
+        return explanation
+
+    if sunset_jd is None:
+        explanation["decision"] = "sunset_not_available"
+        explanation["final_hijri_date"] = baseline
+        explanation["method_relation"] = _method_relation_label(method, baseline["day"])
         return explanation
 
     # Rukyat
@@ -113,4 +126,30 @@ def explain_hijri_decision(
         explanation["decision"] = "istikmal"
         explanation["final_hijri_date"] = {**baseline, "day": 30}
 
+    explanation["method_relation"] = _method_relation_label(method, baseline["day"])
     return explanation
+
+
+def _method_relation_label(method, baseline_day):
+    if method == "global":
+        return {
+            "status": "not_applicable",
+            "note": "Metode global menggunakan kalender baku Mekkah.",
+        }
+
+    if baseline_day == 29:
+        return {
+            "status": "diverged",
+            "note": (
+                "Perbedaan metode dapat terjadi pada akhir bulan "
+                "tergantung hasil hisab dan rukyat."
+            ),
+        }
+
+    return {
+        "status": "converged",
+        "note": (
+            "Perbedaan metode terjadi di awal bulan. "
+            "Pada tanggal ini, hisab dan rukyat menghasilkan tanggal yang sama."
+        ),
+    }
