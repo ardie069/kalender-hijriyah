@@ -1,0 +1,25 @@
+[project]
+name = "kalender-hijriyah-api"
+version = "3.0.0"
+description = "FastAPI backend for Hijri calendar (hisab & rukyat)"
+requires-python = ">=3.10"
+
+dependencies = [
+    "fastapi",
+    "slowapi",
+    "uvicorn",
+    "skyfield",
+    "jplephem",
+    "PyMeeus",
+    "sgp4",
+    "numpy",
+    "astral",
+    "convertdate",
+    "pytz",
+    "python-dotenv",
+    "pytest"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
