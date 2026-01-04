@@ -1,10 +1,6 @@
 import type { HijriDateResponse, Method } from "@/types/hijri";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
-if (!API_BASE) {
-  throw new Error("VITE_API_BASE_URL is not defined");
-}
+const API_BASE = "/api";
 
 export async function fetchHijriDate(
   lat: number,
@@ -19,7 +15,7 @@ export async function fetchHijriDate(
     timezone,
   });
 
-  const res = await fetch(`${API_BASE}/hijri-date?${params.toString()}`);
+  const res = await fetch(`${API_BASE}/hijri-date?${params}`);
 
   if (!res.ok) {
     const text = await res.text();
