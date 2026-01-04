@@ -9,11 +9,11 @@ from app.api.hijri import router as hijri_router
 
 app = FastAPI(
     title="Kalender Hijriyah API",
-    version="2.0.0",
+    version="3.0.0-beta",
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler) # type: ignore
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
