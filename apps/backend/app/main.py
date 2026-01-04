@@ -1,3 +1,6 @@
+import os
+from dotenv import load_dotenv
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
@@ -7,9 +10,20 @@ from slowapi import _rate_limit_exceeded_handler
 from app.deps.rate_limit import limiter
 from app.api.hijri import router as hijri_router
 
+load_dotenv()
+
+
+def get_cors_origins() -> list[str]:
+    raw = os.getenv("CORS_ORIGINS", "")
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
+CORS_ORIGINS = get_cors_origins()
+
+
 app = FastAPI(
     title="Kalender Hijriyah API",
-    version="3.0.0-beta",
+    version="3.0.0",
 )
 
 app.state.limiter = limiter
@@ -18,12 +32,7 @@ app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-        "http://kalender-hijriyah.netlify.app/.functions",
-        "http://kalender-hijriyah-api.vercel.app",
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
