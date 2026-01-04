@@ -65,6 +65,7 @@ def hijri_explain(
 @router.get("/hijri-predict-end")
 @limiter.limit("30/minute")
 def hijri_predict_end(
+    request: Request,
     lat: float,
     lon: float,
     method: str = "hisab",
