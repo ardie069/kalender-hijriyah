@@ -1,9 +1,14 @@
-import { createRouter, createWebHistory } from "vue-router";
-import Home from "../pages/Home.vue";
-import Calendar from "../pages/Calendar.vue";
-import MoonInfo from "../pages/MoonInfo.vue";
+import {
+  createRouter,
+  createWebHistory,
+  type RouteRecordRaw,
+} from "vue-router";
 
-const routes = [
+import Home from "@/pages/Home.vue";
+import Calendar from "@/pages/Calendar.vue";
+import MoonInfo from "@/pages/MoonInfo.vue";
+
+const routes: RouteRecordRaw[] = [
   {
     path: "/",
     name: "Home",
@@ -37,7 +42,10 @@ const router = createRouter({
 
 router.afterEach((to) => {
   const defaultTitle = "Kalender Hijriyah";
-  document.title = to.meta.title || defaultTitle;
+  const title =
+    typeof to.meta.title === "string" ? to.meta.title : defaultTitle;
+
+  document.title = title;
 });
 
 export default router;

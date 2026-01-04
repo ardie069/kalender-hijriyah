@@ -1,40 +1,47 @@
-<template>
-  <div :class="{ dark: darkMode }">
-    <Navbar
-      :darkMode="darkMode"
-      :themeToggleText="themeToggleText"
-      :toggleTheme="toggleTheme"
-    />
-    <router-view />
-  </div>
-</template>
+<script setup lang="ts">
+import { computed, onMounted } from "vue";
+import { useThemeStore } from "@/stores/themeStore";
+import Navbar from "@/components/Navbar.vue";
 
-<script setup>
-import { ref, provide, computed, onMounted } from "vue";
-import Navbar from "./components/Navbar.vue";
+const themeStore = useThemeStore();
 
-const darkMode = ref(true);
+/**
+ * expose state
+ */
+const darkMode = computed(() => themeStore.darkMode);
+const themeToggleText = computed(() => themeStore.themeToggleText);
+const toggleTheme = themeStore.toggleTheme;
 
-// Provide `darkMode` ke semua komponen anak
-provide("darkMode", darkMode);
-
-// Toggle handler
-const toggleTheme = () => {
-  darkMode.value = !darkMode.value;
-  localStorage.setItem("theme", darkMode.value ? "dark" : "light");
-};
-
-// Simpan/ambil dari localStorage
+/**
+ * sync localStorage → store
+ */
 onMounted(() => {
   const saved = localStorage.getItem("theme");
-  if (saved) darkMode.value = saved === "dark";
-  else {
-    localStorage.setItem("theme", darkMode.value ? "dark" : "light");
+  if (saved === "dark") {
+    themeStore.darkMode = true;
+  } else if (saved === "light") {
+    themeStore.darkMode = false;
+  } else {
+    localStorage.setItem("theme", themeStore.darkMode ? "dark" : "light");
   }
 });
 
-// Optional: teks tombol
-const themeToggleText = computed(() =>
-  darkMode.value ? "🌙 Mode Gelap" : "☀️ Mode Terang"
+/**
+ * watch change → persist
+ */
+import { watch } from "vue";
+
+watch(
+  () => themeStore.darkMode,
+  (val) => {
+    localStorage.setItem("theme", val ? "dark" : "light");
+  }
 );
 </script>
+
+<template>
+  <div :class="{ dark: darkMode }">
+    <Navbar :darkMode="darkMode" :themeToggleText="themeToggleText" :toggleTheme="toggleTheme" />
+    <router-view />
+  </div>
+</template>

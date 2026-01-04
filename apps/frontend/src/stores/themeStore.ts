@@ -1,14 +1,14 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, type Ref, type ComputedRef } from "vue";
 
 export const useThemeStore = defineStore("theme", () => {
-  const darkMode = ref(false);
+  const darkMode: Ref<boolean> = ref(false);
 
-  const toggleTheme = () => {
+  const toggleTheme = (): void => {
     darkMode.value = !darkMode.value;
   };
 
-  const themeToggleText = computed(() =>
+  const themeToggleText: ComputedRef<string> = computed(() =>
     darkMode.value ? "🌙 Mode Gelap" : "☀️ Mode Terang"
   );
 

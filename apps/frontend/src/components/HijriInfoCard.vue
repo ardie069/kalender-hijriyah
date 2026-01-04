@@ -1,63 +1,72 @@
-<template>
-  <div
-    class="mt-4 p-4 rounded-box shadow-md"
-    :class="[themeClass, 'transition-colors duration-300']"
-  >
-    <p class="text-lg font-medium">🗓️ Tanggal Hijriyah:</p>
-    <hr class="my-2 border-t border-gray-300 dark:border-gray-700 opacity-50" />
+<script setup lang="ts">
+import { computed } from "vue";
+import { useThemeStore } from "@/stores/themeStore";
+import type { HijriDate, Method } from "@/types/hijri";
 
-    <p v-if="!loading" class="text-lg font-semibold">
-      <span v-if="showWeton && wetonText"> {{ wetonText }}, </span>
-      <span v-else> {{ weekdayText }}, </span>
-      {{ hijriDateText }}
-    </p>
+const props = defineProps<{
+  hijriDate: HijriDate | null;
+  weton: string | null;
+  method: Method;
+}>();
 
-    <p v-else class="text-gray-400 italic">Memuat tanggal Hijriyah...</p>
-  </div>
-</template>
-
-<script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
-import { useThemeStore } from "@/stores/themeStore"; // Menggunakan store
-
+// Theme
 const themeStore = useThemeStore();
-const darkMode = computed(() => themeStore.darkMode); // Ambil darkMode dari store
 
 const themeClass = computed(() =>
-  darkMode.value ? "bg-base-200 text-base-content" : "bg-zinc-100 text-base"
+  themeStore.darkMode
+    ? "bg-base-200 text-base-content"
+    : "bg-zinc-100 text-base"
 );
 
-defineProps({
-  hijriDateText: String,
-  showWeton: Boolean,
-  wetonText: String,
-  loading: Boolean,
+//Format
+const hijriText = computed(() => {
+  if (!props.hijriDate) return "";
+
+  const monthNames = [
+    "Muharam",
+    "Safar",
+    "Rabiulawal",
+    "Rabiulakhir",
+    "Jumadilawal",
+    "Jumadilakhir",
+    "Rajab",
+    "Syakban",
+    "Ramadan",
+    "Syawal",
+    "Zulkaidah",
+    "Zulhijah",
+  ];
+
+  return `${props.hijriDate.day} ${monthNames[props.hijriDate.month - 1]
+    } ${props.hijriDate.year} H`;
 });
 
-const currentDate = ref(new Date());
-const weekdayText = ref("");
-
-// Update waktu real-time
-const updateTime = () => {
-  currentDate.value = new Date();
-  let day = currentDate.value.toLocaleDateString("id-ID", { weekday: "long" });
-
-  // Ubah "Minggu" menjadi "Ahad"
-  if (day === "Minggu") {
-    day = "Ahad";
+const methodLabel = computed(() => {
+  switch (props.method) {
+    case "global":
+      return "Global (Standar Umm al-Qura)";
+    case "hisab":
+      return "Hisab Wujudul Hilal";
+    case "rukyat":
+      return "Rukyat Hilal";
+    default:
+      return props.method;
   }
-
-  weekdayText.value = day;
-};
-
-// Real-time update setiap detik
-let intervalId;
-onMounted(() => {
-  updateTime();
-  intervalId = setInterval(updateTime, 1000);
-});
-
-onUnmounted(() => {
-  clearInterval(intervalId);
 });
 </script>
+
+<template>
+  <div class="mt-4 p-4 rounded-box shadow-md transition-colors duration-300" :class="themeClass">
+    <p class="text-lg font-medium">🗓️ Tanggal Hijriyah</p>
+    <hr class="my-2 border-t opacity-50" />
+
+    <p class="text-lg font-semibold">
+      <span v-if="weton">{{ weton }}, </span>
+      {{ hijriText }}
+    </p>
+
+    <p class="mt-1 text-sm opacity-70">
+      Metode: <strong>{{ methodLabel }}</strong>
+    </p>
+  </div>
+</template>

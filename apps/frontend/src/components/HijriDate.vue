@@ -1,78 +1,37 @@
-<template>
-  <div :class="{ dark: darkMode }">
-    <!-- Menambahkan class dark pada elemen root -->
-    <div v-if="loading" class="flex items-center justify-center mt-4">
-      <span :class="['loading loading-spinner mr-2', loadingClass]"></span>
-      <span :class="['font-semibold', loadingClass]">
-        📍 Menunggu lokasi...
-      </span>
-    </div>
-
-    <HijriInfoCard
-      :hijriDateText="hijriDateText"
-      :showWeton="showWeton"
-      :wetonText="wetonText"
-      :loading="loading"
-    />
-    <HijriPrediction
-      :hijriEndPrediction="hijriEndPrediction"
-    />
-  </div>
-</template>
-
-<script setup>
-import { ref, computed, watch } from "vue";
-import { useThemeStore } from "@/stores/themeStore";
+<script setup lang="ts">
 import HijriInfoCard from "./HijriInfoCard.vue";
 import HijriPrediction from "./HijriPrediction.vue";
-import { useHijriDate } from "../composables/useHijriDate";
 
-const themeStore = useThemeStore();
-const darkMode = computed(() => themeStore.darkMode);
+import type { HijriDate, Method } from "@/types/hijri";
 
-// props dari parent
-const props = defineProps({
-  selectedMethod: String,
-  userTimezone: String,
-  API_BASE_URL: String,
-});
-
-// reactive props
-const selectedMethod = ref(props.selectedMethod);
-const userTimezone = ref(props.userTimezone);
-
-// composable
-const {
-  hijriDateText,
-  hijriEndPrediction,
-  showWeton,
-  wetonText,
-  loading,
-  fetchLocationAndHijriDate,
-} = useHijriDate(selectedMethod, userTimezone, props.API_BASE_URL);
-
-// styling loading
-const loadingClass = computed(() =>
-  darkMode.value ? "text-yellow-400" : "text-yellow-800"
-);
-
-// fetch saat mounted
-fetchLocationAndHijriDate();
-
-// watch props berubah
-watch(
-  () => props.selectedMethod,
-  (newVal) => {
-    selectedMethod.value = newVal;
-    fetchLocationAndHijriDate();
-  }
-);
-
-watch(
-  () => props.userTimezone,
-  (newVal) => {
-    userTimezone.value = newVal;
-    fetchLocationAndHijriDate();
-  }
-);
+defineProps<{
+  hijriDate: HijriDate | null;
+  endMonthInfo: any;
+  weton: string | null;
+  loading: boolean;
+  error: string | null;
+  method: Method;
+}>();
 </script>
+
+<template>
+  <div>
+    <!-- LOADING -->
+    <div v-if="loading" class="flex items-center justify-center mt-4">
+      <span class="loading loading-spinner mr-2"></span>
+      <span class="font-semibold">📍 Menghitung tanggal Hijriyah…</span>
+    </div>
+
+    <!-- ERROR -->
+    <div v-else-if="error" class="alert alert-error mt-4">
+      {{ error }}
+    </div>
+
+    <!-- RESULT -->
+    <div v-else-if="hijriDate">
+      <HijriInfoCard :hijriDate="hijriDate" :weton="weton" :method="method" />
+
+      <HijriPrediction v-if="endMonthInfo" :prediction="endMonthInfo" />
+    </div>
+  </div>
+</template>
