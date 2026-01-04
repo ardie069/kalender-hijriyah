@@ -1,4 +1,4 @@
-from core.month_predictor import predict_end_of_month
+from app.core.month_predictor import predict_end_of_month
 
 
 def test_month_predictor_only_on_day_29(astro):

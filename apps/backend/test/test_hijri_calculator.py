@@ -1,7 +1,7 @@
 from datetime import datetime
 import pytz  # type: ignore
 
-from core.hijri_calculator import get_hijri_date
+from app.core.hijri_calculator import get_hijri_date
 
 
 def test_global_hijri_date_fixed_time(astro):
