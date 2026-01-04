@@ -5,24 +5,33 @@ from app.main import limiter
 from app.core.hijri_calculator import get_hijri_date
 from app.core.month_predictor import predict_end_of_month
 from app.core.hijri_explain import explain_hijri_decision
+from app.schemas.hijri import (
+    HijriDateResponse,
+    HijriDateSchema,
+    LocationSchema,
+    HijriEndMonthResponse,
+)
 from app.deps.astronomy import ts, eph, sun, moon, earth
 
 router = APIRouter()
 
 
-@router.get("/hijri-date")
+@router.get(
+    "/hijri-date",
+    response_model=HijriDateResponse,
+)
 @limiter.limit("30/minute")
 def hijri_date(
+    lat: float,
+    lon: float,
+    method: str,
+    timezone: str,
     request: Request,
-    lat: float = Query(...),
-    lon: float = Query(...),
-    method: str = Query("global"),
-    timezone: str = Query("UTC"),
 ):
 
     now_local = datetime.now(pytz.timezone(timezone))
 
-    return get_hijri_date(
+    hijri = get_hijri_date(
         lat,
         lon,
         method,
@@ -33,6 +42,17 @@ def hijri_date(
         sun=sun,
         moon=moon,
         earth=earth,
+    )
+
+    return HijriDateResponse(
+        method=method,  # type: ignore
+        location=LocationSchema(
+            lat=lat,
+            lon=lon,
+            timezone=timezone,
+        ),
+        hijri_date=HijriDateSchema(**hijri),  # type: ignore
+        generated_at=now_local,
     )
 
 
@@ -62,14 +82,14 @@ def hijri_explain(
     )
 
 
-@router.get("/hijri-predict-end")
+@router.get("/hijri-end-month", response_model=HijriEndMonthResponse)
 @limiter.limit("30/minute")
 def hijri_predict_end(
     request: Request,
     lat: float,
     lon: float,
-    method: str = "hisab",
-    timezone: str = "UTC",
+    method: str,
+    timezone: str,
 ):
     """
     Prediksi apakah bulan hijriyah berakhir di hari ke-29 atau ke-30.
@@ -89,13 +109,13 @@ def hijri_predict_end(
         earth=earth,
     )
 
-    return {
-        "method": method,
-        "location": {
-            "lat": lat,
-            "lon": lon,
-            "timezone": timezone,
-        },
-        "generated_at": now_local.isoformat(),
+    return HijriEndMonthResponse(
+        method=method,
+        location=LocationSchema(
+            lat=lat,
+            lon=lon,
+            timezone=timezone,
+        ),
+        generated_at=now_local,
         **result,
-    }
+    )
