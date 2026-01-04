@@ -60,3 +60,41 @@ def hijri_explain(
         moon=moon,
         earth=earth,
     )
+
+
+@router.get("/hijri-predict-end")
+@limiter.limit("30/minute")
+def hijri_predict_end(
+    lat: float,
+    lon: float,
+    method: str = "hisab",
+    timezone: str = "UTC",
+):
+    """
+    Prediksi apakah bulan hijriyah berakhir di hari ke-29 atau ke-30.
+    """
+    tz = pytz.timezone(timezone)
+    now_local = datetime.now(tz)
+
+    result = predict_end_of_month(
+        lat,
+        lon,
+        method,
+        timezone,
+        ts=ts,
+        eph=eph,
+        sun=sun,
+        moon=moon,
+        earth=earth,
+    )
+
+    return {
+        "method": method,
+        "location": {
+            "lat": lat,
+            "lon": lon,
+            "timezone": timezone,
+        },
+        "generated_at": now_local.isoformat(),
+        **result,
+    }
