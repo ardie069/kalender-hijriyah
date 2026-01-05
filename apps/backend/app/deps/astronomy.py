@@ -12,7 +12,7 @@ ts = load.timescale()
 if EPHEMERIS_FILE.exists():
     eph = load(str(EPHEMERIS_FILE))
 else:
-    eph = load("de421.bsp")
+    eph = load("data/de421.bsp")
     eph.save(str(EPHEMERIS_FILE))  # type: ignore
 
 earth = eph["earth"]
