@@ -94,7 +94,10 @@ def get_hijri_date(
     # RUKYAT
     # ==========================
     if method == "rukyat":
-        rukyat_date = get_rukyat_date(noon_jd)
+        current_utc = now_local.astimezone(pytz.utc)
+        current_jd = jd_from_datetime(current_utc, ts)
+
+        rukyat_date = get_rukyat_date(current_jd)
 
         # sebelum hari 29 → aman
         if rukyat_date["day"] < 29:

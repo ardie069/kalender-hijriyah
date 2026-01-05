@@ -23,7 +23,7 @@ CORS_ORIGINS = get_cors_origins()
 
 app = FastAPI(
     title="Kalender Hijriyah API",
-    version="3.0.0",
+    version="3.1.0",
 )
 
 app.state.limiter = limiter
