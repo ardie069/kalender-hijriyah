@@ -128,10 +128,10 @@ kalender-hijriyah/
 │   └── frontend/         # Vue 3 + TypeScript
 │       ├── src/
 │       ├── public/
-│       ├── netlify.toml
 │       └── vite.config.ts
 │
 ├── docs/                 # Dokumentasi falak & arsitektur
+├── netlify.toml
 └── README.md
 
 ```
