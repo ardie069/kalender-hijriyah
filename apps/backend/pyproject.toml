@@ -2,7 +2,7 @@
 name = "kalender-hijriyah-api"
 version = "3.0.0"
 description = "FastAPI backend for Hijri calendar (hisab & rukyat)"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 
 dependencies = [
     "fastapi",
