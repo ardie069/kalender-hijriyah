@@ -25,7 +25,3 @@ Thumbs.db
 *.pyd
 *.log
 *.sqlite3
-
-# Astronomical ephemeris
-*.bsp
-data/*.bsp

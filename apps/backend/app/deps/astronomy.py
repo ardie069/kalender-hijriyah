@@ -1,15 +1,20 @@
 from pathlib import Path
 from skyfield.api import Loader
 
-BASE_DIR = Path(__file__).resolve().parents[2]
-DATA_DIR = BASE_DIR / "data"
-DATA_DIR.mkdir(exist_ok=True)
+CURRENT_DIR = Path(__file__).resolve().parent
+DATA_DIR = CURRENT_DIR.parent.parent / "data"
 
-loader = Loader(str(DATA_DIR))
+if not DATA_DIR.exists():
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-ts = loader.timescale()
-eph = loader("de421.bsp")
+loader = Loader(str(DATA_DIR), expire=False)
 
-earth = eph["earth"]
-sun = eph["sun"]
-moon = eph["moon"]
+try:
+    ts = loader.timescale()
+    eph = loader("de421.bsp")
+
+    earth = eph["earth"]
+    sun = eph["sun"]
+    moon = eph["moon"]
+except Exception as e:
+    print(f"Load Astronomi Gagal: {e}")

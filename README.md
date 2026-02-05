@@ -51,11 +51,10 @@ untuk menghindari inkonsistensi perhitungan.
 
 ### Frontend
 
-- 🌐 **Vue 3 + Vite**
+- 🌐 **Next.js + Tailwind CSS**
 - 🟦 **TypeScript**
 - 🎨 **Tailwind CSS + DaisyUI**
-- 🧠 Pinia (State Management)
-- ☁️ Deploy: **Netlify**
+- ☁️ Deploy: **Vercel**
 
 ---
 
@@ -88,7 +87,7 @@ http://127.0.0.1:8000
 
 ---
 
-3️⃣ Jalankan Frontend (Vue)
+3️⃣ Jalankan Frontend (Next.js)
 
 ```sh
 cd apps/frontend
@@ -99,7 +98,7 @@ npm run dev
 Frontend akan berjalan di:
 
 ```sh
-http://localhost:5173
+http://localhost:3000
 ```
 
 ---
@@ -125,10 +124,10 @@ kalender-hijriyah/
 │   │   ├── data/         # de421.bsp
 │   │   └── pyproject.toml
 │   │
-│   └── frontend/         # Vue 3 + TypeScript
-│       ├── src/
+│   └── web/         # Next.js + Tailwind CSS
+│       ├── app/
 │       ├── public/
-│       └── vite.config.ts
+│       └── next.config.ts
 │
 ├── docs/                 # Dokumentasi falak & arsitektur
 ├── netlify.toml
@@ -205,11 +204,10 @@ from **presentation logic (frontend)** to avoid calendar inconsistencies.
 
 ### Frontend
 
-- 🌐 Vue 3 + Vite
+- 🌐 Next.js
 - 🟦 TypeScript
 - 🎨 Tailwind CSS + DaisyUI
-- 🧠 Pinia
-- ☁️ Deployment: Netlify
+- ☁️ Deployment: Vercel
 
 ---
 

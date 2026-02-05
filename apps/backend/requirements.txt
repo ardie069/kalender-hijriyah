@@ -1,19 +1,15 @@
+# --- Core Web Framework ---
 fastapi
 slowapi
-uvicorn[standard]
+uvicorn
 
-# Astronomy & calendar libraries
+# --- Astronomy (The Soul) ---
 skyfield
 jplephem
-PyMeeus
-sgp4
 numpy
-astral
-convertdate
+PyMeeus
 
-# time & config
+# --- Calendar & Time ---
 pytz
 python-dotenv
-
-# unit testing
-pytest
+convertdate
