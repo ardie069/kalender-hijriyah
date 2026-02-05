@@ -1,6 +1,6 @@
 [project]
 name = "kalender-hijriyah-api"
-version = "3.0.0"
+version = "3.2.0"
 description = "FastAPI backend for Hijri calendar (hisab & rukyat)"
 requires-python = ">=3.10,<3.13"
 
