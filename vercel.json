@@ -1,15 +1,10 @@
 {
     "version": 2,
-    "builds": [
-        {
-            "src": "apps/web/package.json",
-            "use": "@vercel/next"
-        },
-        {
-            "src": "apps/backend/app/main.py",
-            "use": "@vercel/python"
+    "functions": {
+        "apps/backend/app/main.py": {
+            "runtime": "@vercel/python"
         }
-    ],
+    },
     "rewrites": [
         {
             "source": "/api/:path*",
