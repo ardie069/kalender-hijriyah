@@ -11,7 +11,7 @@
             "destination": "apps/backend/app/main.py"
         },
         {
-            "source": "/(.*)",
+            "source": "/((?!api/).*)",
             "destination": "apps/web/$1"
         }
     ]
