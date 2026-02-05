@@ -1,4 +1,4 @@
-from convertdate import islamic # type: ignore
+from convertdate import islamic
 
 
 def jd_from_datetime(dt, ts):
@@ -7,6 +7,14 @@ def jd_from_datetime(dt, ts):
     """
     t = ts.utc(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
     return t.ut1
+
+
+def jd_to_datetime(jd, ts):
+    """
+    Convert Julian Date (UT1 Scale) to a timezone-aware UTC datetime object.
+    """
+    t = ts.ut1_jd(jd)
+    return t.utc_datetime()
 
 
 def julian_to_hijri(jd_float: float):

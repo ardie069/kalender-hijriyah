@@ -1,4 +1,4 @@
-import pytz  # type: ignore
+import pytz
 from datetime import datetime
 
 from app.core.hijri_calculator import get_hijri_date
@@ -39,7 +39,7 @@ def test_global_maghrib_boundary_no_day_jump():
     )
 
     # ❌ BUG LAMA: bisa lompat 2 hari
-    delta = after["day"] - before["day"]  # type: ignore
+    delta = after["day"] - before["day"]
 
     assert delta in (0, 1), f"Global lompat tidak valid: {before} -> {after}"
 
@@ -76,7 +76,7 @@ def test_hisab_maghrib_boundary_stable():
         earth=earth,
     )
 
-    delta = after["day"] - before["day"]  # type: ignore
+    delta = after["day"] - before["day"]
 
     assert delta in (0, 1)
 
@@ -113,7 +113,7 @@ def test_rukyat_maghrib_boundary_no_double_jump():
         earth=earth,
     )
 
-    delta = after["day"] - before["day"]  # type: ignore
+    delta = after["day"] - before["day"]
 
     assert delta >= 0
     assert delta <= 1, f"Rukyat lompat gila: {before} -> {after}"
@@ -151,4 +151,4 @@ def test_no_plus_one_day_bug():
         earth=earth,
     )
 
-    assert b["day"] - a["day"] in (0, 1)  # type: ignore
+    assert b["day"] - a["day"] in (0, 1)

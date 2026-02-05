@@ -1,7 +1,7 @@
 from functools import lru_cache
-from skyfield import almanac  # type: ignore
-from skyfield.api import wgs84  # type: ignore
-import pytz  # type: ignore
+from skyfield import almanac
+from skyfield.api import wgs84
+import pytz
 
 _TS = None
 _EPH = None
@@ -24,8 +24,8 @@ def _cached_sunset(
 ):
     observer = wgs84.latlon(lat, lon)
 
-    t0 = _TS.utc(year, month, day, 0, 0)  # type: ignore
-    t1 = _TS.utc(year, month, day, 23, 59)  # type: ignore
+    t0 = _TS.utc(year, month, day, 0, 0)
+    t1 = _TS.utc(year, month, day, 23, 59)
 
     f = almanac.sunrise_sunset(_EPH, observer)
     times, events = almanac.find_discrete(t0, t1, f)

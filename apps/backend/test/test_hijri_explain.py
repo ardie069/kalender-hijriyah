@@ -1,5 +1,5 @@
 from datetime import datetime
-import pytz  # type: ignore
+import pytz
 from app.core.hijri_explain import explain_hijri_decision
 
 

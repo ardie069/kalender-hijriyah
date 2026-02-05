@@ -1,5 +1,5 @@
 from datetime import date
-import pytz  # type: ignore
+import pytz
 
 from app.core.sun_times import get_sunset_time
 

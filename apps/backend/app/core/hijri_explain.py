@@ -1,4 +1,4 @@
-import pytz  # type: ignore
+import pytz
 from datetime import datetime
 from typing import Any, Dict
 

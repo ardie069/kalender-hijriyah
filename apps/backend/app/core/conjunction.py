@@ -22,7 +22,7 @@ def _cached_conjunction(jd_key: float) -> float:
         _EARTH,
         _SUN,
         _MOON,
-    )  # type: ignore
+    )
 
 
 def get_conjunction_time(
@@ -74,8 +74,8 @@ def _compute_conjunction(
 
         jd += step
 
-    left = best_jd - step  # type: ignore
-    right = best_jd + step  # type: ignore
+    left = best_jd - step
+    right = best_jd + step
 
     while right - left > precision:
         mid = (left + right) / 2

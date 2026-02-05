@@ -1,5 +1,5 @@
 import pytest
-import pytz  # type: ignore
+import pytz
 from datetime import datetime
 from app.deps.astronomy import ts, eph, sun, moon, earth
 
@@ -22,7 +22,7 @@ def dt(y, m, d, h, tz):
 def test_global_maghrib_boundary(astro):
     from app.core.hijri_calculator import get_hijri_date
 
-    now = dt(2026, 1, 18, 19, "Asia/Riyadh")  # malam # type: ignore
+    now = dt(2026, 1, 18, 19, "Asia/Riyadh")  # malam
     h = get_hijri_date(
         21.4225, 39.8262, "global", "Asia/Riyadh", now_local=now, **astro
     )
@@ -34,7 +34,7 @@ def test_global_maghrib_boundary(astro):
 def test_hisab_istikmal_on_29th(astro):
     from app.core.hijri_calculator import get_hijri_date
 
-    now = dt(2026, 1, 19, 5, "Asia/Jakarta")  # type: ignore
+    now = dt(2026, 1, 19, 5, "Asia/Jakarta")
     h = get_hijri_date(-6.2, 106.8, "hisab", "Asia/Jakarta", now_local=now, **astro)
 
     assert h["day"] == 30
@@ -44,7 +44,7 @@ def test_hisab_istikmal_on_29th(astro):
 def test_rukyat_not_29_no_evaluation(astro):
     from app.core.hijri_calculator import get_hijri_date
 
-    now = dt(2026, 1, 18, 17, "Asia/Jakarta")  # type: ignore
+    now = dt(2026, 1, 18, 17, "Asia/Jakarta")
     h = get_hijri_date(-6.2, 106.8, "rukyat", "Asia/Jakarta", now_local=now, **astro)
 
     assert h["day"] != 29  # baru masuk 29
@@ -55,7 +55,7 @@ def test_rukyat_not_29_no_evaluation(astro):
 def test_all_methods_converge_on_1_syaban(astro, method):
     from app.core.hijri_calculator import get_hijri_date
 
-    now = dt(2026, 1, 20, 10, "Asia/Jakarta")  # type: ignore
+    now = dt(2026, 1, 20, 10, "Asia/Jakarta")
     h = get_hijri_date(-6.2, 106.8, method, "Asia/Jakarta", now_local=now, **astro)
 
     assert h["day"] == 1
@@ -72,7 +72,7 @@ def test_no_day_jump_over_1(astro):
             106.8,
             "rukyat",
             "Asia/Jakarta",
-            now_local=dt(2026, 1, d, 19, "Asia/Jakarta"),  # type: ignore
+            now_local=dt(2026, 1, d, 19, "Asia/Jakarta"),
             **astro,
         )
         dates.append(h)

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Request
 from datetime import datetime
-import pytz  # type: ignore
+import pytz
 from app.main import limiter
 from app.core.hijri_calculator import get_hijri_date
 from app.core.month_predictor import predict_end_of_month
@@ -45,13 +45,13 @@ def hijri_date(
     )
 
     return HijriDateResponse(
-        method=method,  # type: ignore
+        method=method,
         location=LocationSchema(
             lat=lat,
             lon=lon,
             timezone=timezone,
         ),
-        hijri_date=HijriDateSchema(**hijri),  # type: ignore
+        hijri_date=HijriDateSchema(**hijri),
         generated_at=now_local,
     )
 

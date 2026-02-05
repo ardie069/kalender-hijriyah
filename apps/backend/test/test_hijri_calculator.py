@@ -1,5 +1,5 @@
 from datetime import datetime
-import pytz  # type: ignore
+import pytz
 
 from app.core.hijri_calculator import get_hijri_date
 
@@ -12,7 +12,7 @@ def test_global_hijri_date_fixed_time(astro):
         lon=39.8262,
         method="global",
         timezone="Asia/Riyadh",
-        now_local=now,  # type: ignore
+        now_local=now,
         **astro,
     )
 
@@ -29,7 +29,7 @@ def test_hisab_day_29_decision_path(astro):
         lon=106.8,
         method="hisab",
         timezone="Asia/Jakarta",
-        now_local=now, # type: ignore
+        now_local=now,
         **astro,
     )
 
@@ -57,5 +57,4 @@ def test_hisab_vs_rukyat_can_differ(astro):
         **astro,
     )
 
-    assert hisab["day"] >= rukyat["day"] # type: ignore
-
+    assert hisab["day"] >= rukyat["day"]

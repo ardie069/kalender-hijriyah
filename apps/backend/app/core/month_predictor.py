@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-import pytz # type: ignore
+import pytz
 from .hijri_calculator import get_hijri_date
 
 

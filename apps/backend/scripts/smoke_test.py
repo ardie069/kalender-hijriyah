@@ -1,5 +1,5 @@
 from datetime import datetime
-import pytz # type: ignore
+import pytz
 
 from app.deps.astronomy import ts, eph, sun, moon, earth
 from app.core.hijri_calculator import get_hijri_date

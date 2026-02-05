@@ -1,5 +1,5 @@
 from datetime import datetime
-import pytz # type: ignore
+import pytz
 
 from app.core.julian import jd_from_datetime
 from app.deps.astronomy import ts

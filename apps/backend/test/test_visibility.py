@@ -1,5 +1,5 @@
 from datetime import datetime
-import pytz # type: ignore
+import pytz
 
 from app.core.visibility import evaluate_visibility
 from app.deps.astronomy import ts, sun, moon, earth
