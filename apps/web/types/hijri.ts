@@ -20,10 +20,20 @@ export interface Location {
  */
 export interface HijriDateResponse {
   method: Method;
-  location: Location;
+  location: {
+    lat: number;
+    lon: number;
+    timezone: string;
+  };
   hijri_date: HijriDate;
+  explanation?: {
+    reasoning: string[];
+    astronomical_data?: {
+      moon_altitude: number;
+      is_visible: boolean;
+    };
+  };
   generated_at: string;
-  explanation: HijriExplanation;
 }
 
 export interface HijriExplanation {
