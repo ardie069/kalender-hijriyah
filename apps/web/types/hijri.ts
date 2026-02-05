@@ -26,13 +26,7 @@ export interface HijriDateResponse {
     timezone: string;
   };
   hijri_date: HijriDate;
-  explanation?: {
-    reasoning: string[];
-    astronomical_data?: {
-      moon_altitude: number;
-      is_visible: boolean;
-    };
-  };
+  explanation?: HijriExplanation;
   generated_at: string;
 }
 

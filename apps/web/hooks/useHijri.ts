@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { Method, HijriDate, HijriEndMonthResponse, HijriExplanation } from "@/types/hijri";
+import type {
+  Method,
+  HijriDate,
+  HijriEndMonthResponse,
+  HijriExplanation,
+} from "@/types/hijri";
 import { fetchHijriDate, fetchHijriEndMonth } from "@/lib/api/hijri";
 import { isLocationInJava, getWeton } from "@/lib/utils/weton";
 
@@ -69,8 +74,8 @@ export function useHijri(method: Method, timezone: string): UseHijriResult {
       ]);
 
       setHijriDate(dateRes.hijri_date);
-      setExplanation(dateRes.explanation);
-      setEndMonthInfo(endRes);
+      setExplanation(dateRes.explanation ?? null);
+      setEndMonthInfo(endRes ?? null);
 
       if (isLocationInJava(currentLat, currentLon)) {
         const now = new Date();
