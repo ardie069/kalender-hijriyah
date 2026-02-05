@@ -7,7 +7,7 @@ import { isLocationInJava, getWeton } from "@/lib/utils/weton";
 
 interface UseHijriResult {
   hijriDate: HijriDate | null;
-  endMonthInfo: Record<string, any> | null;
+  endMonthInfo: Record<string, unknown> | null;
   weton: string | null;
   loading: boolean;
   error: string | null;
@@ -19,7 +19,7 @@ export function useHijri(method: Method, timezone: string): UseHijriResult {
   const [lon, setLon] = useState<number | null>(null);
 
   const [hijriDate, setHijriDate] = useState<HijriDate | null>(null);
-  const [endMonthInfo, setEndMonthInfo] = useState<Record<string, any> | null>(
+  const [endMonthInfo, setEndMonthInfo] = useState<Record<string, unknown> | null>(
     null,
   );
 
@@ -75,7 +75,7 @@ export function useHijri(method: Method, timezone: string): UseHijriResult {
       ]);
 
       setHijriDate(dateRes.hijri_date);
-      setEndMonthInfo(endRes);
+      setEndMonthInfo(endRes as unknown as Record<string, unknown>);
 
       if (isLocationInJava(currentLat, currentLon)) {
         const day = new Date().toLocaleDateString("id-ID", {
