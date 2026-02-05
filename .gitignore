@@ -25,3 +25,5 @@ Thumbs.db
 *.pyd
 *.log
 *.sqlite3
+.vercel
+.env*.local
