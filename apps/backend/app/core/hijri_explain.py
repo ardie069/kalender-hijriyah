@@ -1,5 +1,5 @@
 import pytz
-from datetime import datetime
+from datetime import datetime, time
 from typing import Any, Dict
 
 from .julian import jd_from_datetime, julian_to_hijri
@@ -7,7 +7,8 @@ from .conjunction import get_conjunction_time
 from .visibility import evaluate_visibility
 from .sun_times import get_sunset_time
 from .config import DEFAULT_LOCATION
-from .hijri_calculator import get_hijri_date
+
+from .hijri_calculator import get_hijri_date, _check_historical_lag
 
 
 def explain_hijri_decision(
@@ -27,33 +28,49 @@ def explain_hijri_decision(
     tz = pytz.timezone(timezone)
     now_local = now_local.astimezone(tz)
 
-    # Lokasi referensi
-    if method == "global":
-        ref_lat, ref_lon, ref_zone = DEFAULT_LOCATION["global"]
-    else:
-        ref_lat, ref_lon, ref_zone = lat, lon, timezone
+    # 1. Lokasi & Parameter Material
+    ref_lat, ref_lon, ref_zone = (
+        DEFAULT_LOCATION["global"] if method == "global" else (lat, lon, timezone)
+    )
 
+    # Gunakan kriteria yang sama dengan engine utama biar konsisten
+    SELECTED_CRITERIA = "Wujudul Hilal"
+
+    # 2. Ambil Sunset & Baseline
     sunset_local = get_sunset_time(
         now_local.date(), ref_lat, ref_lon, ref_zone, ts, eph
     )
-
-    if sunset_local is None:
-        return {
-            "error": "sunset_not_available",
-            "method": method,
-        }
+    if not sunset_local:
+        return {"error": "sunset_not_available", "method": method}
 
     after_sunset = now_local >= sunset_local
     sunset_utc = sunset_local.astimezone(pytz.utc)
     sunset_jd = jd_from_datetime(sunset_utc, ts)
 
-    # Hari Hijriah dimulai setelah maghrib
-    effective_jd = sunset_jd + 1 if after_sunset else sunset_jd
+    # Baseline Arithmetic (Hisab Global)
+    noon_local = tz.localize(datetime.combine(now_local.date(), time(12, 0)))
+    noon_jd = jd_from_datetime(noon_local.astimezone(pytz.utc), ts)
+    baseline = julian_to_hijri(noon_jd)
 
-    # Baseline (tanpa keputusan metode)
-    baseline = julian_to_hijri(effective_jd)
+    # 3. Analisis Sejarah (Lagging Check)
+    # Ini buat ngejelasin kenapa Rukyat bisa selisih -1 dari Global
+    is_lagging = False
+    if method == "rukyat":
+        is_lagging = _check_historical_lag(
+            baseline,
+            noon_jd,
+            lat,
+            lon,
+            timezone,
+            ts,
+            eph,
+            sun,
+            moon,
+            earth,
+            criteria=SELECTED_CRITERIA,
+        )
 
-    # Final date dari engine utama
+    # Ambil hasil final dari engine utama
     final_date = get_hijri_date(
         lat,
         lon,
@@ -67,65 +84,69 @@ def explain_hijri_decision(
         earth=earth,
     )
 
+    # 4. Konstruksi Penjelasan (Dialektika Data)
     explanation: Dict[str, Any] = {
         "method": method,
-        "location": {"lat": lat, "lon": lon, "timezone": timezone},
         "after_sunset": after_sunset,
-        "baseline_date": baseline,
+        "is_lagging_from_start": is_lagging,
+        "criteria_used": SELECTED_CRITERIA,
         "final_hijri_date": final_date,
-        "method_relation": _get_method_note(method),
+        "reasoning": [],
     }
 
-    # GLOBAL
+    # Logika Penjelasan:
     if method == "global":
-        explanation["decision"] = "global_standard"
-        return explanation
-
-    # Evaluasi hanya di hari 29
-    if baseline["day"] != 29:
-        explanation["decision"] = "no_evaluation_needed"
-        return explanation
-
-    # Konjungsi dicari SEBELUM hari evaluasi
-    conj_jd = get_conjunction_time(effective_jd - 1, ts, earth, sun, moon)
-    explanation["conjunction"] = {
-        "jd": conj_jd,
-        "before_sunset": conj_jd < sunset_jd,
-    }
-
-    if method == "hisab":
-        explanation["decision"] = (
-            "new_month_by_hisab" if conj_jd < sunset_jd else "istikmal"
+        explanation["reasoning"].append(
+            "Mengikuti standar aritmatika global (Mekkah/Umm al-Qura)."
         )
 
     elif method == "rukyat":
-        visibility = evaluate_visibility(
-            sunset_utc, lat, lon, conj_jd, ts, sun, moon, earth
+        if is_lagging:
+            explanation["reasoning"].append(
+                "Bulan ini dimulai lebih lambat (Lag -1) karena hilal awal bulan tidak memenuhi kriteria visibilitas."
+            )
+        else:
+            explanation["reasoning"].append(
+                "Bulan ini berjalan serentak dengan Hisab karena hilal awal bulan berhasil teramati/memenuhi kriteria."
+            )
+
+    # 5. Uji Materi khusus hari ke-29 (Sidang Isbat)
+    # Kita cek baseline day-nya.
+    effective_day = baseline["day"]
+    if after_sunset:
+        effective_day += 1  # Pendekatan kasar buat cek tgl 29
+
+    if effective_day >= 29:
+        conj_jd = get_conjunction_time(sunset_jd, ts, earth, sun, moon)
+        vis = evaluate_visibility(
+            sunset_utc,
+            lat,
+            lon,
+            conj_jd,
+            ts,
+            sun,
+            moon,
+            earth,
+            criteria=SELECTED_CRITERIA,
         )
-        explanation["visibility"] = {
-            "moon_altitude_deg": visibility["moon_altitude"],
-            "elongation_deg": visibility["elongation"],
-            "is_visible": visibility["is_visible"],
+
+        explanation["astronomical_data"] = {
+            "conjunction_before_sunset": conj_jd < sunset_jd,
+            "moon_altitude": round(vis["moon_altitude"], 2),
+            "elongation": round(vis["elongation"], 2),
+            "is_visible": vis["is_visible"],
         }
-        explanation["decision"] = (
-            "new_month_by_rukyat" if visibility["is_visible"] else "istikmal"
-        )
+
+        if effective_day == 29 and after_sunset:
+            if method == "hisab":
+                res = "Bulan Baru" if conj_jd < sunset_jd else "Istikmal (30 Hari)"
+                explanation["reasoning"].append(
+                    f"Keputusan akhir bulan: {res} berdasarkan posisi konjungsi."
+                )
+            elif method == "rukyat":
+                res = "Bulan Baru" if vis["is_visible"] else "Istikmal (30 Hari)"
+                explanation["reasoning"].append(
+                    f"Keputusan akhir bulan: {res} berdasarkan kriteria visibilitas {SELECTED_CRITERIA}."
+                )
 
     return explanation
-
-
-def _get_method_note(method: str) -> Dict[str, str]:
-    return {
-        "global": {
-            "status": "not_applicable",
-            "note": "Kalender baku berbasis standar Mekkah (Umm al-Qura-like).",
-        },
-        "hisab": {
-            "status": "deterministic",
-            "note": "Penentuan bulan berbasis konjungsi astronomis.",
-        },
-        "rukyat": {
-            "status": "observational",
-            "note": "Penentuan bulan berbasis visibilitas hilal.",
-        },
-    }.get(method, {"status": "unknown", "note": ""})

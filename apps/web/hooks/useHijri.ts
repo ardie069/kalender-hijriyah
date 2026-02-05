@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { Method, HijriDate } from "@/types/hijri";
+import { useEffect, useState, useCallback } from "react";
+import type { Method, HijriDate, HijriEndMonthResponse, HijriExplanation } from "@/types/hijri";
 import { fetchHijriDate, fetchHijriEndMonth } from "@/lib/api/hijri";
 import { isLocationInJava, getWeton } from "@/lib/utils/weton";
 
 interface UseHijriResult {
   hijriDate: HijriDate | null;
-  endMonthInfo: Record<string, unknown> | null;
+  explanation: HijriExplanation | null;
+  endMonthInfo: HijriEndMonthResponse | null;
   weton: string | null;
   loading: boolean;
   error: string | null;
@@ -19,39 +20,32 @@ export function useHijri(method: Method, timezone: string): UseHijriResult {
   const [lon, setLon] = useState<number | null>(null);
 
   const [hijriDate, setHijriDate] = useState<HijriDate | null>(null);
-  const [endMonthInfo, setEndMonthInfo] = useState<Record<string, unknown> | null>(
-    null,
-  );
+  const [explanation, setExplanation] = useState<HijriExplanation | null>(null);
+  const [endMonthInfo, setEndMonthInfo] =
+    useState<HijriEndMonthResponse | null>(null);
 
   const [weton, setWeton] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Resolve Location
-   */
-  function resolveLocation(): Promise<{ lat: number; lon: number }> {
+  const resolveLocation = useCallback((): Promise<{
+    lat: number;
+    lon: number;
+  }> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         reject(new Error("Geolocation not supported"));
         return;
       }
-
       navigator.geolocation.getCurrentPosition(
         (pos) =>
-          resolve({
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-          }),
+          resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
         reject,
       );
     });
-  }
+  }, []);
 
-  /**
-   * Load Data
-   */
-  async function loadHijri() {
+  const loadHijri = useCallback(async () => {
     if (!timezone) return;
 
     setLoading(true);
@@ -75,33 +69,33 @@ export function useHijri(method: Method, timezone: string): UseHijriResult {
       ]);
 
       setHijriDate(dateRes.hijri_date);
-      setEndMonthInfo(endRes as unknown as Record<string, unknown>);
+      setExplanation(dateRes.explanation);
+      setEndMonthInfo(endRes);
 
       if (isLocationInJava(currentLat, currentLon)) {
-        const day = new Date().toLocaleDateString("id-ID", {
-          weekday: "long",
-        });
-        setWeton(`${day === "Minggu" ? "Ahad" : day} ${getWeton(new Date())}`);
+        const now = new Date();
+        const dayName = now.toLocaleDateString("id-ID", { weekday: "long" });
+        const fixDay = dayName === "Minggu" ? "Ahad" : dayName;
+
+        setWeton(`${fixDay} ${getWeton(now)}`);
       } else {
         setWeton(null);
       }
     } catch (err) {
-      setError("Gagal mengambil data Hijriyah");
+      setError("Gagal mensinkronkan data dengan posisi benda langit.");
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }
+  }, [lat, lon, method, timezone, resolveLocation]);
 
-  /**
-   * Effect
-   */
   useEffect(() => {
     loadHijri();
-  }, [method, timezone]);
+  }, [loadHijri]);
 
   return {
     hijriDate,
+    explanation,
     endMonthInfo,
     weton,
     loading,

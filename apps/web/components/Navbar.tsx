@@ -35,7 +35,7 @@ export default function Navbar() {
             {/* Theme Toggle - Selalu muncul tapi kecil di mobile */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
               aria-label="Toggle Theme"
             >
               {mounted ? (darkMode ? "🌙" : "☀️") : "..."}

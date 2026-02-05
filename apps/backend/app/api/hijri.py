@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Request, Query
 from datetime import datetime
 import pytz
 from app.main import limiter
@@ -16,10 +16,7 @@ from app.deps.astronomy import ts, eph, sun, moon, earth
 router = APIRouter()
 
 
-@router.get(
-    "/hijri-date",
-    response_model=HijriDateResponse,
-)
+@router.get("/hijri-date", response_model=HijriDateResponse)
 @limiter.limit("30/minute")
 def hijri_date(
     lat: float,
@@ -27,11 +24,32 @@ def hijri_date(
     method: str,
     timezone: str,
     request: Request,
+    now: str = Query(None, description="ISO format date string"),
 ):
+    if now:
+        now_local = datetime.fromisoformat(now)
+        if now_local.tzinfo is None:
+            now_local = pytz.timezone(timezone).localize(now_local)
+    else:
+        now_local = datetime.now(pytz.timezone(timezone))
 
-    now_local = datetime.now(pytz.timezone(timezone))
-
+    # 1. Ambil Tanggal Final (Engine Utama)
     hijri = get_hijri_date(
+        lat,
+        lon,
+        method,
+        timezone,
+        now_local=now_local,
+        ts=ts,
+        eph=eph,
+        sun=sun,
+        moon=moon,
+        earth=earth,
+    )
+
+    # 2. Ambil Penjelasan (Reasoning) - Kita gabungkan di sini!
+    # Jadi frontend nggak perlu fetch dua kali.
+    explanation = explain_hijri_decision(
         lat,
         lon,
         method,
@@ -46,39 +64,10 @@ def hijri_date(
 
     return HijriDateResponse(
         method=method,
-        location=LocationSchema(
-            lat=lat,
-            lon=lon,
-            timezone=timezone,
-        ),
+        location=LocationSchema(lat=lat, lon=lon, timezone=timezone),
         hijri_date=HijriDateSchema(**hijri),
+        explanation=explanation,
         generated_at=now_local,
-    )
-
-
-@router.get("/hijri-explain")
-@limiter.limit("10/minute")
-def hijri_explain(
-    request: Request,
-    lat: float,
-    lon: float,
-    method: str,
-    timezone: str,
-    now: str,
-):
-    now_local = datetime.fromisoformat(now).replace(tzinfo=pytz.utc)
-
-    return explain_hijri_decision(
-        lat=lat,
-        lon=lon,
-        method=method,
-        timezone=timezone,
-        now_local=now_local,
-        ts=ts,
-        eph=eph,
-        sun=sun,
-        moon=moon,
-        earth=earth,
     )
 
 
@@ -91,9 +80,6 @@ def hijri_predict_end(
     method: str,
     timezone: str,
 ):
-    """
-    Prediksi apakah bulan hijriyah berakhir di hari ke-29 atau ke-30.
-    """
     tz = pytz.timezone(timezone)
     now_local = datetime.now(tz)
 
@@ -111,11 +97,7 @@ def hijri_predict_end(
 
     return HijriEndMonthResponse(
         method=method,
-        location=LocationSchema(
-            lat=lat,
-            lon=lon,
-            timezone=timezone,
-        ),
+        location=LocationSchema(lat=lat, lon=lon, timezone=timezone),
         generated_at=now_local,
         **result,
     )

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal, Optional, Dict, Any
 
 HijriMethod = Literal["global", "hisab", "rukyat"]
 
@@ -21,6 +21,7 @@ class HijriDateResponse(BaseModel):
     method: HijriMethod
     location: LocationSchema
     hijri_date: HijriDateSchema
+    explanation: Optional[Dict[str, Any]] = None
     generated_at: datetime
 
 

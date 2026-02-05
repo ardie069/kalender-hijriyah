@@ -1,8 +1,8 @@
 export type Method = "global" | "hisab" | "rukyat";
 
-/* =======================
-   BASIC
-======================= */
+/**
+ * Basic
+ */
 export interface HijriDate {
   year: number;
   month: number;
@@ -15,19 +15,28 @@ export interface Location {
   timezone: string;
 }
 
-/* =======================
-   /hijri-date
-======================= */
+/**
+ * /hijri-date
+ */
 export interface HijriDateResponse {
   method: Method;
   location: Location;
   hijri_date: HijriDate;
-  generated_at: string; // ISO datetime
+  generated_at: string;
+  explanation: HijriExplanation;
 }
 
-/* =======================
-   /hijri-end-month
-======================= */
+export interface HijriExplanation {
+  reasoning: string[];
+  astronomical_data?: {
+    moon_altitude: number;
+    is_visible: boolean;
+  };
+}
+
+/**
+ * /hijri-end-month
+ */
 export interface HijriVisibility {
   moon_altitude: number;
   elongation: number;
@@ -41,14 +50,4 @@ export interface HijriEndMonthResponse {
   estimated_end_of_month: HijriDate | null;
   visibility?: HijriVisibility;
   message?: string | null;
-}
-
-/* =======================
-   /hijri-explain
-======================= */
-export interface HijriExplainResponse {
-  method: Method;
-  decision: string;
-  after_sunset: boolean;
-  final_hijri_date: HijriDate;
 }

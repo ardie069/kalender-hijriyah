@@ -29,10 +29,8 @@ export default function HomePage() {
 
   const [selectedMethod, setSelectedMethod] = useState<HijriMethod>("global");
 
-  const { hijriDate, endMonthInfo, weton, loading, error } = useHijri(
-    selectedMethod,
-    userTimezone,
-  );
+  const { hijriDate, explanation, endMonthInfo, weton, loading, error } =
+    useHijri(selectedMethod, userTimezone);
 
   return (
     <main
@@ -63,6 +61,7 @@ export default function HomePage() {
           <div className="relative pt-4 border-t border-current/10">
             <HijriDate
               hijriDate={hijriDate}
+              explanation={explanation}
               endMonthInfo={endMonthInfo}
               weton={weton}
               loading={loading}
