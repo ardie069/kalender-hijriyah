@@ -52,11 +52,11 @@ def _compute_conjunction(
     earth,
     sun,
     moon,
-    max_days=2,
+    max_days=3,
     step=0.01,
     precision=1e-5,
 ):
-    jd = jd_start
+    jd = jd_start - max_days
     limit = jd_start + max_days
     min_diff = float("inf")
     best_jd = None

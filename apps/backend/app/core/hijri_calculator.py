@@ -18,14 +18,14 @@ def get_hijri_date(lat, lon, method, timezone, *, now_local, ts, eph, sun, moon,
         DEFAULT_LOCATION["global"] if method == "global" else (lat, lon, timezone)
     )
 
-    selected_criteria = "Wujudul Hilal" if method == "rukyat" else "MABIMS"
+    selected_criteria = "MABIMS" if method == "rukyat" else "Wujudul Hilal"
 
     noon_local = tz.localize(datetime.combine(now_local.date(), time(12, 0)))
     noon_jd = jd_from_datetime(noon_local.astimezone(pytz.utc), ts)
     current_date = julian_to_hijri(noon_jd)
 
     # 2. Penyesuaian Rukyat
-    if method == "rukyat":
+    if method in ("rukyat", "hisab"):
         is_lagging = _check_historical_lag(
             current_date,
             noon_jd,
