@@ -1,23 +1,50 @@
-from pydantic import BaseModel
+import numpy as np
+from pydantic import BaseModel, field_validator, ConfigDict
 from datetime import datetime
 from typing import Literal, Optional, Dict, Any
 
 HijriMethod = Literal["global", "hisab", "rukyat"]
 
 
-class HijriDateSchema(BaseModel):
+def sanitize_numpy(v: Any) -> Any:
+    """Fungsi pembantu untuk konversi rekursif tipe NumPy ke Python standar."""
+    if isinstance(v, np.bool_):
+        return bool(v)
+    if isinstance(v, (np.floating, np.float64, np.float32)):
+        return float(v)
+    if isinstance(v, (np.integer, np.int64, np.int32)):
+        return int(v)
+    if isinstance(v, dict):
+        return {k: sanitize_numpy(val) for k, val in v.items()}
+    if isinstance(v, list):
+        return [sanitize_numpy(i) for i in v]
+    return v
+
+
+class NumPyBaseModel(BaseModel):
+    """Base model yang otomatis membersihkan tipe data NumPy."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def validate_numpy(cls, v: Any) -> Any:
+        return sanitize_numpy(v)
+
+
+class HijriDateSchema(NumPyBaseModel):
     year: int
     month: int
     day: int
 
 
-class LocationSchema(BaseModel):
+class LocationSchema(NumPyBaseModel):
     lat: float
     lon: float
     timezone: str
 
 
-class HijriDateResponse(BaseModel):
+class HijriDateResponse(NumPyBaseModel):
     method: HijriMethod
     location: LocationSchema
     hijri_date: HijriDateSchema
@@ -25,19 +52,20 @@ class HijriDateResponse(BaseModel):
     generated_at: datetime
 
 
-class HijriEndMonthEstimate(BaseModel):
-    hijri: Optional[HijriDateSchema] = None
-    moon_age: Optional[float] = None
-    moon_altitude: Optional[float] = None
-    elongation: Optional[float] = None
-    is_visible: Optional[bool] = None
+class HijriEndMonthEstimate(NumPyBaseModel):
+    """Data astronomis untuk akhir bulan."""
+
+    moon_age: float
+    moon_altitude: float
+    elongation: float
+    is_visible: bool
 
 
-class HijriEndMonthResponse(BaseModel):
+class HijriEndMonthResponse(NumPyBaseModel):
     method: str
     location: LocationSchema
     generated_at: datetime
-
     today: HijriDateSchema
-    estimated_end_of_month: Optional[HijriEndMonthEstimate] = None
+    estimated_end_of_month: Optional[HijriDateSchema] = None
+    visibility: Optional[HijriEndMonthEstimate] = None
     message: Optional[str] = None

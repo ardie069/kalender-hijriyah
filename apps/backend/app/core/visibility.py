@@ -2,12 +2,11 @@ from skyfield.api import wgs84
 
 
 def get_moon_altitude(dt_utc, lat, lon, ts, moon):
-    t = ts.utc(
-        dt_utc.year, dt_utc.month, dt_utc.day, dt_utc.hour, dt_utc.minute, dt_utc.second
-    )
+    """Mengambil tinggi hilal dalam derajat (standard float)."""
+    t = ts.from_datetime(dt_utc)
     observer = wgs84.latlon(lat, lon)
     alt, _, _ = observer.at(t).observe(moon).apparent().altaz()
-    return alt.degrees
+    return float(alt.degrees)
 
 
 def evaluate_visibility(
@@ -21,37 +20,42 @@ def evaluate_visibility(
     earth,
     criteria="MABIMS",
 ):
-    t = ts.utc(
-        sunset_dt_utc.year,
-        sunset_dt_utc.month,
-        sunset_dt_utc.day,
-        sunset_dt_utc.hour,
-        sunset_dt_utc.minute,
-        sunset_dt_utc.second,
-    )
+    """
+    Evaluasi visibilitas hilal berdasarkan kriteria tertentu.
+    Mengonversi semua output NumPy ke tipe data Python standar.
+    """
+    # 1. Inisialisasi Waktu dan Observer
+    t = ts.from_datetime(sunset_dt_utc)
     topos = wgs84.latlon(latitude_degrees=lat, longitude_degrees=lon)
     observer = earth + topos
 
+    # 2. Perhitungan Astronomi (Apparent Position)
     moon_app = observer.at(t).observe(moon).apparent()
     sun_app = observer.at(t).observe(sun).apparent()
 
-    alt_moon, _, _ = moon_app.altaz()
-    elongation = moon_app.separation_from(sun_app).degrees
-    moon_age_hours = (t.tt - conjunction_jd) * 24
+    alt_moon_deg = alt_moon, _, _ = moon_app.altaz()
+    alt_deg = float(alt_moon_deg[0].degrees)
+    elongation_deg = float(moon_app.separation_from(sun_app).degrees)
 
-    # Dialektika Kriteria:
-    # 1. MABIMS: Standar Pemerintah
-    # 2. Wujudul Hilal: Standar Muhammadiyah/Hisab
+    # Perhitungan umur bulan dalam jam
+    moon_age_hours = float((t.tt - conjunction_jd) * 24)
 
+    # 3. Dialektika Kriteria (Logic)
     if criteria == "Wujudul Hilal":
-        is_visible = alt_moon.degrees > 0
+        # Standar: Matahari terbenam dulu, lalu bulan di atas ufuk (alt > 0)
+        is_visible = alt_deg > 0
     else:
-        is_visible = alt_moon.degrees >= 3 and elongation >= 6.4 and moon_age_hours >= 8
+        # Standar MABIMS Baru (2022): Alt >= 3 & Elongasi >= 6.4
+        # Umur bulan >= 8 jam biasanya jadi pendukung
+        is_visible = (
+            (alt_deg >= 3.0) and (elongation_deg >= 6.4) and (moon_age_hours >= 8.0)
+        )
 
+    # 4. Return Data (Clean & Serialized)
     return {
-        "moon_altitude": alt_moon.degrees,
-        "elongation": elongation,
+        "moon_altitude": alt_deg,
+        "elongation": elongation_deg,
         "moon_age": moon_age_hours,
-        "is_visible": is_visible,
-        "criteria_used": criteria,
+        "is_visible": bool(is_visible),  # WAJIB: Casting ke standard bool
+        "criteria_used": str(criteria),
     }
