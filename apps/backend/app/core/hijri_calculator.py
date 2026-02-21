@@ -13,7 +13,6 @@ def get_hijri_date(lat, lon, method, timezone, *, now_local, ts, eph, sun, moon,
     tz = pytz.timezone(timezone)
     now_local = now_local.astimezone(tz)
 
-    # 1. Lokasi & Baseline
     ref_lat, ref_lon, ref_zone = (
         DEFAULT_LOCATION["global"] if method == "global" else (lat, lon, timezone)
     )
@@ -24,7 +23,6 @@ def get_hijri_date(lat, lon, method, timezone, *, now_local, ts, eph, sun, moon,
     noon_jd = jd_from_datetime(noon_local.astimezone(pytz.utc), ts)
     current_date = julian_to_hijri(noon_jd)
 
-    # 2. Penyesuaian Rukyat
     if method in ("rukyat", "hisab"):
         is_lagging = _check_historical_lag(
             current_date,
@@ -42,13 +40,11 @@ def get_hijri_date(lat, lon, method, timezone, *, now_local, ts, eph, sun, moon,
         if is_lagging:
             current_date = _decrement_hijri_day(current_date)
 
-    # 3. Cek Sunset untuk Pergantian Hari
     sunset_local = get_sunset_time(
         now_local.date(), ref_lat, ref_lon, ref_zone, ts, eph
     )
     after_sunset = now_local >= sunset_local if sunset_local else False
 
-    # Jika Belum Maghrib, return baseline yang sudah di-adjust
     if not after_sunset:
         return current_date
 
@@ -56,11 +52,9 @@ def get_hijri_date(lat, lon, method, timezone, *, now_local, ts, eph, sun, moon,
     # LOGIKA SETELAH MAGHRIB
     # ==========================
 
-    # Jika bukan tgl 29, semua metode tinggal +1 hari
     if current_date["day"] != 29:
         return _increment_hijri_day(current_date)
 
-    # Kondisi Sore Hari Tanggal 29 (Sidang Isbat)
     sunset_utc = sunset_local.astimezone(pytz.utc)
     sunset_jd = jd_from_datetime(sunset_utc, ts)
     conj_jd = get_conjunction_time(sunset_jd, ts, earth, sun, moon)
