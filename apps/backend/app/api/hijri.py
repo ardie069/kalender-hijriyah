@@ -90,7 +90,6 @@ def hijri_predict_end(
     )
 
     return HijriEndMonthResponse(
-        method=method,
         location=LocationSchema(lat=lat, lon=lon, timezone=timezone),
         generated_at=now_local,
         **result
