@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Request, Query
+from fastapi import APIRouter, Request, Query, HTTPException
 from datetime import datetime
 import pytz
-from app.main import limiter
+from app.deps.rate_limit import limiter
 from app.core.hijri_calculator import get_hijri_date
 from app.core.month_predictor import predict_end_of_month
 from app.core.hijri_explain import explain_hijri_decision
@@ -29,7 +29,10 @@ def hijri_date(
     now: str = Query(None),
 ):
 
-    tz = pytz.timezone(timezone)
+    try:
+        tz = pytz.timezone(timezone)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Timezone invalid")
 
     if now:
         now_local = datetime.fromisoformat(now)

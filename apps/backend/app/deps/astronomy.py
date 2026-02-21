@@ -12,9 +12,6 @@ loader = Loader(str(DATA_DIR), expire=False)
 try:
     ts = loader.timescale()
     eph = loader("de421.bsp")
-
-    earth = eph["earth"]
-    sun = eph["sun"]
-    moon = eph["moon"]
+    earth, sun, moon = eph["earth"], eph["sun"], eph["moon"]
 except Exception as e:
-    print(f"Load Astronomi Gagal: {e}")
+    raise RuntimeError(f"Gagal memuat data astronomi: {e}")

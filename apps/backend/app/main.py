@@ -15,7 +15,9 @@ load_dotenv()
 
 def get_cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "")
-    return [o.strip() for o in raw.split(",") if o.strip()]
+    origins = [o.strip() for o in raw.split(",") if o.strip()]
+
+    return origins if origins else ["http://localhost:3000"]
 
 
 CORS_ORIGINS = get_cors_origins()

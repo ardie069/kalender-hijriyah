@@ -39,59 +39,46 @@ def get_conjunction_time(
     return _cached_conjunction(jd_key)
 
 
-def _get_ra_dec(body, jd, ts, earth):
+def _get_diff_lon(jd, ts, earth, sun, moon):
     t = ts.tt(jd=jd)
-    astrometric = earth.at(t).observe(body).apparent()
-    ra, dec, _ = astrometric.radec()
-    return ra.hours, dec.degrees
+    e = earth.at(t)
+    _, slon, _ = e.observe(sun).apparent().ecliptic_latlon()
+    _, mlon, _ = e.observe(moon).apparent().ecliptic_latlon()
+
+    return (mlon.degrees - slon.degrees + 180) % 360 - 180
 
 
 def _compute_conjunction(
-    jd_start,
-    ts,
-    earth,
-    sun,
-    moon,
-    max_days=3,
-    step=0.01,
-    precision=1e-5,
+    jd_start, ts, earth, sun, moon, max_days=2, step=0.1, precision=1e-6
 ):
+    """
+    Mencari waktu konjungsi (saat selisih bujur ekliptika Matahari dan Bulan nol).
+    """
     jd = jd_start - max_days
     limit = jd_start + max_days
-    min_diff = float("inf")
-    best_jd = None
+
+    last_diff = _get_diff_lon(jd, ts, earth, sun, moon)
+    found_jd = jd
 
     while jd < limit:
-        ra_moon, _ = _get_ra_dec(moon, jd, ts, earth)
-        ra_sun, _ = _get_ra_dec(sun, jd, ts, earth)
-
-        diff = abs(ra_moon - ra_sun)
-        diff = min(diff, 24 - diff)
-
-        if diff < min_diff:
-            min_diff = diff
-            best_jd = jd
-
         jd += step
+        current_diff = _get_diff_lon(jd, ts, earth, sun, moon)
 
-    left = best_jd - step
-    right = best_jd + step
+        if last_diff < 0 and current_diff >= 0:
+            found_jd = jd
+            break
+        last_diff = current_diff
+
+    left = found_jd - step
+    right = found_jd
 
     while right - left > precision:
         mid = (left + right) / 2
-        ra_moon, _ = _get_ra_dec(moon, mid, ts, earth)
-        ra_sun, _ = _get_ra_dec(sun, mid, ts, earth)
+        mid_diff = _get_diff_lon(mid, ts, earth, sun, moon)
 
-        diff = abs(ra_moon - ra_sun)
-        diff = min(diff, 24 - diff)
-
-        if diff < min_diff:
-            min_diff = diff
-            best_jd = mid
-
-        if ra_moon > ra_sun:
+        if mid_diff > 0:
             right = mid
         else:
             left = mid
 
-    return best_jd
+    return (left + right) / 2

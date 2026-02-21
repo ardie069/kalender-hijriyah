@@ -40,11 +40,10 @@ def evaluate_visibility(
 
     if criteria == "Wujudul Hilal":
         is_visible = moon_age_hours > 0 and alt_deg > 0
+    elif criteria == "MABIMS":
+        is_visible = alt_deg >= 3.0 and elongation_deg >= 6.4
     else:
-        meets_geometry = alt_deg >= 3.0 and elongation_deg >= 6.4
-        meets_age = moon_age_hours >= 8.0
-
-        is_visible = meets_geometry and meets_age
+        is_visible = False
 
     return {
         "moon_altitude": alt_deg,
