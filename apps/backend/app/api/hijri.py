@@ -9,7 +9,9 @@ from app.schemas.hijri import (
     HijriDateResponse,
     HijriDateSchema,
     LocationSchema,
+    HijriMethod,
     HijriEndMonthResponse,
+    HijriExplanationSchema,
 )
 from app.deps.astronomy import ts, eph, sun, moon, earth
 
@@ -21,19 +23,21 @@ router = APIRouter()
 def hijri_date(
     lat: float,
     lon: float,
-    method: str,
+    method: HijriMethod,
     timezone: str,
     request: Request,
-    now: str = Query(None, description="ISO format date string"),
+    now: str = Query(None),
 ):
+
+    tz = pytz.timezone(timezone)
+
     if now:
         now_local = datetime.fromisoformat(now)
         if now_local.tzinfo is None:
-            now_local = pytz.timezone(timezone).localize(now_local)
+            now_local = tz.localize(now_local)
     else:
-        now_local = datetime.now(pytz.timezone(timezone))
+        now_local = datetime.now(tz)
 
-    # 1. Ambil Tanggal Final (Engine Utama)
     hijri = get_hijri_date(
         lat,
         lon,
@@ -47,9 +51,7 @@ def hijri_date(
         earth=earth,
     )
 
-    # 2. Ambil Penjelasan (Reasoning) - Kita gabungkan di sini!
-    # Jadi frontend nggak perlu fetch dua kali.
-    explanation = explain_hijri_decision(
+    explanation_dict = explain_hijri_decision(
         lat,
         lon,
         method,
@@ -66,7 +68,7 @@ def hijri_date(
         method=method,
         location=LocationSchema(lat=lat, lon=lon, timezone=timezone),
         hijri_date=HijriDateSchema(**hijri),
-        explanation=explanation,
+        explanation=explanation_dict,
         generated_at=now_local,
     )
 
@@ -77,25 +79,18 @@ def hijri_predict_end(
     request: Request,
     lat: float,
     lon: float,
-    method: str,
+    method: HijriMethod,
     timezone: str,
 ):
     tz = pytz.timezone(timezone)
     now_local = datetime.now(tz)
 
     result = predict_end_of_month(
-        lat,
-        lon,
-        method,
-        timezone,
-        ts=ts,
-        eph=eph,
-        sun=sun,
-        moon=moon,
-        earth=earth,
+        lat, lon, method, timezone, ts=ts, eph=eph, sun=sun, moon=moon, earth=earth
     )
 
     return HijriEndMonthResponse(
+        method=method,
         location=LocationSchema(lat=lat, lon=lon, timezone=timezone),
         generated_at=now_local,
         **result

@@ -1,7 +1,7 @@
 import numpy as np
 from pydantic import BaseModel, field_validator, ConfigDict
 from datetime import datetime
-from typing import Literal, Optional, Dict, Any
+from typing import Literal, Optional, Any
 
 HijriMethod = Literal["global", "hisab", "rukyat"]
 
@@ -46,7 +46,7 @@ class LocationSchema(NumPyBaseModel):
 
 class HijriAstronomicalDataSchema(NumPyBaseModel):
     moon_altitude: float
-    elongaton: float
+    elongation: float
     moon_age: float
     is_visible: bool
 
@@ -56,6 +56,7 @@ class HijriExplanationSchema(NumPyBaseModel):
     after_sunset: bool
     criteria_used: str
     reasoning: list[str]
+    decision: str
     astronomical_data: Optional[HijriAstronomicalDataSchema] = None
 
 
@@ -63,7 +64,7 @@ class HijriDateResponse(NumPyBaseModel):
     method: HijriMethod
     location: LocationSchema
     hijri_date: HijriDateSchema
-    explanation: Optional[HijriAstronomicalDataSchema] = None
+    explanation: Optional[HijriExplanationSchema] = None
     generated_at: datetime
 
 

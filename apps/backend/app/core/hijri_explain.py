@@ -64,22 +64,24 @@ def explain_hijri_decision(
 
     explanation: Dict[str, Any] = {
         "method": method,
-        "baseline_date": baseline,
-        "final_hijri_date": final_date,
         "after_sunset": bool(after_sunset),
         "criteria_used": SELECTED_CRITERIA,
         "reasoning": [],
+        "astronomical_data": None,
     }
 
     # --- Metode Global ---
     if method == "global":
-        explanation["decision"] = "global_standard"
-        explanation["reasoning"].append(
-            "Mengikuti standar kalender aritmatika internasional (Umm al-Qura/Mekkah)."
-        )
-        explanation["reasoning"].append(
-            "Pergantian bulan sudah ditetapkan berdasarkan siklus rata-rata bulan tanpa bergantung pada visibilitas lokal."
-        )
+        explanation = {
+            "method": method,
+            "after_sunset": bool(after_sunset),
+            "criteria_used": "Arithmetic (Umm al-Qura)",
+            "reasoning": [
+                "Mengikuti standar kalender aritmatika internasional (Umm al-Qura/Mekkah).",
+                "Pergantian bulan sudah ditetapkan berdasarkan siklus rata-rata bulan tanpa bergantung pada visibilitas lokal.",
+            ],
+            "decision": "global_standard",
+        }
         return explanation
 
     # --- Metode Hisab & Rukyat ---
@@ -107,7 +109,7 @@ def explain_hijri_decision(
             "Siklus bulan berjalan normal sesuai dengan kriteria astronomis yang ditetapkan."
         )
 
-    effective_day = baseline["day"] - (1 if is_lagging else 0)
+    effective_day = final_date["day"]
 
     if effective_day < 29:
         explanation["decision"] = "no_evaluation_needed"
@@ -125,11 +127,6 @@ def explain_hijri_decision(
         earth,
         criteria=SELECTED_CRITERIA,
     )
-
-    explanation["conjunction"] = {
-        "conjunction_jd": float(conj_jd),
-        "conjunction_before_sunset": bool(conj_jd < sunset_jd),
-    }
 
     explanation["astronomical_data"] = {
         "moon_altitude": float(round(vis["moon_altitude"], 2)),
