@@ -44,11 +44,26 @@ class LocationSchema(NumPyBaseModel):
     timezone: str
 
 
+class HijriAstronomicalDataSchema(NumPyBaseModel):
+    moon_altitude: float
+    elongaton: float
+    moon_age: float
+    is_visible: bool
+
+
+class HijriExplanationSchema(NumPyBaseModel):
+    method: HijriMethod
+    after_sunset: bool
+    criteria_used: str
+    reasoning: list[str]
+    astronomical_data: Optional[HijriAstronomicalDataSchema] = None
+
+
 class HijriDateResponse(NumPyBaseModel):
     method: HijriMethod
     location: LocationSchema
     hijri_date: HijriDateSchema
-    explanation: Optional[Dict[str, Any]] = None
+    explanation: Optional[HijriAstronomicalDataSchema] = None
     generated_at: datetime
 
 

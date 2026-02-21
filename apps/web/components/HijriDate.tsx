@@ -57,7 +57,7 @@ export default function HijriDate({
       <HijriInfoCard hijriDate={hijriDate} weton={weton} method={method} />
 
       {/* Reasoning Section (The Scientific Soul) */}
-      {explanation && explanation.reasoning.length > 0 && (
+      {explanation?.reasoning?.length ? (
         <div className="p-5 rounded-4xl bg-black/3 dark:bg-white/3 border border-current/5 text-left transition-all hover:bg-black/5 dark:hover:bg-white/5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">
@@ -109,7 +109,7 @@ export default function HijriDate({
             </div>
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Prediksi Akhir Bulan */}
       {endMonthInfo && (

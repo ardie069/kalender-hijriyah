@@ -62,6 +62,8 @@ export interface HijriVisibility {
  */
 export interface HijriEndMonthResponse {
   method: Method;
+  location: Location;
+  generated_at: string;
   today: HijriDate;
   estimated_end_of_month: HijriDate | null;
   visibility?: HijriVisibility;

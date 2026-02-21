@@ -1,6 +1,6 @@
 import pytz
 from datetime import datetime, time
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from .julian import jd_from_datetime, julian_to_hijri
 from .conjunction import get_conjunction_time
@@ -28,14 +28,12 @@ def explain_hijri_decision(
     tz = pytz.timezone(timezone)
     now_local = now_local.astimezone(tz)
 
-    # 1. Parameter Lokasi & Kriteria
     ref_lat, ref_lon, ref_zone = (
         DEFAULT_LOCATION["global"] if method == "global" else (lat, lon, timezone)
     )
 
     SELECTED_CRITERIA = "MABIMS" if method == "rukyat" else "Wujudul Hilal"
 
-    # 2. Ambil Sunset & Baseline Waktu
     sunset_local = get_sunset_time(
         now_local.date(), ref_lat, ref_lon, ref_zone, ts, eph
     )
@@ -51,7 +49,6 @@ def explain_hijri_decision(
     noon_jd = jd_from_datetime(noon_local.astimezone(pytz.utc), ts)
     baseline = julian_to_hijri(noon_jd)
 
-    # 3. Sinkronisasi dengan Engine Utama
     final_date = get_hijri_date(
         lat,
         lon,
@@ -65,7 +62,6 @@ def explain_hijri_decision(
         earth=earth,
     )
 
-    # 4. Konstruksi Penjelasan (Structured Response)
     explanation: Dict[str, Any] = {
         "method": method,
         "baseline_date": baseline,
@@ -88,7 +84,6 @@ def explain_hijri_decision(
 
     # --- Metode Hisab & Rukyat ---
 
-    # Pengecekan Lagging (Historis)
     is_lagging = _check_historical_lag(
         baseline,
         noon_jd,
@@ -112,15 +107,12 @@ def explain_hijri_decision(
             "Siklus bulan berjalan normal sesuai dengan kriteria astronomis yang ditetapkan."
         )
 
-    # Tentukan effective_day berdasarkan baseline (sebelum adjust)
-    effective_day = baseline["day"]
+    effective_day = baseline["day"] - (1 if is_lagging else 0)
 
-    # Jika bukan hari ke 28+, tidak perlu evaluasi astronomis detail
-    if effective_day < 28:
+    if effective_day < 29:
         explanation["decision"] = "no_evaluation_needed"
         return explanation
 
-    # 5. Evaluasi Astronomis (hari ke-28+)
     conj_jd = get_conjunction_time(sunset_jd, ts, earth, sun, moon)
     vis = evaluate_visibility(
         sunset_utc,
@@ -134,21 +126,18 @@ def explain_hijri_decision(
         criteria=SELECTED_CRITERIA,
     )
 
-    # Data konjungsi (selalu tersedia untuk hisab & rukyat pada hari 28+)
     explanation["conjunction"] = {
         "conjunction_jd": float(conj_jd),
         "conjunction_before_sunset": bool(conj_jd < sunset_jd),
     }
 
-    # Data visibilitas (selalu tersedia untuk hisab & rukyat pada hari 28+)
-    explanation["visibility"] = {
+    explanation["astronomical_data"] = {
         "moon_altitude": float(round(vis["moon_altitude"], 2)),
         "elongation": float(round(vis["elongation"], 2)),
         "moon_age": float(round(vis["moon_age"], 2)),
         "is_visible": bool(vis["is_visible"]),
     }
 
-    # Keputusan pada tanggal 29 setelah maghrib
     if effective_day == 29 and after_sunset:
         if method == "hisab":
             if conj_jd < sunset_jd:
