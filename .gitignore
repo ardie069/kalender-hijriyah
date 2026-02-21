@@ -9,6 +9,8 @@ package-lock.json
 
 # Environment variables
 .env
+.env*
+!.env.example
 
 # Distribution files and build artifacts
 dist/
