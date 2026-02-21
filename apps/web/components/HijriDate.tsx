@@ -2,6 +2,7 @@
 
 import HijriInfoCard from "./HijriInfoCard";
 import HijriPrediction from "./HijriPrediction";
+import { formatGeneratedTime } from "@/lib/utils/timezone";
 import type {
   HijriDate as HijriDateType,
   Method,
@@ -17,6 +18,7 @@ interface HijriDateProps {
   error: string | null;
   method: Method;
   explanation?: HijriExplanation | null;
+  generatedAt?: string;
 }
 
 export default function HijriDate({
@@ -27,6 +29,7 @@ export default function HijriDate({
   error,
   method,
   explanation,
+  generatedAt,
 }: HijriDateProps) {
   if (loading) {
     return (
@@ -120,6 +123,19 @@ export default function HijriDate({
               message: endMonthInfo.message ?? undefined,
             }}
           />
+        </div>
+      )}
+
+      {/* Footer: Timestamp (The Final Touch) */}
+      {generatedAt && (
+        <div className="pt-4 pb-2 text-center">
+          <p className="text-[10px] font-medium opacity-30 flex items-center justify-center gap-1.5 uppercase tracking-[0.2em]">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
+            Sistem diperbarui: {formatGeneratedTime(generatedAt)}
+          </p>
         </div>
       )}
     </div>
