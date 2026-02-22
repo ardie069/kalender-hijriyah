@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/context/theme-context";
 import Navbar from "@/components/Navbar";
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
   variable: "--font-mono",
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Kalender Hijriyah | Digital Lunar Analytics",
   description:
     "Aplikasi kalender Hijriyah modern berbasis astronomi presisi dan kearifan lokal.",
@@ -29,9 +30,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" suppressHydrationWarning>
+    <html lang="id" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans transition-colors duration-500 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100`}
+        className="antialiased font-sans transition-colors duration-500 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100"
       >
         <ThemeProvider>
           {/* Wrapper biar content gak mentok Navbar */}

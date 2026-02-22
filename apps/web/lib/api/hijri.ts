@@ -6,10 +6,6 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
 
-if (!API_BASE) {
-  throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
-}
-
 /**
  * Generic fetch helper
  * Sengaja sederhana, biar gampang debug

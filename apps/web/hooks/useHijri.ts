@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState, useCallback } from "react";
 import type {
   Method,
@@ -17,6 +15,7 @@ interface UseHijriResult {
   weton: string | null;
   loading: boolean;
   error: string | null;
+  generatedAt: string | null;
   reload: () => void;
 }
 
@@ -32,6 +31,7 @@ export function useHijri(method: Method, timezone: string): UseHijriResult {
   const [weton, setWeton] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
   const resolveLocation = useCallback((): Promise<{
     lat: number;
@@ -76,6 +76,7 @@ export function useHijri(method: Method, timezone: string): UseHijriResult {
       setHijriDate(dateRes.hijri_date);
       setExplanation(dateRes.explanation ?? null);
       setEndMonthInfo(endRes ?? null);
+      setGeneratedAt(dateRes.generated_at ?? null);
 
       if (isLocationInJava(currentLat, currentLon)) {
         const now = new Date();
@@ -105,6 +106,7 @@ export function useHijri(method: Method, timezone: string): UseHijriResult {
     weton,
     loading,
     error,
+    generatedAt,
     reload: loadHijri,
   };
 }
