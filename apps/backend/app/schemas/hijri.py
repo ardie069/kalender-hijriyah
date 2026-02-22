@@ -3,7 +3,7 @@ from pydantic import BaseModel, field_validator, ConfigDict
 from datetime import datetime
 from typing import Literal, Optional, Any
 
-HijriMethod = Literal["global", "hisab", "rukyat"]
+HijriMethod = Literal["umm_al_qura", "local_hisab", "local_rukyat", "ughc"]
 
 
 def sanitize_numpy(v: Any) -> Any:

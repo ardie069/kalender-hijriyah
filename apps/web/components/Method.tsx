@@ -10,9 +10,30 @@ interface MethodProps {
 }
 
 const METHODS: { id: Method; label: string; icon: string; desc: string }[] = [
-  { id: "global", label: "Global", icon: "🌍", desc: "Umm al-Qura" },
-  { id: "hisab", label: "Hisab", icon: "🔢", desc: "Wujudul Hilal" },
-  { id: "rukyat", label: "Rukyat", icon: "🔭", desc: "MABIMS" },
+  {
+    id: "umm_al_qura",
+    label: "Umm al-Qura",
+    icon: "🕋",
+    desc: "Arithmetic (Makkah)",
+  },
+  {
+    id: "local_hisab",
+    label: "Hisab Lokal",
+    icon: "🔢",
+    desc: "Wujudul Hilal",
+  },
+  {
+    id: "local_rukyat",
+    label: "Rukyat Lokal",
+    icon: "🔭",
+    desc: "MABIMS",
+  },
+  {
+    id: "ughc",
+    label: "KHGT",
+    icon: "🌎",
+    desc: "Kalender Hijriyah Global Tunggal",
+  },
 ];
 
 export default function Method({ value, onChange }: MethodProps) {
@@ -28,7 +49,7 @@ export default function Method({ value, onChange }: MethodProps) {
       </label>
 
       <div
-        className={`grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl transition-colors ${containerBg}`}
+        className={`grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl transition-colors ${containerBg}`}
       >
         {METHODS.map((m) => {
           const isActive = value === m.id;
@@ -51,7 +72,9 @@ export default function Method({ value, onChange }: MethodProps) {
                 {m.label}
               </span>
               <span
-                className={`text-[8px] mt-1 opacity-70 ${isActive ? "text-white" : ""}`}
+                className={`text-[8px] mt-1 opacity-70 ${
+                  isActive ? "text-white" : ""
+                }`}
               >
                 {m.desc}
               </span>

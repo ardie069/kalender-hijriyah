@@ -2,14 +2,14 @@
 
 import { useMemo } from "react";
 import { useTheme } from "@/context/theme-context";
-import type { HijriDate, Method, HijriVisibility } from "@/types/hijri"; // Gunakan type dari file utama
+import type { HijriDate, Method, HijriAstronomicalData } from "@/types/hijri";
 
 interface HijriPredictionData {
-  method: Method; // Tambahkan method di sini
+  method: Method;
   today?: HijriDate;
   estimated_end_of_month?: HijriDate | null;
   message?: string;
-  visibility?: HijriVisibility;
+  visibility?: HijriAstronomicalData;
 }
 
 interface HijriPredictionProps {
@@ -48,7 +48,8 @@ export default function HijriPrediction({ prediction }: HijriPredictionProps) {
 
   if (!prediction) return null;
 
-  const isGlobal = prediction.method === "global";
+  const isArithmetic = prediction.method === "umm_al_qura";
+  const vis = prediction.visibility;
 
   return (
     <div
@@ -59,16 +60,15 @@ export default function HijriPrediction({ prediction }: HijriPredictionProps) {
           🌙 Info Akhir Bulan
         </h3>
 
-        {/* Badge Status: Hanya muncul jika BUKAN global */}
-        {!isGlobal && prediction.visibility && (
+        {!isArithmetic && typeof vis?.is_visible === "boolean" && (
           <span
             className={`text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-tighter ${
-              prediction.visibility.is_visible
+              vis.is_visible
                 ? "bg-emerald-500/20 text-emerald-500"
                 : "bg-red-500/20 text-red-500"
             }`}
           >
-            {prediction.visibility.is_visible ? "Hilal Terlihat" : "Istikmal"}
+            {vis.is_visible ? "Hilal Terlihat" : "Istikmal"}
           </span>
         )}
       </div>
@@ -87,7 +87,8 @@ export default function HijriPrediction({ prediction }: HijriPredictionProps) {
           <p className="text-lg font-bold text-emerald-500">
             {formatHijri(prediction.estimated_end_of_month)}
           </p>
-          {isGlobal && (
+
+          {isArithmetic && (
             <p className="text-[10px] mt-2 opacity-40 italic">
               *Berdasarkan ketetapan kalender aritmatika tetap.
             </p>
@@ -95,49 +96,56 @@ export default function HijriPrediction({ prediction }: HijriPredictionProps) {
         </div>
       )}
 
-      {/* Grid Statistik: Sembunyikan total jika metode global */}
-      {!isGlobal && prediction.visibility && (
+      {!isArithmetic && vis && (
         <div className="grid grid-cols-2 gap-4 animate-in fade-in zoom-in duration-500">
-          <div className="space-y-1">
-            <p className="text-[9px] uppercase opacity-40 font-bold">
-              Altitude
-            </p>
-            <p className="font-mono text-sm font-bold">
-              {prediction.visibility.moon_altitude.toFixed(2)}°
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-[9px] uppercase opacity-40 font-bold">
-              Elongasi
-            </p>
-            <p className="font-mono text-sm font-bold">
-              {prediction.visibility.elongation.toFixed(2)}°
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-[9px] uppercase opacity-40 font-bold">
-              Usia Bulan
-            </p>
-            <p className="font-mono text-sm font-bold">
-              {prediction.visibility.moon_age.toFixed(1)}j
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-[9px] uppercase opacity-40 font-bold">
-              Kriteria
-            </p>
-            <p
-              className={`text-[10px] font-bold ${
-                prediction.visibility.is_visible
-                  ? "text-emerald-500"
-                  : "text-red-500"
-              }`}
-            >
-              {prediction.visibility.is_visible ? "✓ Lolos" : "✕ Tidak Lolos"}
-            </p>
-          </div>
+          <Stat
+            label="Altitude"
+            value={
+              typeof vis.moon_altitude === "number"
+                ? `${vis.moon_altitude.toFixed(2)}°`
+                : "—"
+            }
+          />
+
+          <Stat
+            label="Elongasi"
+            value={
+              typeof vis.elongation === "number"
+                ? `${vis.elongation.toFixed(2)}°`
+                : "—"
+            }
+          />
+
+          <Stat
+            label="Usia Bulan"
+            value={
+              typeof vis.moon_age === "number"
+                ? `${vis.moon_age.toFixed(1)}j`
+                : "—"
+            }
+          />
+
+          <Stat
+            label="Kriteria"
+            value={
+              typeof vis.is_visible === "boolean"
+                ? vis.is_visible
+                  ? "✓ Lolos"
+                  : "✕ Tidak Lolos"
+                : "—"
+            }
+          />
         </div>
       )}
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[9px] uppercase opacity-40 font-bold">{label}</p>
+      <p className="font-mono text-sm font-bold">{value}</p>
     </div>
   );
 }

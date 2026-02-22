@@ -66,13 +66,15 @@ export default function HijriDate({
             <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">
               Analisis Logika & Sains
             </p>
-            {explanation.astronomical_data && (
-              <span
-                className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${explanation.astronomical_data.is_visible ? "bg-emerald-500/20 text-emerald-600" : "bg-orange-500/20 text-orange-600"}`}
-              >
-                {explanation.astronomical_data.is_visible
-                  ? "Hilal Terlihat"
-                  : "Istikmal"}
+            {explanation.decision === "new_month" && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-emerald-500/20 text-emerald-600">
+                Bulan Baru
+              </span>
+            )}
+
+            {explanation.decision === "istikmal_30" && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-orange-500/20 text-orange-600">
+                Istikmal
               </span>
             )}
           </div>
@@ -88,6 +90,15 @@ export default function HijriDate({
             ))}
           </div>
 
+          {explanation.astronomical_data?.global_visible !== undefined && (
+            <div className="mt-2 text-[10px] opacity-50">
+              Status Global:{" "}
+              {explanation.astronomical_data.global_visible
+                ? "Memenuhi Global"
+                : "Belum Global"}
+            </div>
+          )}
+
           {/* Menampilkan angka astronomis jika ada */}
           {explanation.astronomical_data && (
             <div className="mt-4 pt-3 border-t border-current/5 grid grid-cols-2 gap-4">
@@ -96,17 +107,21 @@ export default function HijriDate({
                   Tinggi Hilal
                 </p>
                 <p className="text-sm font-mono font-bold text-emerald-500">
-                  {explanation.astronomical_data.moon_altitude.toFixed(2)}°
+                  {typeof explanation.astronomical_data.moon_altitude ===
+                  "number"
+                    ? `${explanation.astronomical_data.moon_altitude.toFixed(2)}°`
+                    : "—"}
                 </p>
               </div>
+
               <div>
                 <p className="text-[9px] opacity-40 uppercase font-bold">
-                  Status Visibilitas
+                  Elongasi
                 </p>
-                <p className="text-sm font-bold opacity-80">
-                  {explanation.astronomical_data.is_visible
-                    ? "Memenuhi Syarat"
-                    : "Dibawah Kriteria"}
+                <p className="text-sm font-mono font-bold opacity-80">
+                  {typeof explanation.astronomical_data.elongation === "number"
+                    ? `${explanation.astronomical_data.elongation.toFixed(2)}°`
+                    : "—"}
                 </p>
               </div>
             </div>
@@ -120,6 +135,7 @@ export default function HijriDate({
           <HijriPrediction
             prediction={{
               ...endMonthInfo,
+              method: method,
               message: endMonthInfo.message ?? undefined,
             }}
           />

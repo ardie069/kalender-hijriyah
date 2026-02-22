@@ -20,7 +20,7 @@ def dt(y, m, d, h, tz):
 
 
 def test_global_maghrib_boundary(astro):
-    from app.core.hijri_calculator import get_hijri_date
+    from apps.backend.app.core.astronomy_engine import get_hijri_date
 
     now = dt(2026, 1, 18, 19, "Asia/Riyadh")  # malam
     h = get_hijri_date(
@@ -32,7 +32,7 @@ def test_global_maghrib_boundary(astro):
 
 
 def test_hisab_istikmal_on_29th(astro):
-    from app.core.hijri_calculator import get_hijri_date
+    from apps.backend.app.core.astronomy_engine import get_hijri_date
 
     now = dt(2026, 1, 19, 5, "Asia/Jakarta")
     h = get_hijri_date(-6.2, 106.8, "hisab", "Asia/Jakarta", now_local=now, **astro)
@@ -42,7 +42,7 @@ def test_hisab_istikmal_on_29th(astro):
 
 
 def test_rukyat_not_29_no_evaluation(astro):
-    from app.core.hijri_calculator import get_hijri_date
+    from apps.backend.app.core.astronomy_engine import get_hijri_date
 
     now = dt(2026, 1, 18, 17, "Asia/Jakarta")
     h = get_hijri_date(-6.2, 106.8, "rukyat", "Asia/Jakarta", now_local=now, **astro)
@@ -53,7 +53,7 @@ def test_rukyat_not_29_no_evaluation(astro):
 
 @pytest.mark.parametrize("method", ["global", "hisab", "rukyat"])
 def test_all_methods_converge_on_1_syaban(astro, method):
-    from app.core.hijri_calculator import get_hijri_date
+    from apps.backend.app.core.astronomy_engine import get_hijri_date
 
     now = dt(2026, 1, 20, 10, "Asia/Jakarta")
     h = get_hijri_date(-6.2, 106.8, method, "Asia/Jakarta", now_local=now, **astro)
@@ -63,7 +63,7 @@ def test_all_methods_converge_on_1_syaban(astro, method):
 
 
 def test_no_day_jump_over_1(astro):
-    from app.core.hijri_calculator import get_hijri_date
+    from apps.backend.app.core.astronomy_engine import get_hijri_date
 
     dates = []
     for d in [18, 19, 20]:
@@ -83,7 +83,7 @@ def test_no_day_jump_over_1(astro):
 
 def test_midnight_transition_consistency(astro):
     """Memastikan tidak ada perubahan tanggal Hijriyah antara jam 23:59 dan 00:01"""
-    from app.core.hijri_calculator import get_hijri_date
+    from apps.backend.app.core.astronomy_engine import get_hijri_date
 
     # 1. Cek sebelum tengah malam (23:55)
     before_midnight = dt(2026, 1, 18, 23, "Asia/Jakarta")

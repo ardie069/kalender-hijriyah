@@ -1,14 +1,6 @@
 from skyfield.api import wgs84
 
 
-def get_moon_altitude(dt_utc, lat, lon, ts, moon):
-    """Mengambil tinggi hilal dalam derajat (standard float)."""
-    t = ts.from_datetime(dt_utc)
-    observer = wgs84.latlon(lat, lon)
-    alt, _, _ = observer.at(t).observe(moon).apparent().altaz()
-    return float(alt.degrees)
-
-
 def evaluate_visibility(
     sunset_dt_utc,
     lat,
@@ -18,16 +10,26 @@ def evaluate_visibility(
     sun,
     moon,
     earth,
-    criteria="MABIMS",
+    criteria,
 ):
     """
-    Evaluasi visibilitas hilal berdasarkan kriteria tertentu.
-    Mengonversi semua output NumPy ke tipe data Python standar.
+    Universal Hilal Visibility Engine.
+    Supports:
+    - Wujudul Hilal
+    - MABIMS
+    - TURKEY_2016_GEOCENTRIC
+    - TURKEY_2016_TOPOCENTRIC
     """
-    t = ts.from_datetime(sunset_dt_utc)
-    topos = wgs84.latlon(latitude_degrees=lat, longitude_degrees=lon)
-    observer = earth + topos
 
+    t = ts.from_datetime(sunset_dt_utc)
+
+    # ==========================
+    # GEOCENTRIC vs TOPOCENTRIC
+    # Altitude dan Azimuth secara definisi bersifat toposentris, sehingga kita harus
+    # selalu mengamati dari lokasi spesifik di permukaan Bumi.
+    # ==========================
+    topos = wgs84.latlon(lat, lon)
+    observer = earth + topos
     moon_app = observer.at(t).observe(moon).apparent()
     sun_app = observer.at(t).observe(sun).apparent()
 
@@ -38,17 +40,27 @@ def evaluate_visibility(
 
     moon_age_hours = float((t.tt - conjunction_jd) * 24)
 
-    if criteria == "Wujudul Hilal":
+    # ==========================
+    # CRITERIA RULES
+    # ==========================
+    is_visible = False
+
+    if criteria == "WUJUDUL_HILAL":
         is_visible = moon_age_hours > 0 and alt_deg > 0
+
     elif criteria == "MABIMS":
         is_visible = alt_deg >= 3.0 and elongation_deg >= 6.4
-    else:
-        is_visible = False
+
+    elif criteria == "TURKI_2016_GEOCENTRIC":
+        is_visible = alt_deg >= 5.0 and elongation_deg >= 8.0
+
+    elif criteria == "TURKI_2016_TOPOCENTRIC":
+        is_visible = alt_deg >= 5.0 and elongation_deg >= 8.0
 
     return {
         "moon_altitude": alt_deg,
         "elongation": elongation_deg,
         "moon_age": moon_age_hours,
         "is_visible": bool(is_visible),
-        "criteria_used": str(criteria),
+        "criteria_used": criteria,
     }

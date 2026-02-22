@@ -43,11 +43,13 @@ export default function HijriInfoCard({
 
   const methodLabel = useMemo(() => {
     const labels: Record<Method, string> = {
-      global: "Global Standard",
-      hisab: "Hisab Wujudul Hilal",
-      rukyat: "Rukyat Hilal Indonesia",
+      umm_al_qura: "Umm al-Qura (Makkah)",
+      local_hisab: "Hisab Lokal – Wujudul Hilal",
+      local_rukyat: "Rukyat Lokal – MABIMS",
+      ughc: "KHGT – Turki 2016 Global",
     };
-    return labels[method] || method;
+
+    return labels[method];
   }, [method]);
 
   return (

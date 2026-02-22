@@ -1,7 +1,7 @@
 import pytz
 from datetime import datetime
 
-from app.core.hijri_calculator import get_hijri_date
+from apps.backend.app.core.astronomy_engine import get_hijri_date
 from app.deps.astronomy import ts, eph, sun, moon, earth
 
 
