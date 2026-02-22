@@ -21,10 +21,9 @@ class UGHCMethod(BaseHijriMethod):
         candidate_latitudes = [-40, -20, 0, 20, 40]
 
         global_visible = False
-        visibility_data = {}
+        visibility_data = None
 
         best_score = -999
-
         for lat in candidate_latitudes:
             for lon in candidate_longitudes:
 
@@ -50,9 +49,6 @@ class UGHCMethod(BaseHijriMethod):
                     context.moon,
                 )
 
-                moon_age_hours = (sunset_jd - conj_jd) * 24
-                conjunction_before_sunset = moon_age_hours > 0
-
                 vis = evaluate_visibility(
                     sunset_utc,
                     lat,
@@ -65,6 +61,8 @@ class UGHCMethod(BaseHijriMethod):
                     criteria="TURKEY_2016_GEOCENTRIC",
                 )
 
+                conjunction_before_sunset = vis["moon_age"] > 0
+
                 score = vis["moon_altitude"] + vis["elongation"]
 
                 if score > best_score:
@@ -73,7 +71,6 @@ class UGHCMethod(BaseHijriMethod):
                         **vis,
                         "lat": lat,
                         "lon": lon,
-                        "moon_age_hours": moon_age_hours,
                         "conjunction_before_sunset": conjunction_before_sunset,
                     }
 

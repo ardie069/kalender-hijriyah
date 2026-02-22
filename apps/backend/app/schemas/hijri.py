@@ -83,5 +83,6 @@ class HijriEndMonthResponse(NumPyBaseModel):
     generated_at: datetime
     today: HijriDateSchema
     estimated_end_of_month: Optional[HijriDateSchema] = None
+    estimated_end_of_month_gregorian: Optional[datetime] = None
     visibility: Optional[HijriEndMonthEstimate] = None
     message: Optional[str] = None

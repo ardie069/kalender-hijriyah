@@ -3,11 +3,13 @@
 import { useMemo } from "react";
 import { useTheme } from "@/context/theme-context";
 import type { HijriDate, Method, HijriAstronomicalData } from "@/types/hijri";
+import { formatFullDate } from "@/lib/utils/timezone";
 
 interface HijriPredictionData {
   method: Method;
   today?: HijriDate;
   estimated_end_of_month?: HijriDate | null;
+  estimated_end_of_month_gregorian?: string | null;
   message?: string;
   visibility?: HijriAstronomicalData;
 }
@@ -46,10 +48,17 @@ export default function HijriPrediction({ prediction }: HijriPredictionProps) {
     [darkMode],
   );
 
-  if (!prediction) return null;
+  if (
+    !prediction ||
+    !prediction.estimated_end_of_month ||
+    !prediction.estimated_end_of_month_gregorian
+  ) {
+    return null;
+  }
 
   const isArithmetic = prediction.method === "umm_al_qura";
   const vis = prediction.visibility;
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   return (
     <div
@@ -74,23 +83,27 @@ export default function HijriPrediction({ prediction }: HijriPredictionProps) {
       </div>
 
       {prediction.message && (
-        <p className="text-sm leading-relaxed opacity-80 mb-4 italic">
-          <q>{prediction.message}</q>
+        <p className="text-sm leading-relaxed opacity-70 mb-4">
+          {prediction.message}
         </p>
       )}
 
       {prediction.estimated_end_of_month && (
         <div className="mb-6 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
           <p className="text-[10px] uppercase opacity-50 font-bold mb-1">
-            Estimasi Tanggal Baru:
+            Estimasi Bulan Baru:
           </p>
+
           <p className="text-lg font-bold text-emerald-500">
             {formatHijri(prediction.estimated_end_of_month)}
           </p>
 
-          {isArithmetic && (
-            <p className="text-[10px] mt-2 opacity-40 italic">
-              *Berdasarkan ketetapan kalender aritmatika tetap.
+          {prediction.estimated_end_of_month_gregorian && (
+            <p className="text-sm mt-2 opacity-80 font-medium">
+              {formatFullDate(
+                prediction.estimated_end_of_month_gregorian,
+                userTimezone,
+              )}
             </p>
           )}
         </div>

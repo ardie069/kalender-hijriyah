@@ -43,6 +43,7 @@ export interface HijriEndMonthResponse {
   generated_at: string;
   today: HijriDate;
   estimated_end_of_month: HijriDate | null;
+  estimated_end_of_month_gregorian?: string | null;
   visibility?: HijriAstronomicalData;
   message?: string;
 }

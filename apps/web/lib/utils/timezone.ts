@@ -17,3 +17,18 @@ export function formatGeneratedTime(dateStr: string | undefined): string {
     timeZoneName: "short",
   }).format(date);
 }
+
+/**
+ * Helper untuk menampilkan hari dan tanggal
+ */
+export function formatFullDate(dateString: string, timeZone: string): string {
+  const date = new Date(dateString);
+
+  return new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone,
+  }).format(date);
+}

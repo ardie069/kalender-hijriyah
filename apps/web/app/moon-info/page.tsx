@@ -25,7 +25,13 @@ export default function MoonInfoPage() {
         {/* Header: Center Focused */}
         <header className="text-center mb-12 md:mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="inline-block p-4 rounded-full bg-emerald-500/10 mb-6">
-            <span className="text-4xl md:text-6xl">🌕</span>
+            <span
+              className="text-4xl md:text-6xl"
+              role="img"
+              aria-label="Ikon Bulan"
+            >
+              🌕
+            </span>
           </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-4">
             Lunar Analytics
@@ -77,7 +83,7 @@ export default function MoonInfoPage() {
                 },
               ].map((item, i) => (
                 <div
-                  key={i}
+                  key={item.label}
                   className="group flex justify-between items-end border-b border-gray-100/50 dark:border-gray-800 pb-4 last:border-0"
                 >
                   <div>
@@ -103,7 +109,11 @@ export default function MoonInfoPage() {
               <div className="relative mb-6">
                 {/* Efek Glow di belakang bulan */}
                 <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full" />
-                <div className="relative text-8xl md:text-9xl drop-shadow-2xl">
+                <div
+                  className="relative text-8xl md:text-9xl drop-shadow-2xl"
+                  role="img"
+                  aria-label="Ikon Hilal"
+                >
                   🌒
                 </div>
               </div>
@@ -136,7 +146,9 @@ export default function MoonInfoPage() {
         {/* Footer Note */}
         <footer className="mt-12 text-center md:text-left px-4">
           <div className="inline-flex items-center gap-3 p-4 rounded-2xl bg-black/2 dark:bg-white/2 border border-gray-100/50 dark:border-gray-800">
-            <span className="text-xs">🔬</span>
+            <span className="text-xs" role="img" aria-label="Ikon Sains">
+              🔬
+            </span>
             <p className="text-[10px] md:text-xs opacity-40 italic leading-relaxed">
               Data dihitung menggunakan algoritma <strong>Skyfield API</strong>{" "}
               dengan koreksi refraksi atmosfer lokal. Akurasi data astronomis

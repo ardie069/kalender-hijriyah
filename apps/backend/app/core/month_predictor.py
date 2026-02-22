@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 from app.core.method_factory import get_method_instance
@@ -37,26 +37,62 @@ def predict_end_of_month(lat, lon, method, timezone, *, ts, eph, sun, moon, eart
     # 3. PREDICTION LOGIC
     # ==========================
     decision = meta.get("decision")
-
-    if decision == "new_month" or decision == "new_year":
-        estimated_date = today
-        msg = "Kriteria terpenuhi. Besok diperkirakan masuk bulan baru."
-    elif decision == "istikmal_30":
-        estimated_date = today
-        msg = "Hilal tidak memenuhi kriteria. Bulan digenapkan 30 hari."
-    else:
+    
+    if decision == "no_evaluation_needed":
         return {
             "method": method,
             "today": today,
             "estimated_end_of_month": None,
-            "visibility": meta.get("visibility") or meta.get("visibility_data"),
-            "message": "Prediksi akhir bulan hanya tersedia pada fase evaluasi.",
+            "visibility": None,
+            "message": "Prediksi akhir bulan hanya tersedia pada fase evaluasi akhir bulan.",
         }
+
+    if decision not in ("new_month", "new_year", "istikmal_30"):
+        return {
+            "method": method,
+            "today": today,
+            "estimated_end_of_month": None,
+            "visibility": None,
+            "message": "Prediksi akhir bulan tidak tersedia.",
+        }
+
+    baseline = meta.get("baseline") or today
+
+    year = baseline["year"]
+    month = baseline["month"]
+
+    if month == 12:
+        next_month = 1
+        next_year = year + 1
+    else:
+        next_month = month + 1
+        next_year = year
+
+    estimated_hijri = {
+        "year": next_year,
+        "month": next_month,
+        "day": 1,
+    }
+    
+    if decision in ("new_month", "new_year"):
+        offset_days = 1
+        msg_suffix = "besok"
+    else:
+        offset_days = 2
+        msg_suffix = "lusa"
+    
+    estimated_gregorian = now_local + timedelta(days=offset_days)
+    
+    msg = (
+        f"Estimasi 1 {next_month} {next_year} H"
+        f"jatuh pada {estimated_gregorian.strftime('%d %B %Y')} ({msg_suffix})"
+    )
 
     return {
         "method": method,
         "today": today,
-        "estimated_end_of_month": estimated_date,
+        "estimated_end_of_month": estimated_hijri,
+        "estimated_end_of_month_gregorian": estimated_gregorian.isoformat(),
         "visibility": meta.get("visibility") or meta.get("visibility_data"),
         "message": msg,
     }

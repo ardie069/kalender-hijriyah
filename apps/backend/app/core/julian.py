@@ -1,4 +1,6 @@
+import pytz
 from convertdate import islamic
+from datetime import timedelta
 from functools import lru_cache
 
 _TS_REGISTRY = {}
@@ -41,3 +43,18 @@ def jd_to_datetime(jd, ts):
 def julian_to_hijri(jd_float: float):
     y, m, d = islamic.from_jd(jd_float)
     return {"year": y, "month": m, "day": d}
+
+
+def add_days_to_datetime(dt, days):
+    return dt + timedelta(days=days)
+
+
+def hijri_to_jd(year: int, month: int, day: int):
+    return islamic.to_jd(year, month, day)
+
+
+def jd_to_local_datetime(jd, ts, timezone):
+    utc_dt = jd_to_datetime(jd, ts)
+    tz = pytz.timezone(timezone)
+
+    return utc_dt.astimezone(tz)
