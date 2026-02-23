@@ -1,13 +1,15 @@
-from ..astronomy_engine import (
+from ..services.engine import (
     calculate_baseline_hijri,
     calculate_sunset,
     check_historical_lag,
+)
+from ..calendar.hijri_date import (
     increment_hijri_day,
     decrement_hijri_day,
     start_new_month,
 )
 
-from ..visibility_registry import GlobalVisibilityRegistry
+from ..services.visibility_scan import GlobalVisibilityRegistry
 from ..config import REGIONAL_RUKYAT_CONFIG
 
 from .base import BaseHijriMethod, HijriResult

@@ -2,10 +2,11 @@ import pytz
 from datetime import datetime, time, timedelta
 from functools import lru_cache
 
-from .julian import jd_from_datetime, jd_to_datetime, julian_to_hijri
-from .conjunction import get_conjunction_time
-from .visibility import evaluate_visibility
-from .sun_times import get_sunset_time
+from ..calendar.julian import jd_from_datetime, jd_to_datetime, julian_to_hijri
+from ..calendar.hijri_date import increment_hijri_day, decrement_hijri_day, start_new_month
+from ..astronomy.conjunction import get_conjunction_time
+from ..astronomy.visibility import evaluate_visibility
+from ..astronomy.sun_times import get_sunset_time
 
 _TS_REGISTRY = {}
 _EPH_REGISTRY = {}
@@ -198,23 +199,3 @@ def check_historical_lag(
     )
 
     return not vis["is_visible"]
-
-
-def increment_hijri_day(date):
-    if date["day"] < 30:
-        return {**date, "day": date["day"] + 1}
-    return start_new_month(date)
-
-
-def decrement_hijri_day(date):
-    d, m, y = date["day"], date["month"], date["year"]
-    if d > 1:
-        return {**date, "day": d - 1}
-    pm, py = (m - 1, y) if m > 1 else (12, y - 1)
-    return {"year": py, "month": pm, "day": 30}
-
-
-def start_new_month(date):
-    m, y = date["month"], date["year"]
-    nm, ny = (m + 1, y) if m < 12 else (1, y + 1)
-    return {"year": ny, "month": nm, "day": 1}

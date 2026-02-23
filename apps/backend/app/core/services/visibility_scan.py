@@ -1,9 +1,9 @@
 from functools import lru_cache
 import pytz
 
-from .julian import jd_from_datetime
-from .disk_cache import _make_key, get_cache, set_cache
-from .astronomy_engine import (
+from ..calendar.julian import jd_from_datetime
+from ..cache.disk import _make_key, get_cache, set_cache
+from .engine import (
     calculate_sunset,
     calculate_conjunction,
     calculate_visibility,
@@ -45,7 +45,7 @@ class GlobalVisibilityRegistry:
         moon = _MOON_REGISTRY[moon_id]
         earth = _EARTH_REGISTRY[earth_id]
 
-        from .global_grid import generate_global_grid
+        from ..astronomy.global_grid import generate_global_grid
 
         sites = generate_global_grid(
             lat_step=lat_step,

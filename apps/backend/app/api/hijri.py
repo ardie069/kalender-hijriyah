@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Query, HTTPException
 from datetime import datetime
 import pytz
 from app.deps.rate_limit import limiter
-from app.core.hijri_explain import explain_hijri_decision
+from app.core.services.hijri_explain import explain_hijri_decision
 from app.schemas.hijri import (
     HijriDateResponse,
     HijriDateSchema,
@@ -11,7 +11,7 @@ from app.schemas.hijri import (
     HijriEndMonthResponse,
 )
 from app.deps.astronomy import ts, eph, sun, moon, earth
-from app.core.method_factory import get_method_instance
+from app.core.services.method_factory import get_method_instance
 from app.core.methods.base import HijriContext
 
 router = APIRouter()

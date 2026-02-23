@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import pytz
 
-from app.core.method_factory import get_method_instance
+from app.core.services.method_factory import get_method_instance
 from app.core.methods.base import HijriContext
 
 

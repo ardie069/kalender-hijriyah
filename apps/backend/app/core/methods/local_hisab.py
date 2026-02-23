@@ -1,15 +1,17 @@
-from ..astronomy_engine import (
+from ..services.engine import (
     calculate_baseline_hijri,
     calculate_sunset,
     calculate_conjunction,
     calculate_visibility,
     check_historical_lag,
+)
+from ..calendar.hijri_date import (
     increment_hijri_day,
     decrement_hijri_day,
     start_new_month,
 )
 
-from ..julian import jd_from_datetime
+from ..calendar.julian import jd_from_datetime
 import pytz
 
 from .base import BaseHijriMethod, HijriResult

@@ -1,20 +1,22 @@
 import pytz
 from datetime import datetime
 
-from ..astronomy_engine import (
+from ..services.engine import (
     calculate_baseline_hijri,
     calculate_sunset,
     calculate_conjunction,
     check_historical_lag,
+)
+from ..calendar.hijri_date import (
     increment_hijri_day,
     decrement_hijri_day,
     start_new_month,
 )
 
-from ..julian import jd_from_datetime, jd_to_datetime
-from ..sun_times import get_fajr_time
-from ..global_grid import generate_global_grid
-from ..visibility_registry import GlobalVisibilityRegistry
+from ..calendar.julian import jd_from_datetime, jd_to_datetime
+from ..astronomy.sun_times import get_fajr_time
+from ..astronomy.global_grid import generate_global_grid
+from ..services.visibility_scan import GlobalVisibilityRegistry
 from ..config import NZ_LOCATION
 from .base import BaseHijriMethod, HijriResult
 

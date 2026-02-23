@@ -1,8 +1,8 @@
-from ..astronomy_engine import (
+from ..services.engine import (
     calculate_baseline_hijri,
     calculate_sunset,
-    increment_hijri_day,
 )
+from ..calendar.hijri_date import increment_hijri_day
 
 from .base import BaseHijriMethod, HijriResult
 from ..config import AL_HARAM_LOCATION
