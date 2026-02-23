@@ -13,3 +13,6 @@ PyMeeus
 pytz
 python-dotenv
 convertdate
+
+# --- Caching ---
+redis
