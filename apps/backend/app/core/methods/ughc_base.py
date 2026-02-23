@@ -16,7 +16,7 @@ from ..calendar.hijri_date import (
 from ..calendar.julian import jd_from_datetime, jd_to_datetime
 from ..astronomy.sun_times import get_fajr_time
 from ..astronomy.global_grid import generate_global_grid
-from ..services.visibility_scan import GlobalVisibilityRegistry
+from ..astronomy.visibility_scan import GlobalVisibilityRegistry
 from ..config import NZ_LOCATION
 from .base import BaseHijriMethod, HijriResult
 
