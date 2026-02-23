@@ -5,11 +5,9 @@ from ..services.engine import (
     calculate_baseline_hijri,
     calculate_sunset,
     calculate_conjunction,
-    check_historical_lag,
 )
 from ..calendar.hijri_date import (
     increment_hijri_day,
-    decrement_hijri_day,
     start_new_month,
 )
 
@@ -38,27 +36,7 @@ class BaseUGHCMethod(BaseHijriMethod):
             context.now_local,
             context.timezone,
             context.ts,
-            lat=context.lat,
-            lon=context.lon,
-            eph=context.eph,
         )
-
-        is_lagging = check_historical_lag(
-            baseline,
-            noon_jd,
-            context.lat,
-            context.lon,
-            context.timezone,
-            context.ts,
-            context.eph,
-            context.sun,
-            context.moon,
-            context.earth,
-            criteria=self.CRITERIA,
-        )
-
-        if is_lagging:
-            baseline = decrement_hijri_day(baseline)
 
         # ==================================================
         # 2️⃣ MAGHRIB LOKAL USER
