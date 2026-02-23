@@ -1,7 +1,7 @@
-from ..methods.umm_al_qura import UmmAlQuraMethod
-from ..methods.local_hisab import LocalHisabMethod
-from ..methods.local_rukyat import LocalRukyatMethod
-from ..methods.ughc_base import BaseUGHCMethod
+from .umm_al_qura import UmmAlQuraMethod
+from .local_hisab import LocalHisabMethod
+from .local_rukyat import LocalRukyatMethod
+from .ughc_base import BaseUGHCMethod
 
 _instances = {}
 

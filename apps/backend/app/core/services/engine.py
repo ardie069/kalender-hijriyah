@@ -3,7 +3,6 @@ from datetime import datetime, time, timedelta
 from functools import lru_cache
 
 from ..calendar.julian import jd_from_datetime, jd_to_datetime, julian_to_hijri
-from ..calendar.hijri_date import increment_hijri_day, decrement_hijri_day, start_new_month
 from ..astronomy.conjunction import get_conjunction_time
 from ..astronomy.visibility import evaluate_visibility
 from ..astronomy.sun_times import get_sunset_time

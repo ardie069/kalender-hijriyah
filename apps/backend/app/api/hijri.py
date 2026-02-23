@@ -11,7 +11,7 @@ from app.schemas.hijri import (
     HijriEndMonthResponse,
 )
 from app.deps.astronomy import ts, eph, sun, moon, earth
-from app.core.services.method_factory import get_method_instance
+from app.core.methods.factory import get_method_instance
 from app.core.methods.base import HijriContext
 
 router = APIRouter()
