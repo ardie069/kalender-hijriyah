@@ -1,5 +1,5 @@
 import pytz
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from functools import lru_cache
 
 from .julian import jd_from_datetime, jd_to_datetime, julian_to_hijri
@@ -14,14 +14,36 @@ _SUN_REGISTRY = {}
 _MOON_REGISTRY = {}
 
 
-def calculate_baseline_hijri(now_local, timezone, ts):
+def calculate_baseline_hijri(now_local, timezone, ts, lat=None, lon=None, eph=None):
     """
-    Baseline (Arithmetic Noon)
+    Baseline Hijriyah berbasis noon,
+    tapi mengikuti pergantian hari saat Maghrib.
     """
+
     tz = pytz.timezone(timezone)
     now_local = now_local.astimezone(tz)
 
-    noon_local = tz.localize(datetime.combine(now_local.date(), time(12, 0)))
+    # Hitung sunset lokal dulu
+    if lat is not None and lon is not None and eph is not None:
+        sunset = calculate_sunset(
+            now_local.date(),
+            lat,
+            lon,
+            timezone,
+            ts,
+            eph,
+        )
+    else:
+        sunset = None
+
+    after_sunset = sunset and now_local >= sunset
+
+    # Jika sudah lewat Maghrib, geser ke hari Gregorian berikutnya
+    target_date = now_local.date()
+    if after_sunset:
+        target_date = target_date + timedelta(days=1)
+
+    noon_local = tz.localize(datetime.combine(target_date, time(12, 0)))
     noon_jd = jd_from_datetime(noon_local.astimezone(pytz.utc), ts)
 
     return julian_to_hijri(noon_jd), noon_jd
