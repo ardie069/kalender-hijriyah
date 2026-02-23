@@ -1,21 +1,23 @@
 from ..astronomy_engine import (
     calculate_baseline_hijri,
     calculate_sunset,
-    calculate_conjunction,
-    calculate_visibility,
     check_historical_lag,
     increment_hijri_day,
     decrement_hijri_day,
     start_new_month,
 )
 
-from ..julian import jd_from_datetime
-import pytz
+from ..visibility_registry import GlobalVisibilityRegistry
+from ..config import REGIONAL_RUKYAT_CONFIG
 
 from .base import BaseHijriMethod, HijriResult
 
 
 class LocalRukyatMethod(BaseHijriMethod):
+    def __init__(self, mode="individual", region=None):
+        self.mode = mode
+        self.region = region
+
     def calculate(self, context):
         baseline, noon_jd = calculate_baseline_hijri(
             context.now_local,
@@ -71,30 +73,38 @@ class LocalRukyatMethod(BaseHijriMethod):
                 },
             )
 
-        sunset_utc = sunset_local.astimezone(pytz.utc)
-        sunset_jd = jd_from_datetime(sunset_utc, context.ts)
+        if self.mode == "individual":
+            sites = [
+                {
+                    "name": "User Location",
+                    "lat": context.lat,
+                    "lon": context.lon,
+                    "timezone": context.timezone,
+                }
+            ]
 
-        conj_jd = calculate_conjunction(
-            sunset_jd,
+            criteria = "MABIMS"
+
+        elif self.mode == "national":
+            if not self.region:
+                raise ValueError("Region must be provided in national mode")
+
+            region_config = REGIONAL_RUKYAT_CONFIG[self.region]
+            sites = region_config["sites"]
+            criteria = region_config["criteria"]
+        
+        result = GlobalVisibilityRegistry.scan_global(
+            context.now_local.date(),
+            sites,
+            criteria,
             context.ts,
-            context.earth,
+            context.eph,
             context.sun,
             context.moon,
-        )
-
-        vis = calculate_visibility(
-            sunset_utc,
-            context.lat,
-            context.lon,
-            conj_jd,
-            context.ts,
-            context.sun,
-            context.moon,
             context.earth,
-            criteria="MABIMS",
         )
 
-        if vis["is_visible"]:
+        if result["visible"]:
             final_date = start_new_month(baseline)
             decision = "new_month"
         else:
@@ -106,6 +116,6 @@ class LocalRukyatMethod(BaseHijriMethod):
             metadata={
                 "type": "local_rukyat",
                 "decision": decision,
-                "visibility": vis,
+                "visibility": result["best_visibility"],
             },
         )

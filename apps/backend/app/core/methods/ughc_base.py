@@ -5,7 +5,6 @@ from ..astronomy_engine import (
     calculate_baseline_hijri,
     calculate_sunset,
     calculate_conjunction,
-    calculate_visibility,
     check_historical_lag,
     increment_hijri_day,
     decrement_hijri_day,
@@ -14,6 +13,8 @@ from ..astronomy_engine import (
 
 from ..julian import jd_from_datetime, jd_to_datetime
 from ..sun_times import get_fajr_time
+from ..global_grid import generate_global_grid
+from ..visibility_registry import GlobalVisibilityRegistry
 from ..config import NZ_LOCATION
 from .base import BaseHijriMethod, HijriResult
 
@@ -122,67 +123,22 @@ class BaseUGHCMethod(BaseHijriMethod):
             tzinfo=pytz.utc,
         )
 
-        candidate_longitudes = [-150, -120, -90, -60, -30, 0]
-        candidate_latitudes = [-40, -20, 0, 20, 40]
+        sites = generate_global_grid(lat_step=10, lon_step=15)
 
         visibility_before_midnight = False
         visibility_after_midnight = False
         visibility_after_midnight_america = False
 
-        best_visibility = None
-        best_score = -999
-
-        for lat in candidate_latitudes:
-            for lon in candidate_longitudes:
-
-                s_local = calculate_sunset(
-                    context.now_local.date(),
-                    lat,
-                    lon,
-                    "UTC",
-                    context.ts,
-                    context.eph,
-                )
-
-                if not s_local:
-                    continue
-
-                s_utc = s_local.astimezone(pytz.utc)
-
-                vis = calculate_visibility(
-                    s_utc,
-                    lat,
-                    lon,
-                    conj_jd,
-                    context.ts,
-                    context.sun,
-                    context.moon,
-                    context.earth,
-                    criteria=self.CRITERIA,
-                )
-
-                score = vis["moon_altitude"] + vis["elongation"]
-
-                if score > best_score:
-                    best_score = score
-                    best_visibility = {
-                        **vis,
-                        "lat": lat,
-                        "lon": lon,
-                    }
-
-                if not vis["is_visible"]:
-                    continue
-
-                if s_utc <= end_of_day_utc:
-                    visibility_before_midnight = True
-                else:
-                    visibility_after_midnight = True
-                    if self.is_america(lon):
-                        visibility_after_midnight_america = True
-
-            if visibility_before_midnight:
-                break
+        result = GlobalVisibilityRegistry.scan_global(
+            context.now_local.date(),
+            sites,
+            self.CRITERIA,
+            context.ts,
+            context.eph,
+            context.sun,
+            context.moon,
+            context.earth,
+        )
 
         # ==================================================
         # 6️⃣ KHGT GLOBAL DECISION
@@ -233,7 +189,7 @@ class BaseUGHCMethod(BaseHijriMethod):
                 "decision": decision,
                 "baseline": baseline,
                 "global_visible": global_visible,
-                "visibility_data": best_visibility,
+                "visibility_data": result["best_visibility"],
                 "conjunction_before_maghrib": (
                     conj_jd
                     < jd_from_datetime(
