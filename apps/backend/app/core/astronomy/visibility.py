@@ -14,21 +14,21 @@ def evaluate_visibility(
     criteria,
 ):
 
-    criteria = CRITERIA_REGISTRY.get(criteria)
+    criteria_name = criteria
+    criteria_def = CRITERIA_REGISTRY.get(criteria_name)
 
-    if not criteria:
+    if not criteria_def:
         return {
             "moon_altitude": None,
             "elongation": None,
             "moon_age": None,
             "is_visible": False,
-            "criteria_used": criteria,
+            "criteria_used": criteria_name,
         }
 
     t = ts.from_datetime(sunset_dt_utc)
 
-    # Observer selection
-    if criteria.get("observer") == "geocentric":
+    if criteria_def.get("observer") == "geocentric":
         observer = earth
     else:
         observer = earth + wgs84.latlon(lat, lon)
@@ -36,7 +36,7 @@ def evaluate_visibility(
     moon_app = observer.at(t).observe(moon).apparent()
     sun_app = observer.at(t).observe(sun).apparent()
 
-    if criteria.get("observer") == "geocentric":
+    if criteria_def.get("observer") == "geocentric":
         alt, _, _ = moon_app.altaz(wgs84.latlon(lat, lon))
     else:
         alt, _, _ = moon_app.altaz()
@@ -45,19 +45,23 @@ def evaluate_visibility(
     elongation_deg = float(moon_app.separation_from(sun_app).degrees)
     moon_age_hours = float((t.tt - conjunction_jd) * 24)
 
-    # ======================
-    # Decision Engine
-    # ======================
+    if criteria_def.get("requires_conjunction") and moon_age_hours <= 0:
+        return {
+            "moon_altitude": alt_deg,
+            "elongation": elongation_deg,
+            "moon_age": moon_age_hours,
+            "is_visible": False,
+            "criteria_used": criteria_name,
+        }
 
-    if criteria["type"] == "wujud":
+    if criteria_def["type"] == "wujud":
         is_visible = moon_age_hours > 0 and alt_deg > 0
 
-    elif criteria["type"] == "numeric":
+    elif criteria_def["type"] == "numeric":
         is_visible = (
-            alt_deg >= criteria["altitude_min"]
-            and elongation_deg >= criteria["elongation_min"]
+            alt_deg >= criteria_def["altitude_min"]
+            and elongation_deg >= criteria_def["elongation_min"]
         )
-
     else:
         is_visible = False
 
@@ -66,5 +70,5 @@ def evaluate_visibility(
         "elongation": elongation_deg,
         "moon_age": moon_age_hours,
         "is_visible": bool(is_visible),
-        "criteria_used": criteria,
+        "criteria_used": criteria_name,
     }
