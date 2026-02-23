@@ -1,6 +1,10 @@
 # Python virtual environment
 venv/
 .venv/
+
+# Caching files
+.cache/
+cache/
 __pycache__/
 
 # Node.js dependencies
