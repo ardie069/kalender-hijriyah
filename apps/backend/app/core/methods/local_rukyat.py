@@ -9,7 +9,7 @@ from ..calendar.hijri_date import (
     start_new_month,
 )
 
-from ..astronomy.visibility_scan import GlobalVisibilityRegistry
+from ..services.visibility_scan import GlobalVisibilityRegistry
 from ..config import REGIONAL_RUKYAT_CONFIG
 
 from .base import BaseHijriMethod, HijriResult
