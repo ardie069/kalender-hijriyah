@@ -46,15 +46,4 @@ REGIONAL_RUKYAT_CONFIG = {
             }
         ],
     },
-    "pakistan": {
-        "criteria": "Ruet-e-Hilal Committee",
-        "sites": [
-            {
-                "name": "Lahore",
-                "lat": 31.55,
-                "lon": 74.34,
-                "timezone": "Asia/Karachi",
-            }
-        ],
-    },
 }
