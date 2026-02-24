@@ -4,7 +4,7 @@ import { useState } from "react";
 import Clock from "@/components/Clock";
 import Method from "@/components/Method";
 import HijriDate from "@/components/HijriDate";
-import { useHijri } from "@/hooks/useHijri";
+import { useHijri } from "@/hooks/use-hijri";
 import { useTheme } from "@/context/theme-context";
 import { useMounted } from "@/hooks/use-mounted";
 import type { Method as HijriMethod } from "@/types/hijri";

@@ -48,7 +48,7 @@ export default function HijriDate({
   explanation,
   generatedAt,
 }: HijriDateProps) {
-  if (loading) return <HijriSkeleton />;
+  if (loading || (!hijriDate && !error)) return <HijriSkeleton />;
 
   if (error) {
     return (

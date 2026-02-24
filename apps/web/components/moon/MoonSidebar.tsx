@@ -1,8 +1,13 @@
 "use client";
 
+import { MoonTelemetry } from "@/types/moon";
 import DataRow from "./DataRow";
 
-export default function MoonSidebar() {
+interface MoonSidebarProps {
+  telemetry?: MoonTelemetry;
+}
+
+export default function MoonSidebar({ telemetry }: MoonSidebarProps) {
   return (
     <aside className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-right-10 duration-1000">
       {/* --- Calculation Method: Selection Logic --- */}
@@ -62,19 +67,19 @@ export default function MoonSidebar() {
         </h3>
         <ul className="space-y-6 relative z-10">
           <DataRow
-            label="Ijtimak (Konjungsi)"
-            value="14:02 WIB"
-            sub="21 Feb 2026"
+            label="Azimuth Bulan"
+            value={`${telemetry?.azimuth.toFixed(2) ?? "0.00"}°`}
+            sub="Sudut dari Utara"
           />
           <DataRow
-            label="Matahari Terbenam"
-            value="18:14 WIB"
-            sub="Azimuth 256°"
+            label="Altitude (Tinggi)"
+            value={`${telemetry?.altitude.toFixed(2) ?? "0.00"}°`}
+            sub="Di atas ufuk"
           />
           <DataRow
-            label="Bulan Terbenam"
-            value="19:02 WIB"
-            sub="Azimuth 254°"
+            label="Jarak Bumi-Bulan"
+            value={`${telemetry?.distance_km ?? "0"} km`}
+            sub="Toposentris"
           />
         </ul>
       </div>
@@ -89,9 +94,11 @@ export default function MoonSidebar() {
         <div className="flex flex-col gap-4 relative z-10">
           <div className="h-px w-8 bg-primary/40" />
           <p className="text-sm font-bold italic text-emerald-800 dark:text-emerald-300 leading-relaxed">
-            <q>Dan Dialah yang menjadikan matahari bersinar dan bulan bercahaya
-            dan ditetapkan-Nya manzilah-manzilah (tempat-tempat) bagi perjalanan
-            bulan itu...</q>
+            <q>
+              Dan Dialah yang menjadikan matahari bersinar dan bulan bercahaya
+              dan ditetapkan-Nya manzilah-manzilah (tempat-tempat) bagi
+              perjalanan bulan itu...
+            </q>
           </p>
           <p className="text-[9px] font-black text-primary mt-2 uppercase tracking-[0.3em] flex items-center gap-2">
             <span className="w-1 h-1 rounded-full bg-primary" />
