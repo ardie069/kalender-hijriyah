@@ -1,234 +1,119 @@
-# 📅 Kalender Hijriyah 🌙
+# 🕌 Kalender Hijriyah Digital — Lunar Analytics 🌙
 
-Kalender Hijriyah adalah aplikasi web untuk menampilkan **tanggal Hijriyah secara akurat dan konsisten**
-berdasarkan **lokasi geografis**, **waktu Matahari terbenam (Maghrib)**, dan **metode penetapan bulan Hijriyah**
-(Global, Hisab, dan Rukyat).
+[![Framework: Next.js 15](https://img.shields.io/badge/Frontend-Next.js%2015-000000?style=flat-square&logo=nextdotjs)](https://nextjs.org/)
+[![Backend: FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Engine: Skyfield](https://img.shields.io/badge/Engine-Skyfield%20API-10b981?style=flat-square)](https://rhodesmill.org/skyfield/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-Aplikasi ini memisahkan **logika falak (backend)** dan **tampilan (frontend)** secara tegas
-untuk menghindari inkonsistensi perhitungan.
+> **"Sains adalah obor yang membakar kegelapan ghaib dengan cahaya logika materialistik."**
+> Aplikasi ini adalah sintesis antara presisi astronomi modern dan kearifan lokal dalam satu ekosistem digital.
 
----
-
-## ✨ Fitur Utama
-
-- ✅ **Tanggal Hijriyah real-time** berbasis lokasi dan zona waktu
-- ✅ **Pergantian hari Hijriyah saat Maghrib**, bukan tengah malam
-- ✅ **Metode Perhitungan**:
-  - 🌍 Global (Umm al-Qura)
-  - 🧮 Hisab Astronomis atau Wujudul Hilal
-  - 🌙 Rukyat Hilal (Imkanur Rukyat)
-- ✅ **Prediksi Akhir Bulan Hijriyah** (29 atau 30 hari)
-- ✅ **Validasi visibilitas hilal** (usia bulan, ketinggian, elongasi)
-- ✅ **Penjelasan keputusan kalender (explain endpoint)**
-- ✅ **Nama Weton** (khusus wilayah Jawa)
-- ✅ **Dark / Light Mode**
-- ✅ **Jam real-time sesuai zona waktu pengguna**
+Aplikasi ini menampilkan **tanggal Hijriyah secara akurat dan konsisten** berdasarkan lokasi geografis, posisi matahari terbenam (Maghrib), dan berbagai metode penetapan global maupun lokal. Kami memisahkan secara tegas antara **Logika Falak (Backend)** dan **Estetika User Experience (Frontend)** untuk menjaga validitas data.
 
 ---
 
-## 🧠 Prinsip Perhitungan
+## 🧠 Filosofi Madilog & Dialektika Falak
 
-- Hari Hijriyah **dimulai saat Matahari terbenam (Maghrib)**
-- Hisab dan Rukyat **dipisahkan secara logika**
-- Tidak ada loncatan tanggal (29 → 1 → 2)
-- Tidak ada perubahan tanggal di tengah malam
-- Rukyat **lebih ketat** daripada Hisab
+Proyek ini dibangun di atas prinsip **Materialisme, Dialektika, dan Logika**:
 
-> Fokus utama proyek ini adalah **konsistensi kalender**, bukan sekadar konversi tanggal.
+1. **Materialisme**: Data astronomi didasarkan pada pergerakan benda langit riil menggunakan ephemeris NASA JPL DE421.
+2. **Dialektika**: Menjembatani perbedaan metode (Hisab vs Rukyat) melalui transparansi data visibilitas hilal.
+3. **Logika**: Memastikan tidak ada perubahan tanggal di tengah malam; hari baru dimulai tepat saat Matahari terbenam.
 
 ---
 
-## 🔧 Teknologi yang Digunakan
+## ✨ Fitur Utama (v2.0 - 2026 Edition)
 
-### Backend (API)
-
-- ⚡ **FastAPI (Python)**
-- 🌌 **Skyfield** + Ephemeris JPL (DE421)
-- 🧮 Astronomi berbasis Julian Day
-- 🕰️ pytz & timezone-aware datetime
-- 🚦 Rate limiting (SlowAPI)
-- ☁️ Deploy: **Vercel (Serverless Python)**
-
-### Frontend
-
-- 🌐 **Next.js + Tailwind CSS**
-- 🟦 **TypeScript**
-- 🎨 **Tailwind CSS + DaisyUI**
-- ☁️ Deploy: **Vercel**
+- 📡 **Real-time Hijri Telemetry**: Sinkronisasi otomatis berdasarkan koordinat GPS dan zona waktu pengguna.
+- 🌅 **Sunset-Based Transition**: Logika pergantian hari saat Maghrib, bukan pukul 00:00.
+- 🧪 **Multi-Method Engine**:
+  - 🌍 **KHGT (Global)**: Kalender Hijriyah Global Tunggal.
+  - 🕋 **Umm al-Qura**: Standar otoritas Mekkah.
+  - 🔢 **Hisab Lokal**: Berdasarkan kriteria Wujudul Hilal.
+  - 🔭 **Rukyat Lokal**: Simulasi visibilitas hilal berbasis kriteria MABIMS.
+- 🔮 **Predictive Analytics**: Prediksi apakah bulan berjalan berjumlah 29 atau 30 hari (Istikmal).
+- 🗺️ **Global Hilal Map**: Integrasi pelacakan posisi hilal di seluruh belahan dunia.
+- ✨ **Local Wisdom**: Integrasi Nama Weton (khusus wilayah Jawa).
+- 🎨 **Emerald-Scientific UI**: Desain "Lunar Aura" yang mendukung Dark/Light mode secara *seamless*.
 
 ---
 
-## 🚀 Cara Menjalankan (Development)
+## 🔧 Teknologi & Arsitektur
 
-### 1️⃣ Clone repository
+### Backend (The Engine)
 
-```sh
-git clone https://github.com/ardie069/kalender-hijriyah.git
+- **FastAPI**: *High-performance* Python framework untuk pemrosesan data asinkron.
+- **Skyfield**: Library astronomi untuk kalkulasi posisi planet dan satelit dengan tingkat akurasi tinggi.
+- **Julian Day Calculation**: Standar internal perhitungan waktu astronomis.
+- **Vercel Serverless**: Infrastruktur backend yang *scalable* dan enteng.
+
+### Frontend (The Dashboard)
+
+- **Next.js 15**: Menggunakan *App Router* dan *Server Components* untuk performa maksimal.
+- **Tailwind CSS v4 + DaisyUI**: Estetika bento-grid dengan sentuhan *Glassmorphism*.
+- **TypeScript**: Menjamin keamanan tipe data antara API dan UI.
+- **Zustand/Context**: Manajemen state tema dan preferensi pengguna.
+
+---
+
+## 🚀 Instalasi & Development
+
+### 1. Clone & Setup
+
+```bash
+git clone [https://github.com/ardie069/kalender-hijriyah.git](https://github.com/ardie069/kalender-hijriyah.git)
 cd kalender-hijriyah
 ```
 
----
+### 2. Backend (FastAPI)
 
-2️⃣ Jalankan Backend (FastAPI)
-
-```sh
+```bash
 cd apps/backend
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install .
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Backend akan berjalan di:
+API akan tersedia di `http://127.0.0.1:8000`.
 
-```sh
-http://127.0.0.1:8000
+### 3. Frontend (Next.js)
+
+```bash
+cd apps/web
+pnpm install
+pnpm dev
 ```
 
----
+Dashboard akan tersedia di `http://localhost:3000`.
 
-3️⃣ Jalankan Frontend (Next.js)
-
-```sh
-cd apps/frontend
-npm install
-npm run dev
-```
-
-Frontend akan berjalan di:
-
-```sh
-http://localhost:3000
-```
-
----
-
-🌐 Endpoint Utama API
-
-| Endpoint | Keterangan |
-| -------- | ---------- |
-| /hijri-date | Tanggal Hijriyah hari ini |
-| /hijri-end-month | Prediksi akhir bulan |
-| /hijri-explain | Penjelasan keputusan kalender |
-| /health | Health check |
-
----
-
-📁 Struktur Proyek
+## 📁 Struktur Proyek (Atomic Design)
 
 ```plaintext
 kalender-hijriyah/
 ├── apps/
-│   ├── backend/          # FastAPI + Astronomi
-│   │   ├── app/
-│   │   ├── data/         # de421.bsp
-│   │   └── pyproject.toml
-│   │
-│   └── web/         # Next.js + Tailwind CSS
-│       ├── app/
-│       ├── public/
-│       └── next.config.ts
-│
-├── docs/                 # Dokumentasi falak & arsitektur
-├── netlify.toml
+│   ├── backend/          # Python FastAPI (Falak Logic)
+│   │   ├── app/          # Core API & Astronomical Service
+│   │   └── data/         # Ephemeris Files (de421.bsp)
+│   └── web/              # Next.js 15 (Emerald UI)
+│       ├── components/   # Atomic UI Components
+│       ├── context/      # Theme & Auth Context
+│       └── hooks/        # Custom React Hooks (useHijri)
+├── docs/                 # Documentation & Research
 └── README.md
-
 ```
 
----
+🌐 API Endpoints Utama
 
-📜 Lisensi
-
-MIT License — bebas digunakan, dimodifikasi, dan dikembangkan.
-
----
-
-Dikembangkan oleh [Ardiansyah](https://github.com/ardie069)
-🧠 Fokus: falak, konsistensi kalender, dan logika yang bisa dipertanggungjawabkan.
+| Endpoint             | Fungsi                       | Parameter Utama     |
+| -------------------- | ---------------------------- | --------------------|
+| GET /hijri-date      |	Ambil tanggal Hijriyah riil |	method, lat, lon    |
+| GET /hijri-end-month |	Prediksi akhir bulan        |	method, year, month |
 
 ---
 
-<details>
-<summary><strong>📘 English Documentation (Click to expand)</strong></summary>
+## 📜 Lisensi
 
-## 📅 Hijri Calendar 🌙
+Lisensi MIT. Bebas dikembangkan untuk kemaslahatan umat dan ilmu pengetahuan.
 
-Hijri Calendar is a web application designed to provide **accurate and consistent Hijri dates**
-based on **geographical location**, **local sunset (Maghrib)**, and **Hijri month determination methods**
-(Global, Hisab, and Rukyat).
-
-The project strictly separates **astronomical calculation logic (backend)**
-from **presentation logic (frontend)** to avoid calendar inconsistencies.
-
----
-
-## ✨ Key Features
-
-- ✅ **Real-time Hijri date** based on location and timezone
-- ✅ **Hijri day transition at sunset**, not at midnight
-- ✅ **Calculation methods**:
-  - 🌍 Global (Umm al-Qura)
-  - 🧮 Astronomical Hisab
-  - 🌙 Hilal Observation (Rukyat)
-- ✅ **End-of-month prediction** (29 or 30 days)
-- ✅ **Hilal visibility validation** (moon age, altitude, elongation)
-- ✅ **Decision explanation endpoint**
-- ✅ **Javanese Weton support** (regional)
-- ✅ **Dark / Light mode**
-- ✅ **Real-time clock**
-
----
-
-## 🧠 Calculation Principles
-
-- Hijri day **starts at sunset (Maghrib)**
-- Hisab and Rukyat are **logically separated**
-- No date skipping (29 → 1 → 2)
-- No date change at midnight
-- Rukyat criteria are **stricter** than Hisab
-
-> The main goal of this project is **calendar consistency**, not mere date conversion.
-
----
-
-## 🔧 Technology Stack
-
-### Backend (API)
-
-- ⚡ FastAPI (Python)
-- 🌌 Skyfield + JPL Ephemeris (DE421)
-- 🧮 Julian Day based astronomy
-- 🕰️ Timezone-aware datetime
-- 🚦 Rate limiting (SlowAPI)
-- ☁️ Deployment: Vercel (Serverless)
-
-### Frontend
-
-- 🌐 Next.js
-- 🟦 TypeScript
-- 🎨 Tailwind CSS + DaisyUI
-- ☁️ Deployment: Vercel
-
----
-
-## 🌐 Main API Endpoints
-
-| Endpoint | Description |
-| -------- | ------------- |
-| `/hijri-date` | Current Hijri date |
-| `/hijri-end-month` | End-of-month prediction |
-| `/hijri-explain` | Decision explanation |
-| `/health` | Health check |
-
----
-
-## 📜 License
-
-MIT License — free to use and modify.
-
----
-
-Developed by **Ardi**  
-Focus: astronomical correctness, calendar consistency, and accountable logic.
-
-</details>
+Build with Logic & Passion by [Ardiansyah](https://github.com/ardie069). Fokus: Falakiyah, Konsistensi Kalender, dan Dialektika Logika.
