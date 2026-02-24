@@ -14,6 +14,8 @@ from app.deps.astronomy import ts, eph, sun, moon, earth
 from app.core.methods.factory import get_method_instance
 from app.core.methods.base import HijriContext
 
+from app.core.services.month_predictor import predict_end_of_month
+
 router = APIRouter()
 
 
@@ -25,10 +27,8 @@ def resolve_now(timezone: str, now: str | None) -> datetime:
 
     if now:
         dt = datetime.fromisoformat(now)
-
         if dt.tzinfo is None:
             dt = tz.localize(dt)
-
         return dt
 
     return datetime.now(tz)
@@ -83,13 +83,11 @@ def hijri_predict_end(
     method: HijriMethod,
     timezone: str,
 ):
-    now_local = resolve_now(timezone, None)
-
-    context = HijriContext(
+    prediction = predict_end_of_month(
         lat=lat,
         lon=lon,
+        method=method,
         timezone=timezone,
-        now_local=now_local,
         ts=ts,
         eph=eph,
         sun=sun,
@@ -97,25 +95,14 @@ def hijri_predict_end(
         earth=earth,
     )
 
-    method_instance = get_method_instance(method)
-    result = method_instance.calculate(context)
-
-    meta = result.metadata
-    decision = meta.get("decision")
-
-    if decision in ("new_month", "new_year"):
-        message = "Kriteria terpenuhi. Besok diperkirakan masuk bulan baru."
-    elif decision == "istikmal_30":
-        message = "Hilal tidak memenuhi kriteria. Bulan digenapkan 30 hari."
-    else:
-        message = "Belum masuk fase evaluasi akhir bulan."
-
     return HijriEndMonthResponse(
         location=LocationSchema(lat=lat, lon=lon, timezone=timezone),
-        generated_at=now_local,
+        generated_at=datetime.now(pytz.timezone(timezone)),
         method=method,
-        today=result.hijri_date,
-        estimated_end_of_month=result.hijri_date,
-        visibility=meta.get("visibility") or meta.get("visibility_data"),
-        message=message,
+        today=HijriDateSchema(**prediction["current_hijri"]),
+        estimated_end_of_month=HijriDateSchema(
+            **prediction["prediction"]["estimated_next_month_1"]
+        ),
+        visibility=prediction["visibility_at_29"],
+        message=prediction["message"],
     )

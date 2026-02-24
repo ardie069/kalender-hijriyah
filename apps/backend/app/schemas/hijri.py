@@ -7,7 +7,7 @@ HijriMethod = Literal["umm_al_qura", "local_hisab", "local_rukyat", "ughc"]
 
 
 def sanitize_numpy(v: Any) -> Any:
-    """Fungsi pembantu untuk konversi rekursif tipe NumPy ke Python standar."""
+    """Konversi rekursif tipe NumPy ke Python standar."""
     if isinstance(v, np.bool_):
         return bool(v)
     if isinstance(v, (np.floating, np.float64, np.float32)):
@@ -22,7 +22,7 @@ def sanitize_numpy(v: Any) -> Any:
 
 
 class NumPyBaseModel(BaseModel):
-    """Base model yang otomatis membersihkan tipe data NumPy."""
+    """Base model otomatis membersihkan tipe data NumPy."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -45,10 +45,15 @@ class LocationSchema(NumPyBaseModel):
 
 
 class HijriAstronomicalDataSchema(NumPyBaseModel):
+    """Data astronomis lengkap, termasuk koordinat referensi (untuk UGHC)."""
+
     moon_altitude: float
     elongation: float
-    moon_age: float
+    moon_age: Optional[float] = None
     is_visible: bool
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    location_name: Optional[str] = None
 
 
 class HijriExplanationSchema(NumPyBaseModel):
@@ -68,21 +73,12 @@ class HijriDateResponse(NumPyBaseModel):
     generated_at: datetime
 
 
-class HijriEndMonthEstimate(NumPyBaseModel):
-    """Data astronomis untuk akhir bulan."""
-
-    moon_age: float
-    moon_altitude: float
-    elongation: float
-    is_visible: bool
-
-
 class HijriEndMonthResponse(NumPyBaseModel):
-    method: str
+    method: HijriMethod
     location: LocationSchema
     generated_at: datetime
     today: HijriDateSchema
-    estimated_end_of_month: Optional[HijriDateSchema] = None
-    estimated_end_of_month_gregorian: Optional[datetime] = None
-    visibility: Optional[HijriEndMonthEstimate] = None
+    estimated_next_month_1: Optional[HijriDateSchema] = None
+    estimated_gregorian: Optional[datetime] = None
+    visibility: Optional[HijriAstronomicalDataSchema] = None
     message: Optional[str] = None
