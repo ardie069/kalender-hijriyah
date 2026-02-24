@@ -48,7 +48,7 @@ export default function HijriDate({
   explanation,
   generatedAt,
 }: HijriDateProps) {
-  if (loading || (!hijriDate && !error)) return <HijriSkeleton />;
+  if ((loading && !hijriDate) || (!hijriDate && !error)) return <HijriSkeleton />;
 
   if (error) {
     return (
@@ -227,7 +227,7 @@ export default function HijriDate({
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-              <p className="text-[10px] font-black text-base-content/60 uppercase tracking-[0.25em]">
+              <p className="text-[10px] font-black dark:text-primary-content text-base-content/60 uppercase tracking-[0.25em]">
                 System Telemetry
               </p>
               <div className="hidden sm:block h-3 w-px bg-base-content/10"></div>

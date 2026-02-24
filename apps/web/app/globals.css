@@ -38,8 +38,12 @@
 
 :root {
   --card-bg: #ffffff;
+  --color-primary: oklch(0.696 0.17 162.48);
+  --color-primary-content: #ffffff;
 }
 
 .dark {
   --card-bg: #1f2937;
+  --color-primary: oklch(0.696 0.17 162.48);
+  --color-primary-content: #ffffff;
 }
