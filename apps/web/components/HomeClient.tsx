@@ -15,12 +15,6 @@ export default function HomeClient() {
   const [selectedMethod, setSelectedMethod] =
     useState<HijriMethod>("umm_al_qura");
 
-  const isDark = mounted && darkMode;
-
-  const bgClass = isDark
-    ? "bg-gray-950 text-white"
-    : "bg-gray-50 text-gray-800";
-
   const userTimezone = mounted
     ? Intl.DateTimeFormat().resolvedOptions().timeZone
     : "UTC";
@@ -42,77 +36,42 @@ export default function HomeClient() {
     ughc: "KHGT",
   };
 
+  if (!mounted) {
+    return <div className="min-h-screen bg-background-light" />;
+  }
+
   return (
-    <main
-      className={`${bgClass} min-h-[calc(100vh-64px)] transition-colors duration-500 px-4 py-6 md:py-12 flex flex-col items-center justify-start`}
-    >
-      <div className="w-full max-w-6xl">
-        <header className="mb-8 md:mb-12 text-center md:text-left px-2">
-          <h1 className="text-3xl md:text-5xl font-black mb-3 tracking-tight flex items-center justify-center md:justify-start gap-3">
-            <span className="text-4xl md:text-6xl">🕌</span>
-            <span>Kalender Hijriyah</span>
+    <div className="flex flex-col gap-8 lg:gap-12 animate-in fade-in duration-1000">
+      {/* 1. Header Section */}
+      <header className="space-y-4">
+        <div className="flex items-center gap-4">
+          <span className="text-5xl sm:text-6xl drop-shadow-md">
+            {darkMode ? "🌙" : "🕌"}
+          </span>
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-gray-900 dark:text-white transition-colors duration-500">
+            Kalender Hijriyah
           </h1>
-          <p className="text-sm md:text-lg opacity-50 max-w-md mx-auto md:mx-0 font-medium leading-relaxed">
-            Integrasi sains astronomi dan kearifan lokal dalam satu genggaman
-            digital.
-          </p>
-        </header>
+        </div>
+        <p className="text-lg sm:text-xl text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl font-medium">
+          Integrasi sains astronomi dan kearifan lokal dalam satu genggaman
+          digital.
+        </p>
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start">
-          <div className="lg:col-span-7 lg:row-start-1 order-1 animate-in fade-in slide-in-from-left-8 duration-700">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        {/* KOLOM KIRI: Data Utama */}
+        <div className="lg:col-span-7 flex flex-col gap-8">
+          <section className="animate-in slide-in-from-left-8 duration-700">
             <Clock userTimezone={userTimezone} />
-          </div>
+          </section>
 
-          <aside className="lg:col-span-5 lg:row-span-2 order-2 lg:order-2 space-y-6">
-            <div
-              className={`p-8 rounded-[3rem] border transition-all duration-500 shadow-xl 
-              ${
-                isDark
-                  ? "bg-gray-900 border-gray-800 shadow-emerald-500/5"
-                  : "bg-white border-gray-200/50 shadow-gray-200/30"
-              }`}
-            >
-              <Method value={selectedMethod} onChange={setSelectedMethod} />
-
-              <div className="mt-8 pt-8 border-t border-gray-100/80 dark:border-gray-800">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-30 mb-4">
-                  Sistem Informasi
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { label: "Zona Waktu", value: userTimezone },
-                    {
-                      label: "Standardisasi",
-                      value: methodLabels[selectedMethod],
-                    },
-                  ].map((info, i) => (
-                    <div
-                      key={i}
-                      className="p-4 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-transparent"
-                    >
-                      <p className="text-[9px] opacity-40 uppercase font-black mb-1">
-                        {info.label}
-                      </p>
-                      <p className="text-xs font-mono font-bold truncate opacity-80">
-                        {info.value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-3xl p-6 flex items-start gap-4">
+              {/* Konten Error */}
             </div>
+          )}
 
-            <div className="hidden lg:block p-8 rounded-[3rem] bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/10 dark:border-emerald-500/20">
-              <p className="text-sm leading-relaxed text-emerald-800 dark:text-emerald-400 font-medium italic opacity-80">
-                <q>
-                  Waktu bukan sekadar angka, melainkan gerak materi di ruang
-                  angkasa yang kita tangkap melalui logika.
-                </q>
-              </p>
-            </div>
-          </aside>
-
-          <div className="lg:col-span-7 lg:row-start-2 order-3 lg:order-3 animate-in fade-in slide-in-from-left-10 duration-1000">
+          <section className="animate-in slide-in-from-bottom-8 duration-1000 delay-200">
             <HijriDate
               hijriDate={hijriDate}
               explanation={explanation}
@@ -123,22 +82,59 @@ export default function HomeClient() {
               method={selectedMethod}
               generatedAt={generatedAt ?? undefined}
             />
-          </div>
+          </section>
         </div>
 
-        <footer className="mt-12 py-12 border-t border-gray-100 dark:border-gray-800 text-center md:text-left">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-[10px] md:text-xs opacity-30 uppercase tracking-[0.3em] font-bold">
-              © 2026 Kalender Hijriyah Digital • Build with Logic
-            </p>
-            <div className="flex gap-6 opacity-30 text-[10px] uppercase font-bold tracking-widest">
-              <span>Next.js 15</span>
-              <span>FastAPI</span>
-              <span>Skyfield API</span>
+        {/* KOLOM KANAN: Sidebar Kontrol */}
+        <aside className="lg:col-span-5 flex flex-col gap-6 sticky top-24">
+          <div className="rounded-4xl p-6 sm:p-8 shadow-card border transition-all duration-500 bg-card-light dark:bg-card-dark dark:text-white border-gray-100 dark:border-gray-800 shadow-gray-200/50 dark:shadow-emerald-500/5">
+            <div className="mb-8">
+              <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-6">
+                Metode Perhitungan
+              </h3>
+              <Method value={selectedMethod} onChange={setSelectedMethod} />
+            </div>
+
+            <div className="w-full border-t border-gray-100 dark:border-gray-800 mb-8 border-dashed" />
+
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4">
+                Sistem Informasi
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <InfoBlock label="Zona Waktu" value={userTimezone} />
+                <InfoBlock
+                  label="Standardisasi"
+                  value={methodLabels[selectedMethod]}
+                />
+              </div>
             </div>
           </div>
-        </footer>
+
+          {/* Quote Section ala Madilog */}
+          <div className="rounded-4xl p-8 border transition-all duration-500 group bg-[#ecfdf5] dark:bg-primary/5 border-primary/10 dark:border-primary/20">
+            <p className="italic font-semibold leading-relaxed transition-opacity text-primary-dark dark:text-primary opacity-90 dark:opacity-80 group-hover:opacity-100">
+              <q>
+                Waktu bukan sekadar angka, melainkan gerak materi di ruang
+                angkasa yang kita tangkap melalui logika.
+              </q>
+            </p>
+          </div>
+        </aside>
       </div>
-    </main>
+    </div>
+  );
+}
+
+function InfoBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border border-gray-100 dark:border-gray-800 rounded-2xl p-4 bg-gray-50/50 dark:bg-white/5 transition-colors duration-500">
+      <span className="block text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+        {label}
+      </span>
+      <span className="font-bold text-xs text-gray-900 dark:text-white block truncate">
+        {value}
+      </span>
+    </div>
   );
 }

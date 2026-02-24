@@ -16,7 +16,7 @@ type ThemeContextType = {
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
-// External store untuk localStorage theme — SSR-safe via useSyncExternalStore
+// --- 1. EXTERNAL STORE LOGIC ---
 let listeners: Array<() => void> = [];
 
 function subscribe(callback: () => void) {
@@ -27,6 +27,7 @@ function subscribe(callback: () => void) {
 }
 
 function getSnapshot(): boolean {
+  if (typeof window === "undefined") return false;
   return localStorage.getItem("theme") === "dark";
 }
 
@@ -35,22 +36,41 @@ function getServerSnapshot(): boolean {
 }
 
 function setTheme(isDark: boolean) {
-  localStorage.setItem("theme", isDark ? "dark" : "light");
-  // Notify semua subscriber bahwa state berubah
+  if (typeof window === "undefined") return;
+
+  const root = window.document.documentElement;
+  if (isDark) {
+    root.classList.add("dark");
+    localStorage.setItem("theme", "dark");
+  } else {
+    root.classList.remove("dark");
+    localStorage.setItem("theme", "light");
+  }
+
   for (const listener of listeners) {
     listener();
   }
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const darkMode = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const darkMode = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot,
+  );
 
   const toggleTheme = () => setTheme(!darkMode);
 
-  // Jika localStorage belum pernah diset, inisialisasi dengan "light"
   useEffect(() => {
-    if (localStorage.getItem("theme") === null) {
-      localStorage.setItem("theme", "light");
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+
+    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+      setTheme(true);
+    } else {
+      setTheme(false);
     }
   }, []);
 

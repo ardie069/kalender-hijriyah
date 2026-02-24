@@ -1,26 +1,45 @@
 @import "tailwindcss";
+@plugin "daisyui";
+@custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Warna sesuai referensi */
+  --color-primary: #10b981;
+  --color-primary-dark: #059669;
+  --color-background-light: #f8f9fa;
+  --color-background-dark: #111827;
+  --color-card-light: #ffffff;
+  --color-card-dark: #1f2937;
+  --color-card: var(--card-bg);
+
+  /* Border Radius Gede (4xl, 5xl) */
+  --radius-4xl: 2.5rem;
+  --radius-5xl: 3rem;
+
+  /* Shadow Soft ala Referensi */
+  --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -2px rgba(0, 0, 0, 0.01);
+  --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* Base Styles untuk Scrollbar */
+@layer base {
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+:root {
+  --card-bg: #ffffff;
+}
+
+.dark {
+  --card-bg: #1f2937;
 }

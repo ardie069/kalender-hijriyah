@@ -1,15 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
-import { useTheme } from "@/context/theme-context";
 import type { HijriDate, Method, HijriAstronomicalData } from "@/types/hijri";
 import { formatFullDate } from "@/lib/utils/timezone";
+import { formatCoordinates } from "@/lib/utils/maps";
 
 interface HijriPredictionData {
   method: Method;
   today?: HijriDate;
-  estimated_end_of_month?: HijriDate | null;
-  estimated_end_of_month_gregorian?: string | null;
+  estimated_next_month_1?: HijriDate | null;
+  estimated_gregorian?: string | null;
   message?: string;
   visibility?: HijriAstronomicalData;
 }
@@ -38,127 +37,172 @@ function formatHijri(date: HijriDate): string {
 }
 
 export default function HijriPrediction({ prediction }: HijriPredictionProps) {
-  const { darkMode } = useTheme();
-
-  const themeClass = useMemo(
-    () =>
-      darkMode
-        ? "bg-white/[0.03] border-white/10"
-        : "bg-black/[0.03] border-black/5",
-    [darkMode],
-  );
 
   if (
     !prediction ||
-    !prediction.estimated_end_of_month ||
-    !prediction.estimated_end_of_month_gregorian
+    !prediction.estimated_next_month_1 ||
+    !prediction.estimated_gregorian
   ) {
     return null;
   }
 
   const isArithmetic = prediction.method === "umm_al_qura";
   const vis = prediction.visibility;
-  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const userTimezone =
+    typeof window !== "undefined"
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : "UTC";
 
   return (
-    <div
-      className={`p-6 rounded-4xl border transition-all duration-500 ${themeClass}`}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold uppercase tracking-widest opacity-60">
-          🌙 Info Akhir Bulan
-        </h3>
+    <div className="group relative animate-in fade-in slide-in-from-bottom-10 duration-1000">
+      {/* Aura Glow - Proyeksi Masa Depan */}
+      <div className="absolute -inset-1 bg-linear-to-tr from-indigo-500/10 via-primary/5 to-emerald-500/10 rounded-5xl blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
 
-        {!isArithmetic && typeof vis?.is_visible === "boolean" && (
-          <span
-            className={`text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-tighter ${
-              vis.is_visible
-                ? "bg-emerald-500/20 text-emerald-500"
-                : "bg-red-500/20 text-red-500"
-            }`}
-          >
-            {vis.is_visible ? "Hilal Terlihat" : "Istikmal"}
-          </span>
-        )}
-      </div>
+      <div className="relative overflow-hidden bg-white/40 dark:bg-card-dark/40 backdrop-blur-3xl p-8 sm:p-10 rounded-4xl border border-white/40 dark:border-white/5 shadow-soft transition-all duration-500">
+        {/* Header: Status Proyeksi */}
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-4">
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+            </div>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 dark:text-gray-500">
+              Lunar Projection Module
+            </h3>
+          </div>
 
-      {prediction.message && (
-        <p className="text-sm leading-relaxed opacity-70 mb-4">
-          {prediction.message}
-        </p>
-      )}
-
-      {prediction.estimated_end_of_month && (
-        <div className="mb-6 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
-          <p className="text-[10px] uppercase opacity-50 font-bold mb-1">
-            Estimasi Bulan Baru:
-          </p>
-
-          <p className="text-lg font-bold text-emerald-500">
-            {formatHijri(prediction.estimated_end_of_month)}
-          </p>
-
-          {prediction.estimated_end_of_month_gregorian && (
-            <p className="text-sm mt-2 opacity-80 font-medium">
-              {formatFullDate(
-                prediction.estimated_end_of_month_gregorian,
-                userTimezone,
-              )}
-            </p>
+          {!isArithmetic && vis && (
+            <div
+              className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest transition-all duration-500
+              ${
+                vis.is_visible
+                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                  : "bg-orange-500/10 text-orange-600 border-orange-500/20"
+              }`}
+            >
+              {vis.is_visible
+                ? "Visibility Verified"
+                : "Cycle Extended (Istikmal)"}
+            </div>
           )}
-        </div>
-      )}
+        </header>
 
-      {!isArithmetic && vis && (
-        <div className="grid grid-cols-2 gap-4 animate-in fade-in zoom-in duration-500">
-          <Stat
-            label="Altitude"
-            value={
-              typeof vis.moon_altitude === "number"
-                ? `${vis.moon_altitude.toFixed(2)}°`
-                : "—"
-            }
-          />
+        {/* Prediction Message: Analisis Naratif */}
+        {prediction.message && (
+          <div className="mb-10 p-6 bg-white/50 dark:bg-white/3 rounded-3xl border border-gray-100 dark:border-white/5 italic">
+            <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400 font-medium">
+              <span className="text-primary font-black not-italic mr-2">
+                LOG:
+              </span>
+              {prediction.message}
+            </p>
+          </div>
+        )}
 
-          <Stat
-            label="Elongasi"
-            value={
-              typeof vis.elongation === "number"
-                ? `${vis.elongation.toFixed(2)}°`
-                : "—"
-            }
-          />
+        {/* Main Result: Target Date (Materi Utama) */}
+        <section className="mb-10 relative overflow-hidden p-8 rounded-[2rem] bg-linear-to-br from-primary/10 to-emerald-500/5 border border-primary/10 shadow-inner group/result">
+          <div className="absolute top-0 right-0 p-6 opacity-10 dark:opacity-20 transition-transform duration-3000 group-hover/result:rotate-180">
+            <svg
+              width="80"
+              height="80"
+              viewBox="0 0 100 100"
+              fill="none"
+              stroke="currentColor"
+            >
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                strokeWidth="0.5"
+                strokeDasharray="5 5"
+              />
+              <path
+                d="M50 5L50 15M50 85L50 95M5 50L15 50M85 50L95 50"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
 
-          <Stat
-            label="Usia Bulan"
-            value={
-              typeof vis.moon_age === "number"
-                ? `${vis.moon_age.toFixed(1)}j`
-                : "—"
-            }
-          />
+          <div className="relative z-10">
+            <p className="text-[9px] uppercase opacity-50 font-black mb-3 tracking-[0.3em] text-primary">
+              Estimated 1 {MONTHS[prediction.estimated_next_month_1.month - 1]}
+            </p>
+            <h4 className="text-3xl sm:text-4xl font-black text-primary tracking-tighter mb-2">
+              {formatHijri(prediction.estimated_next_month_1)}
+            </h4>
+            <div className="flex items-center gap-2">
+              <div className="h-px w-4 bg-primary/30"></div>
+              <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                {formatFullDate(prediction.estimated_gregorian, userTimezone)}
+              </p>
+            </div>
+          </div>
+        </section>
 
-          <Stat
-            label="Kriteria"
-            value={
-              typeof vis.is_visible === "boolean"
-                ? vis.is_visible
-                  ? "✓ Lolos"
-                  : "✕ Tidak Lolos"
-                : "—"
-            }
-          />
-        </div>
-      )}
+        {/* Telemetry Grid: Bukti Material */}
+        {!isArithmetic && vis && (
+          <div className="pt-8 border-t border-gray-100 dark:border-white/5">
+            <div className="grid grid-cols-2 gap-8 mb-8">
+              <Stat
+                label="Moon Altitude"
+                value={`${vis.moon_altitude?.toFixed(2)}°`}
+                isPrimary
+              />
+              <Stat
+                label="Elongation"
+                value={`${vis.elongation?.toFixed(2)}°`}
+              />
+            </div>
+
+            {vis.lat !== undefined && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-transparent">
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black opacity-30 uppercase tracking-[0.3em]">
+                    Projection Reference
+                  </p>
+                  <p className="text-[11px] font-mono font-bold text-gray-600 dark:text-gray-400">
+                    {formatCoordinates(vis.lat, vis.lon || 0)}
+                  </p>
+                </div>
+                <div className="px-3 py-1 bg-primary/10 rounded-lg">
+                  <p className="text-[9px] font-black text-primary uppercase tracking-widest">
+                    {vis.is_visible ? "✓ Criteria Met" : "✕ Below Limit"}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Footer: Tech Hint */}
+        <p className="mt-8 text-[8px] opacity-20 text-center uppercase tracking-[0.5em] font-black">
+          Automated Astronomical Simulation Output
+        </p>
+      </div>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  isPrimary = false,
+}: {
+  label: string;
+  value: string;
+  isPrimary?: boolean;
+}) {
   return (
-    <div className="space-y-1">
-      <p className="text-[9px] uppercase opacity-40 font-bold">{label}</p>
-      <p className="font-mono text-sm font-bold">{value}</p>
+    <div className="flex flex-col gap-1">
+      <p className="text-[9px] font-black opacity-30 uppercase tracking-[0.2em]">
+        {label}
+      </p>
+      <p
+        className={`text-xl sm:text-2xl font-black tabular-nums tracking-tighter ${isPrimary ? "text-primary" : "text-gray-900 dark:text-white"}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }

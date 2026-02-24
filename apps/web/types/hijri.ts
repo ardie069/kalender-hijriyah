@@ -13,19 +13,23 @@ export interface Location {
 }
 
 export interface HijriAstronomicalData {
-  moon_altitude?: number;
-  elongation?: number;
+  moon_altitude: number;
+  elongation: number;
   moon_age?: number;
-  is_visible?: boolean;
+  is_visible: boolean;
+  lat?: number;
+  lon?: number;
+  location_name?: string;
   conjunction_before_sunset?: boolean;
   global_visible?: boolean;
 }
 
 export interface HijriExplanation {
   method: Method;
-  criteria_used?: string;
+  after_sunset: boolean;
+  criteria_used: string;
   reasoning: string[];
-  decision?: string;
+  decision: string;
   astronomical_data?: HijriAstronomicalData;
 }
 
@@ -42,8 +46,8 @@ export interface HijriEndMonthResponse {
   location: Location;
   generated_at: string;
   today: HijriDate;
-  estimated_end_of_month: HijriDate | null;
-  estimated_end_of_month_gregorian?: string | null;
+  estimated_next_month_1: HijriDate | null;
+  estimated_gregorian?: string | null;
   visibility?: HijriAstronomicalData;
   message?: string;
 }
