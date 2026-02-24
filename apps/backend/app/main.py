@@ -10,6 +10,8 @@ from fastapi.responses import FileResponse
 
 from app.deps.rate_limit import limiter
 from app.api.hijri import router as hijri_router
+from app.api.moon import router as moon
+
 
 load_dotenv()
 
@@ -21,14 +23,25 @@ def get_cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "")
     origins = [o.strip() for o in raw.split(",") if o.strip()]
 
-    return origins if origins else ["http://localhost:3000"]
+    # Standarisasi Jalur Lokal
+    default_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://0.0.0.0:3000",
+    ]
+
+    for origin in default_origins:
+        if origin not in origins:
+            origins.append(origin)
+
+    return origins
 
 
 CORS_ORIGINS = get_cors_origins()
 
 app = FastAPI(
     title="Kalender Hijriyah API",
-    version="3.2.0",
+    version="3.3.0",
 )
 
 app.state.limiter = limiter
@@ -44,6 +57,7 @@ app.add_middleware(
 )
 
 app.include_router(hijri_router, prefix="/api")
+app.include_router(moon, prefix="/api", tags=["Lunar"])
 
 
 @app.get("/")

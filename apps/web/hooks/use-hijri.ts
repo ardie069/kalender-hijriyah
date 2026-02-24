@@ -56,6 +56,12 @@ export function useHijri(method: Method, timezone: string): UseHijriResult {
     setLoading(true);
     setError(null);
 
+    setHijriDate(null);
+    setExplanation(null);
+    setEndMonthInfo(null);
+    setGeneratedAt(null);
+    setWeton(null);
+
     try {
       let currentLat = lat;
       let currentLon = lon;
