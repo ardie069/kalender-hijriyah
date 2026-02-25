@@ -21,14 +21,14 @@ export default function SimulationCard({
 }: SimulationCardProps) {
   return (
     <div
-      className={`group flex flex-col lg:flex-row gap-6 p-6 rounded-3xl transition-all ${className}`}
+      className={`group flex flex-col lg:flex-row gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl sm:rounded-3xl transition-all ${className}`}
     >
-      <div className="relative w-full lg:w-2/3 aspect-video rounded-3xl overflow-hidden">
+      <div className="relative w-full lg:w-2/3 aspect-video rounded-2xl sm:rounded-3xl overflow-hidden">
         {visual}
       </div>
       <div className="flex-1 space-y-4 py-2">
         <div className="flex justify-between items-center">
-          <h3 className="text-xl font-black dark:text-white uppercase tracking-tight">
+          <h3 className="text-base sm:text-xl font-black dark:text-white uppercase tracking-tight">
             {title}
           </h3>
           {badge}

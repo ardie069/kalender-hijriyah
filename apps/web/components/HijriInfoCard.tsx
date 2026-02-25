@@ -44,7 +44,7 @@ export default function HijriInfoCard({
       {/* Glow Aura di belakang kartu - Dialektika Cahaya */}
       <div className="absolute -inset-1 bg-linear-to-tr from-primary/30 to-emerald-400/20 rounded-3xl blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000"></div>
 
-      <div className="relative overflow-hidden bg-white/60 dark:bg-card-dark/40 backdrop-blur-3xl p-10 sm:p-12 rounded-[2.8rem] border border-white/40 dark:border-white/5 shadow-card transition-all duration-500 hover:border-primary/20">
+      <div className="relative overflow-hidden bg-white/60 dark:bg-card-dark/40 backdrop-blur-3xl p-6 sm:p-10 md:p-12 rounded-[2rem] sm:rounded-[2.8rem] border border-white/40 dark:border-white/5 shadow-card transition-all duration-500 hover:border-primary/20">
         {/* Dekorasi Ornamen: Tekstur Geometris Halus */}
         <div className="absolute top-0 right-0 p-8 opacity-5 dark:opacity-10 pointer-events-none">
           <svg
@@ -73,7 +73,7 @@ export default function HijriInfoCard({
         </div>
 
         <div className="relative z-10 flex flex-col items-center">
-          <header className="mb-10 w-full text-center">
+          <header className="mb-6 sm:mb-10 w-full text-center">
             <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10 mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">
@@ -83,11 +83,11 @@ export default function HijriInfoCard({
 
             <div className="flex flex-col items-center gap-1">
               {/* Angka Tanggal: Materi Utama yang Bold */}
-              <h2 className="text-8xl sm:text-9xl font-black tracking-tighter text-gray-900 dark:text-white tabular-nums drop-shadow-sm">
+              <h2 className="text-6xl sm:text-8xl md:text-9xl font-black tracking-tighter text-gray-900 dark:text-white tabular-nums drop-shadow-sm">
                 {hijriDate.day}
               </h2>
               <div className="space-y-0">
-                <p className="text-3xl sm:text-4xl font-black text-gray-800 dark:text-gray-200 tracking-tight">
+                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-800 dark:text-gray-200 tracking-tight">
                   {MONTHS[hijriDate.month - 1]}
                 </p>
                 <p className="text-lg font-bold opacity-30 italic tracking-[0.2em] mt-1">

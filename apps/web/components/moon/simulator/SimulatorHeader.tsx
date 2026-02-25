@@ -25,7 +25,7 @@ export default function SimulatorHeader({
   return (
     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
       <div className="space-y-4">
-        <h1 className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter text-gray-900 dark:text-white">
           Simulator Perbandingan
         </h1>
         <div className="flex flex-wrap items-center gap-3">

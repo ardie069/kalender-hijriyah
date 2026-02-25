@@ -64,11 +64,9 @@ export default function RootLayout({
         `}
       >
         <ThemeProvider>
-          <header className="bg-white/80 dark:bg-card-dark/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50">
-            <Navbar />
-          </header>
+          <Navbar />
 
-          <main className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <main className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-10">
             {children}
           </main>
 

@@ -82,8 +82,8 @@ export default function HijriDate({
 
           <div className="relative overflow-hidden bg-white/40 dark:bg-card-dark/40 backdrop-blur-2xl rounded-2xl border border-white/40 dark:border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)] transition-all hover:shadow-primary/5">
             {/* Top Header Section */}
-            <div className="p-8 pb-4">
-              <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
+            <div className="p-4 sm:p-6 md:p-8 pb-4">
+              <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 mb-6 sm:mb-10">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <div className="h-1 w-8 bg-primary rounded-full"></div>
@@ -91,7 +91,7 @@ export default function HijriDate({
                       Logic Analysis Report
                     </h3>
                   </div>
-                  <p className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">
+                  <p className="text-xl sm:text-2xl font-black tracking-tight text-gray-900 dark:text-white">
                     Kenapa {hijriDate.day} {MONTHS[hijriDate.month - 1]}?
                   </p>
                 </div>
@@ -121,7 +121,7 @@ export default function HijriDate({
               </header>
 
               {/* Reasoning Flow: Timeline Style */}
-              <div className="relative space-y-6 mb-10 ml-2">
+              <div className="relative space-y-4 sm:space-y-6 mb-6 sm:mb-10 ml-2">
                 <div className="absolute left-1.75 top-2 bottom-2 w-px bg-gray-200 dark:bg-gray-800"></div>
                 {explanation.reasoning.map((note, i) => (
                   <div key={i} className="flex gap-6 items-start group/item">
@@ -136,8 +136,8 @@ export default function HijriDate({
 
             {/* Bottom Data Section: Telemetry Widgets */}
             {explanation.astronomical_data && (
-              <div className="bg-gray-50/50 dark:bg-white/2 p-8 pt-10 border-t border-gray-100 dark:border-white/5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 mb-10">
+              <div className="bg-gray-50/50 dark:bg-white/2 p-4 sm:p-6 md:p-8 pt-6 sm:pt-10 border-t border-gray-100 dark:border-white/5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10 mb-6 sm:mb-10">
                   <Stat
                     label="Lunar Altitude"
                     value={`${explanation.astronomical_data.moon_altitude?.toFixed(2)}°`}

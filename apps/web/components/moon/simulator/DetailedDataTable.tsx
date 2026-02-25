@@ -18,14 +18,14 @@ function TableRow({
 }) {
   return (
     <tr className="hover:bg-white/5 transition-colors">
-      <td className="px-8 py-5 font-bold flex items-center gap-4 text-gray-900 dark:text-gray-100">
+      <td className="px-4 py-3 sm:px-6 md:px-8 sm:py-4 md:py-5 font-bold flex items-center gap-3 sm:gap-4 text-gray-900 dark:text-gray-100">
         <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl">
           {icon}
         </div>
         {label}
       </td>
-      <td className="px-8 py-5 font-mono text-primary font-black">{value}</td>
-      <td className="px-8 py-5 text-gray-500 text-[10px] font-black uppercase tracking-widest">
+      <td className="px-4 py-3 sm:px-6 md:px-8 sm:py-4 md:py-5 font-mono text-primary font-black">{value}</td>
+      <td className="px-4 py-3 sm:px-6 md:px-8 sm:py-4 md:py-5 text-gray-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest hidden sm:table-cell">
         {threshold}
       </td>
     </tr>
@@ -37,7 +37,7 @@ export default function DetailedDataTable({
 }: DetailedDataTableProps) {
   return (
     <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl rounded-2xl border border-white/40 dark:border-white/5 overflow-hidden shadow-soft">
-      <div className="px-8 py-6 border-b border-white/10 flex justify-between items-center bg-white/20">
+      <div className="px-4 py-4 sm:px-6 md:px-8 sm:py-5 md:py-6 border-b border-white/10 flex justify-between items-center bg-white/20">
         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">
           Detailed Data
         </h3>

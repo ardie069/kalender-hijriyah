@@ -51,7 +51,7 @@ export default function Clock({ userTimezone }: ClockProps) {
 
       <div
         className={`
-          relative overflow-hidden p-10 sm:p-14 rounded-[2.8rem] border transition-all duration-700
+           relative overflow-hidden p-6 sm:p-10 md:p-14 rounded-[2rem] sm:rounded-[2.8rem] border transition-all duration-700
           flex flex-col items-center justify-center text-center backdrop-blur-3xl
           ${
             mounted
@@ -93,13 +93,13 @@ export default function Clock({ userTimezone }: ClockProps) {
 
           {/* Jam: Angka Dominan */}
           <div className="mb-4 relative">
-            <h2 className="text-7xl sm:text-8xl font-black tabular-nums tracking-tighter transition-all duration-500 text-gray-900 dark:text-white dark:drop-shadow-[0_0_25px_rgba(255,255,255,0.1)]">
+            <h2 className="text-5xl sm:text-7xl md:text-8xl font-black tabular-nums tracking-tighter transition-all duration-500 text-gray-900 dark:text-white dark:drop-shadow-[0_0_25px_rgba(255,255,255,0.1)]">
               {mounted ? time.clock : "00.00.00"}
             </h2>
           </div>
 
           {/* Badge Hari & Tanggal */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 mb-10">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 mb-6 sm:mb-10">
             <span className="bg-primary text-white dark:text-black px-4 py-1 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20">
               {mounted ? time.day : "---"}
             </span>

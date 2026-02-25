@@ -17,13 +17,13 @@ export default function StatCard({
   progress,
 }: StatCardProps) {
   return (
-    <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-8 rounded-2xl border border-white/40 dark:border-white/5 flex flex-col h-full shadow-soft transition-all hover:scale-[1.02]">
+    <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-5 sm:p-8 rounded-2xl border border-white/40 dark:border-white/5 flex flex-col h-full shadow-soft transition-all hover:scale-[1.02]">
       <div className="flex items-center gap-4 mb-6">
         <div className="p-3 bg-primary/10 rounded-2xl text-primary">⚡</div>
         <h3 className="font-black text-lg tracking-tight uppercase">{label}</h3>
       </div>
       <div className="grow">
-        <p className="text-4xl font-black tabular-nums tracking-tighter">
+        <p className="text-2xl sm:text-3xl md:text-4xl font-black tabular-nums tracking-tighter">
           {value}
         </p>
         <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-2 leading-relaxed italic">

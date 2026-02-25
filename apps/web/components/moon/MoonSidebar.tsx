@@ -17,7 +17,7 @@ export default function MoonSidebar({
   return (
     <aside className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-right-10 duration-1000">
       {/* --- Calculation Method: Selection Logic --- */}
-      <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-8 rounded-2xl border border-white/40 dark:border-white/5 shadow-soft hover:shadow-primary/5 transition-all duration-500 group">
+      <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-5 sm:p-8 rounded-2xl border border-white/40 dark:border-white/5 shadow-soft hover:shadow-primary/5 transition-all duration-500 group">
         <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-8">
           Metode Kalkulasi
         </h3>
@@ -80,7 +80,7 @@ export default function MoonSidebar({
       </div>
 
       {/* --- Ephemeris Data List: Telemetry --- */}
-      <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-8 rounded-2xl border border-white/40 dark:border-white/5 shadow-soft transition-all duration-500 hover:border-primary/20 relative overflow-hidden">
+      <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-5 sm:p-8 rounded-2xl border border-white/40 dark:border-white/5 shadow-soft transition-all duration-500 hover:border-primary/20 relative overflow-hidden">
         {/* Subtle Background Decoration */}
         <div className="absolute -bottom-4 -right-4 opacity-[0.03] dark:opacity-[0.07] pointer-events-none">
           <svg
@@ -117,7 +117,7 @@ export default function MoonSidebar({
       </div>
 
       {/* --- Wisdom Quote Section: The Spiritual Pulse --- */}
-      <div className="p-8 rounded-2xl bg-emerald-500/5 border border-primary/10 relative overflow-hidden group transition-all duration-700">
+      <div className="p-5 sm:p-8 rounded-2xl bg-emerald-500/5 border border-primary/10 relative overflow-hidden group transition-all duration-700">
         {/* Giant Quote Mark Decoration */}
         <div className="absolute -top-4 -right-2 text-8xl font-black text-primary/10 opacity-0 group-hover:opacity-100 group-hover:translate-y-2 transition-all duration-1000 select-none">
           <q></q>

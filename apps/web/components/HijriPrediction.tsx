@@ -57,9 +57,9 @@ export default function HijriPrediction({ prediction }: HijriPredictionProps) {
       {/* Aura Glow - Proyeksi Masa Depan */}
       <div className="absolute -inset-1 bg-linear-to-tr from-indigo-500/10 via-primary/5 to-emerald-500/10 rounded-3xl blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
 
-      <div className="relative overflow-hidden bg-white/40 dark:bg-card-dark/40 backdrop-blur-3xl p-8 sm:p-10 rounded-2xl border border-white/40 dark:border-white/5 shadow-soft transition-all duration-500">
+      <div className="relative overflow-hidden bg-white/40 dark:bg-card-dark/40 backdrop-blur-3xl p-5 sm:p-8 md:p-10 rounded-2xl border border-white/40 dark:border-white/5 shadow-soft transition-all duration-500">
         {/* Header: Status Proyeksi */}
-        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-4">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-10 gap-4">
           <div className="flex items-center gap-3">
             <div className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
@@ -88,7 +88,7 @@ export default function HijriPrediction({ prediction }: HijriPredictionProps) {
 
         {/* Prediction Message: Analisis Naratif */}
         {prediction.message && (
-          <div className="mb-10 p-6 bg-white/50 dark:bg-white/3 rounded-3xl border border-gray-100 dark:border-white/5 italic">
+          <div className="mb-6 sm:mb-10 p-4 sm:p-6 bg-white/50 dark:bg-white/3 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-white/5 italic">
             <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400 font-medium">
               <span className="text-primary font-black not-italic mr-2">
                 LOG:
@@ -99,7 +99,7 @@ export default function HijriPrediction({ prediction }: HijriPredictionProps) {
         )}
 
         {/* Main Result: Target Date (Materi Utama) */}
-        <section className="mb-10 relative overflow-hidden p-8 rounded-[2rem] bg-linear-to-br from-primary/10 to-emerald-500/5 border border-primary/10 shadow-inner group/result">
+        <section className="mb-6 sm:mb-10 relative overflow-hidden p-4 sm:p-6 md:p-8 rounded-[1.5rem] sm:rounded-[2rem] bg-linear-to-br from-primary/10 to-emerald-500/5 border border-primary/10 shadow-inner group/result">
           <div className="absolute top-0 right-0 p-6 opacity-10 dark:opacity-20 transition-transform duration-3000 group-hover/result:rotate-180">
             <svg
               width="80"
@@ -127,7 +127,7 @@ export default function HijriPrediction({ prediction }: HijriPredictionProps) {
             <p className="text-[9px] uppercase opacity-50 font-black mb-3 tracking-[0.3em] text-primary">
               Estimated 1 {MONTHS[prediction.estimated_next_month_1.month - 1]}
             </p>
-            <h4 className="text-3xl sm:text-4xl font-black text-primary tracking-tighter mb-2">
+            <h4 className="text-2xl sm:text-3xl md:text-4xl font-black text-primary tracking-tighter mb-2">
               {formatHijri(prediction.estimated_next_month_1)}
             </h4>
             <div className="flex items-center gap-2">

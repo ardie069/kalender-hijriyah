@@ -10,7 +10,7 @@ export default function Metric({ label, value, sub }: MetricProps) {
       <p className="text-[9px] font-black opacity-30 uppercase tracking-[0.3em]">
         {label}
       </p>
-      <p className="text-3xl font-black tabular-nums text-gray-900 dark:text-white tracking-tighter">
+      <p className="text-xl sm:text-2xl md:text-3xl font-black tabular-nums text-gray-900 dark:text-white tracking-tighter">
         {value}
       </p>
       <p className="text-[8px] font-bold text-primary uppercase tracking-widest">
