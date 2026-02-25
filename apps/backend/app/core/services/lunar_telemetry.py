@@ -1,6 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 from ..astronomy.skyfield_adapter import SkyfieldAdapter
+from ..astronomy.criteria_registry import CRITERIA_REGISTRY
+from .engine import calculate_month_conjunction
+from ..calendar.julian import jd_to_datetime
 
 
 class LunarTelemetryService:
@@ -14,26 +17,36 @@ class LunarTelemetryService:
         Menghasilkan paket data lengkap untuk Dashboard Info Bulan.
         """
         if dt is None:
-            dt = datetime.now()
+            dt = datetime.now(timezone.utc)
 
-        # 1. Ambil Telemetry Dasar
+        conj_jd = calculate_month_conjunction(
+            dt,
+            self.adapter.ts,
+            self.adapter.earth,
+            self.adapter.sun,
+            self.adapter.moon,
+        )
+
         telemetry = self.adapter.get_moon_telemetry(dt, lat, lon)
-        last_conjunction = self.adapter.get_last_conjunction(dt)
+        last_conjunction = jd_to_datetime(conj_jd, self.adapter.ts)
         age_delta = dt - last_conjunction
         age_days = age_delta.total_seconds() / 86400
 
-        # 2. Dialektika Fase: Apakah membesar atau mengecil?
-        # Kita bandingkan iluminasi sekarang dengan 1 jam ke depan
         dt_future = dt + timedelta(hours=1)
         tel_future = self.adapter.get_moon_telemetry(dt_future, lat, lon)
 
         is_waxing = tel_future["illumination"] > telemetry["illumination"]
         phase_name = self._determine_phase_name(telemetry["illumination"], is_waxing)
-        
+
         is_relevant_time = is_waxing and age_days < 3 and telemetry["altitude"] > 0
-        
+
+        mabims = CRITERIA_REGISTRY["MABIMS"]
+
         if is_relevant_time:
-            is_met = bool(telemetry["altitude"] > 3 and telemetry["elongation"] > 6.4)
+            is_met = (
+                telemetry["altitude"] >= mabims["altitude_min"]
+                and telemetry["elongation"] >= mabims["elongation_min"]
+            )
         else:
             is_met = False
 
