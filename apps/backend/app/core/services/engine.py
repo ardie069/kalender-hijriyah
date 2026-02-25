@@ -25,14 +25,7 @@ def calculate_baseline_hijri(now_local, timezone, ts, lat=None, lon=None, eph=No
 
     # Hitung sunset lokal dulu
     if lat is not None and lon is not None and eph is not None:
-        sunset = calculate_sunset(
-            now_local.date(),
-            lat,
-            lon,
-            timezone,
-            ts,
-            eph,
-        )
+        sunset = calculate_sunset(now_local.date(), lat, lon, timezone, ts, eph)
     else:
         sunset = None
 
@@ -60,24 +53,11 @@ def calculate_sunset(date, lat, lon, timezone, ts, eph):
     _TS_REGISTRY[id(ts)] = ts
     _EPH_REGISTRY[id(eph)] = eph
 
-    return _calculate_sunset_cached(
-        date,
-        lat,
-        lon,
-        timezone,
-        id(ts),
-        id(eph),
-    )
+    return _calculate_sunset_cached(date, lat, lon, timezone, id(ts), id(eph))
 
 
 @lru_cache(maxsize=256)
-def _calculate_conjunction_cached(
-    sunset_jd,
-    ts_id,
-    earth_id,
-    sun_id,
-    moon_id,
-):
+def _calculate_conjunction_cached(sunset_jd, ts_id, earth_id, sun_id, moon_id):
     return get_conjunction_time(
         sunset_jd,
         _TS_REGISTRY[ts_id],
@@ -94,34 +74,18 @@ def calculate_conjunction(sunset_jd, ts, earth, sun, moon):
     _MOON_REGISTRY[id(moon)] = moon
 
     return _calculate_conjunction_cached(
-        sunset_jd,
-        id(ts),
-        id(earth),
-        id(sun),
-        id(moon),
+        sunset_jd, id(ts), id(earth), id(sun), id(moon)
     )
 
 
 @lru_cache(maxsize=128)
-def _calculate_month_conjunction_cached(
-    jd_key,
-    ts_id,
-    earth_id,
-    sun_id,
-    moon_id,
-):
+def _calculate_month_conjunction_cached(jd_key, ts_id, earth_id, sun_id, moon_id):
     ts = _TS_REGISTRY[ts_id]
     earth = _EARTH_REGISTRY[earth_id]
     sun = _SUN_REGISTRY[sun_id]
     moon = _MOON_REGISTRY[moon_id]
 
-    return get_conjunction_time(
-        jd_key,
-        ts,
-        earth,
-        sun,
-        moon,
-    )
+    return get_conjunction_time(jd_key, ts, earth, sun, moon)
 
 
 def calculate_month_conjunction(now_local, ts, earth, sun, moon):
@@ -135,25 +99,11 @@ def calculate_month_conjunction(now_local, ts, earth, sun, moon):
     jd_key = jd_from_datetime(now_utc, ts)
 
     return _calculate_month_conjunction_cached(
-        jd_key,
-        id(ts),
-        id(earth),
-        id(sun),
-        id(moon),
+        jd_key, id(ts), id(earth), id(sun), id(moon)
     )
 
 
-def calculate_visibility(
-    sunset_utc,
-    lat,
-    lon,
-    conj_jd,
-    ts,
-    sun,
-    moon,
-    earth,
-    criteria,
-):
+def calculate_visibility(sunset_utc, lat, lon, conj_jd, ts, sun, moon, earth, criteria):
     """
     Visibilitas Hilal
     """
@@ -163,17 +113,7 @@ def calculate_visibility(
 
 
 def check_historical_lag(
-    current_baseline,
-    noon_jd,
-    lat,
-    lon,
-    timezone,
-    ts,
-    eph,
-    sun,
-    moon,
-    earth,
-    criteria,
+    current_baseline, noon_jd, lat, lon, timezone, ts, eph, sun, moon, earth, criteria
 ):
     days_since_start = current_baseline["day"] - 1
     month_start_noon_jd = noon_jd - days_since_start

@@ -2,8 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 from ..astronomy.skyfield_adapter import SkyfieldAdapter
 from ..astronomy.criteria_registry import CRITERIA_REGISTRY
-from .engine import calculate_month_conjunction
-from ..calendar.julian import jd_to_datetime
+from ..astronomy.conjunction import get_previous_conjunction
 
 
 class LunarTelemetryService:
@@ -19,16 +18,8 @@ class LunarTelemetryService:
         if dt is None:
             dt = datetime.now(timezone.utc)
 
-        conj_jd = calculate_month_conjunction(
-            dt,
-            self.adapter.ts,
-            self.adapter.earth,
-            self.adapter.sun,
-            self.adapter.moon,
-        )
-
         telemetry = self.adapter.get_moon_telemetry(dt, lat, lon)
-        last_conjunction = jd_to_datetime(conj_jd, self.adapter.ts)
+        last_conjunction = get_previous_conjunction(dt, self.adapter)
         age_delta = dt - last_conjunction
         age_days = age_delta.total_seconds() / 86400
 

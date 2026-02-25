@@ -1,4 +1,6 @@
 from functools import lru_cache
+from skyfield import almanac
+from datetime import timedelta, timezone
 
 _TS = None
 _EARTH = None
@@ -37,6 +39,30 @@ def get_conjunction_time(
 
     jd_key = round(jd_start, 3)
     return _cached_conjunction(jd_key)
+
+
+def get_previous_conjunction(dt_utc, adapter):
+
+    if dt_utc.tzinfo is None:
+        raise ValueError("dt_utc must be timezone-aware")
+
+    dt_utc = dt_utc.astimezone(timezone.utc)
+
+    ts = adapter.ts
+    eph = adapter.eph
+
+    t1 = ts.from_datetime(dt_utc - timedelta(days=32))
+    t2 = ts.from_datetime(dt_utc)
+
+    f = almanac.moon_phases(eph)
+    times, phases = almanac.find_discrete(t1, t2, f)
+
+    new_moons = [t for t, p in zip(times, phases) if p == 0]
+
+    if not new_moons:
+        raise RuntimeError("No conjunction found in 32-day window")
+
+    return new_moons[-1].utc_datetime()
 
 
 def _get_diff_lon(jd, ts, earth, sun, moon):
