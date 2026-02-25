@@ -48,7 +48,8 @@ export default function HijriDate({
   explanation,
   generatedAt,
 }: HijriDateProps) {
-  if ((loading && !hijriDate) || (!hijriDate && !error)) return <HijriSkeleton />;
+  if ((loading && !hijriDate) || (!hijriDate && !error))
+    return <HijriSkeleton />;
 
   if (error) {
     return (
@@ -77,9 +78,9 @@ export default function HijriDate({
       {explanation?.reasoning?.length ? (
         <div className="relative group animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-150">
           {/* Efek Pendaran Halus di Belakang (Glow) */}
-          <div className="absolute -inset-2 bg-linear-to-br from-primary/5 via-transparent to-emerald-500/5 rounded-5xl blur-2xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
+          <div className="absolute -inset-2 bg-linear-to-br from-primary/5 via-transparent to-emerald-500/5 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
 
-          <div className="relative overflow-hidden bg-white/40 dark:bg-card-dark/40 backdrop-blur-2xl rounded-4xl border border-white/40 dark:border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)] transition-all hover:shadow-primary/5">
+          <div className="relative overflow-hidden bg-white/40 dark:bg-card-dark/40 backdrop-blur-2xl rounded-2xl border border-white/40 dark:border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)] transition-all hover:shadow-primary/5">
             {/* Top Header Section */}
             <div className="p-8 pb-4">
               <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
@@ -200,7 +201,7 @@ export default function HijriDate({
       {endMonthInfo && (
         <section className="relative group animate-in slide-in-from-bottom-6 duration-700 delay-300">
           {/* Aksentuasi Cahaya di Belakang Card */}
-          <div className="absolute -inset-1 bg-linear-to-r from-primary/20 to-emerald-500/10 rounded-4xl blur-xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+          <div className="absolute -inset-1 bg-linear-to-r from-primary/20 to-emerald-500/10 rounded-2xl blur-xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
 
           <div className="relative">
             <HijriPrediction

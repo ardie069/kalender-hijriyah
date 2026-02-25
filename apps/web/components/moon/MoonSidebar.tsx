@@ -5,50 +5,82 @@ import DataRow from "./DataRow";
 
 interface MoonSidebarProps {
   telemetry?: MoonTelemetry;
+  method: "hisab" | "rukyat";
+  onMethodChange: (method: "hisab" | "rukyat") => void;
 }
 
-export default function MoonSidebar({ telemetry }: MoonSidebarProps) {
+export default function MoonSidebar({
+  telemetry,
+  method,
+  onMethodChange,
+}: MoonSidebarProps) {
   return (
     <aside className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-right-10 duration-1000">
       {/* --- Calculation Method: Selection Logic --- */}
-      <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-8 rounded-4xl border border-white/40 dark:border-white/5 shadow-soft hover:shadow-primary/5 transition-all duration-500 group">
+      <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-8 rounded-2xl border border-white/40 dark:border-white/5 shadow-soft hover:shadow-primary/5 transition-all duration-500 group">
         <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-8">
           Metode Kalkulasi
         </h3>
 
         <div className="space-y-4">
-          {/* Active Method: Ephemeris */}
-          <div className="p-5 bg-primary text-white rounded-[2rem] shadow-lg shadow-primary/20 flex items-center gap-4 transition-transform hover:scale-[1.02]">
-            <div className="bg-white/20 p-2.5 rounded-xl text-xl">🛰️</div>
+          {/* Active Method: Ephemeris (Hisab) */}
+          <button
+            onClick={() => onMethodChange("hisab")}
+            className={`w-full p-5 flex items-center gap-4 transition-all duration-500 rounded-[2rem] text-left cursor-pointer
+              ${
+                method === "hisab"
+                  ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]"
+                  : "bg-gray-100/50 dark:bg-white/5 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 border border-transparent dark:border-white/5"
+              }`}
+          >
+            <div
+              className={`${method === "hisab" ? "bg-white/20" : "bg-gray-200 dark:bg-gray-800"} p-2.5 rounded-xl text-xl`}
+            >
+              🛰️
+            </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-tight">
+              <p
+                className={`text-xs font-black uppercase tracking-tight ${method === "hisab" ? "text-white" : "text-gray-900 dark:text-white"}`}
+              >
                 Ephemeris Hisab
               </p>
               <p className="text-[9px] opacity-80 font-bold uppercase tracking-tighter">
                 Algoritma Jean Meeus
               </p>
             </div>
-          </div>
+          </button>
 
-          {/* Inactive Method: Rukyat (Greyed out but clean) */}
-          <div className="p-5 bg-gray-100/50 dark:bg-white/5 rounded-[2rem] flex items-center gap-4 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500 border border-transparent dark:border-white/5">
-            <div className="bg-gray-200 dark:bg-gray-800 p-2.5 rounded-xl text-xl">
+          {/* Inactive Method: Rukyat (Simulasi) */}
+          <button
+            onClick={() => onMethodChange("rukyat")}
+            className={`w-full p-5 flex items-center gap-4 transition-all duration-500 rounded-[2rem] text-left cursor-pointer
+              ${
+                method === "rukyat"
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20 scale-[1.02]"
+                  : "bg-gray-100/50 dark:bg-white/5 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 border border-transparent dark:border-white/5"
+              }`}
+          >
+            <div
+              className={`${method === "rukyat" ? "bg-white/20" : "bg-gray-200 dark:bg-gray-800"} p-2.5 rounded-xl text-xl`}
+            >
               🔭
             </div>
             <div>
-              <p className="text-xs font-black uppercase text-gray-900 dark:text-white">
+              <p
+                className={`text-xs font-black uppercase tracking-tight ${method === "rukyat" ? "text-white" : "text-gray-900 dark:text-white"}`}
+              >
                 Rukyatul Hilal
               </p>
               <p className="text-[9px] font-bold uppercase tracking-tighter">
                 Observasi Visual
               </p>
             </div>
-          </div>
+          </button>
         </div>
       </div>
 
       {/* --- Ephemeris Data List: Telemetry --- */}
-      <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-8 rounded-4xl border border-white/40 dark:border-white/5 shadow-soft transition-all duration-500 hover:border-primary/20 relative overflow-hidden">
+      <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-8 rounded-2xl border border-white/40 dark:border-white/5 shadow-soft transition-all duration-500 hover:border-primary/20 relative overflow-hidden">
         {/* Subtle Background Decoration */}
         <div className="absolute -bottom-4 -right-4 opacity-[0.03] dark:opacity-[0.07] pointer-events-none">
           <svg
@@ -74,7 +106,7 @@ export default function MoonSidebar({ telemetry }: MoonSidebarProps) {
           <DataRow
             label="Altitude (Tinggi)"
             value={`${telemetry?.altitude.toFixed(2) ?? "0.00"}°`}
-            sub="Di atas ufuk"
+            sub={(telemetry?.altitude ?? 0) > 0 ? "Di atas ufuk" : "Di bawah ufuk"}
           />
           <DataRow
             label="Jarak Bumi-Bulan"
@@ -85,7 +117,7 @@ export default function MoonSidebar({ telemetry }: MoonSidebarProps) {
       </div>
 
       {/* --- Wisdom Quote Section: The Spiritual Pulse --- */}
-      <div className="p-8 rounded-4xl bg-emerald-500/5 border border-primary/10 relative overflow-hidden group transition-all duration-700">
+      <div className="p-8 rounded-2xl bg-emerald-500/5 border border-primary/10 relative overflow-hidden group transition-all duration-700">
         {/* Giant Quote Mark Decoration */}
         <div className="absolute -top-4 -right-2 text-8xl font-black text-primary/10 opacity-0 group-hover:opacity-100 group-hover:translate-y-2 transition-all duration-1000 select-none">
           <q></q>

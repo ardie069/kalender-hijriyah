@@ -42,7 +42,7 @@ export default function HijriInfoCard({
   return (
     <div className="group relative animate-in fade-in zoom-in duration-700">
       {/* Glow Aura di belakang kartu - Dialektika Cahaya */}
-      <div className="absolute -inset-1 bg-linear-to-tr from-primary/30 to-emerald-400/20 rounded-5xl blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000"></div>
+      <div className="absolute -inset-1 bg-linear-to-tr from-primary/30 to-emerald-400/20 rounded-3xl blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000"></div>
 
       <div className="relative overflow-hidden bg-white/60 dark:bg-card-dark/40 backdrop-blur-3xl p-10 sm:p-12 rounded-[2.8rem] border border-white/40 dark:border-white/5 shadow-card transition-all duration-500 hover:border-primary/20">
         {/* Dekorasi Ornamen: Tekstur Geometris Halus */}

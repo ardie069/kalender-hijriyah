@@ -37,7 +37,6 @@ function formatHijri(date: HijriDate): string {
 }
 
 export default function HijriPrediction({ prediction }: HijriPredictionProps) {
-
   if (
     !prediction ||
     !prediction.estimated_next_month_1 ||
@@ -56,9 +55,9 @@ export default function HijriPrediction({ prediction }: HijriPredictionProps) {
   return (
     <div className="group relative animate-in fade-in slide-in-from-bottom-10 duration-1000">
       {/* Aura Glow - Proyeksi Masa Depan */}
-      <div className="absolute -inset-1 bg-linear-to-tr from-indigo-500/10 via-primary/5 to-emerald-500/10 rounded-5xl blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+      <div className="absolute -inset-1 bg-linear-to-tr from-indigo-500/10 via-primary/5 to-emerald-500/10 rounded-3xl blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
 
-      <div className="relative overflow-hidden bg-white/40 dark:bg-card-dark/40 backdrop-blur-3xl p-8 sm:p-10 rounded-4xl border border-white/40 dark:border-white/5 shadow-soft transition-all duration-500">
+      <div className="relative overflow-hidden bg-white/40 dark:bg-card-dark/40 backdrop-blur-3xl p-8 sm:p-10 rounded-2xl border border-white/40 dark:border-white/5 shadow-soft transition-all duration-500">
         {/* Header: Status Proyeksi */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-4">
           <div className="flex items-center gap-3">

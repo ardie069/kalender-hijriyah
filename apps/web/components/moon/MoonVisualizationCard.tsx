@@ -6,11 +6,12 @@ import StatCard from "./StatCard";
 interface MoonVisualizationProps {
   illumination: number;
   phaseName: string;
-  age: number; // Dirubah ke number biar sinkron sama API
+  age: number;
   distance: string;
-  elongation: number; // Dirubah ke number
-  altitude: number; // Ditambahin buat StatCard
+  elongation: number;
+  altitude: number;
   lat: number;
+  is_rukyat_time: boolean;
 }
 
 export default function MoonVisualizationCard({
@@ -20,7 +21,8 @@ export default function MoonVisualizationCard({
   distance = "0",
   elongation = 0,
   altitude = 0,
-  lat = -6.2,
+  lat = 0,
+  is_rukyat_time = false,
 }: MoonVisualizationProps) {
   const isWaning =
     phaseName.toLowerCase().includes("waning") ||
@@ -29,7 +31,7 @@ export default function MoonVisualizationCard({
 
   const isWaxing = !isWaning;
 
-  const isNorth = lat >= 0;
+  const isNorth = lat > 0;
 
   const lightOnRight = (isNorth && isWaxing) || (!isNorth && isWaning);
 
@@ -37,7 +39,7 @@ export default function MoonVisualizationCard({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-1000">
-      <div className="bg-white/60 dark:bg-card-dark/40 backdrop-blur-3xl p-8 sm:p-12 rounded-5xl border border-white/40 dark:border-white/5 shadow-soft overflow-hidden relative group transition-all duration-500">
+      <div className="bg-white/60 dark:bg-card-dark/40 backdrop-blur-3xl p-8 sm:p-12 rounded-3xl border border-white/40 dark:border-white/5 shadow-soft overflow-hidden relative group transition-all duration-500">
         <div className="relative z-10">
           <div className="flex justify-between items-center mb-12">
             <div>
@@ -54,7 +56,6 @@ export default function MoonVisualizationCard({
           </div>
 
           <div className="flex flex-col md:flex-row items-center gap-16 justify-center">
-            {/* --- LUNAR ENGINE: PENGGERAK FASE --- */}
             <div className="relative w-56 h-56 sm:w-64 sm:h-64 shrink-0">
               <div className="absolute inset-0 bg-primary/20 blur-[80px] rounded-full animate-pulse"></div>
 
@@ -90,7 +91,6 @@ export default function MoonVisualizationCard({
               </div>
             </div>
 
-            {/* Metrics: Mapping data dari API */}
             <div className="grid grid-cols-2 gap-y-10 gap-x-8 w-full max-w-sm">
               <Metric
                 label="Iluminasi"
@@ -133,27 +133,45 @@ export default function MoonVisualizationCard({
         </div>
       </div>
 
-      {/* Stats bawah: Altitude dari API, Lag Time (opsional) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <StatCard
           icon="vertical_align_top"
           label="Altitude Bulan"
-          value={`${altitude > 0 ? "+" : ""}${altitude.toFixed(2)}°`}
-          desc="Tinggi di atas ufuk saat pengamatan."
-          footer={
-            altitude > 3
-              ? "Memenuhi kriteria MABIMS (> 3°)"
-              : "Di bawah ambang batas"
+          value={`${altitude.toFixed(2)}°`}
+          desc={
+            altitude > 0
+              ? "Tinggi di atas ufuk saat pengamatan."
+              : "Bulan berada di bawah ufuk"
           }
-          isSuccess={altitude > 3}
+          footer={
+            is_rukyat_time
+              ? altitude > 3
+                ? "Lolos Kriteria MABIMS"
+                : "Belum Lolos Kriteria"
+              : "Posisi Real-time"
+          }
+          isSuccess={is_rukyat_time && altitude > 3}
         />
+
         <StatCard
           icon="schedule"
-          label="Status Visibilitas"
-          value={altitude > 3 && elongation > 6.4 ? "Visible" : "Not Visible"}
-          desc="Berdasarkan parameter Altitude & Elongasi."
+          label={is_rukyat_time ? "Status Visibilitas" : "Elongasi Sudut"}
+          value={
+            is_rukyat_time
+              ? altitude > 3 && elongation > 6.4
+                ? "Visible"
+                : "Not Visible"
+              : `${elongation.toFixed(2)}°`
+          }
+          desc={
+            is_rukyat_time
+              ? "Parameter Altitude & Elongasi"
+              : "Jarak Sudut Bulan-Matahari"
+          }
           footer="Kalkulasi Toposentris"
-          progress={altitude > 3 && elongation > 6.4 ? 100 : 30}
+          progress={
+            is_rukyat_time ? (altitude > 3 && elongation > 6.4 ? 100 : 30) : 100
+          }
         />
       </div>
     </div>

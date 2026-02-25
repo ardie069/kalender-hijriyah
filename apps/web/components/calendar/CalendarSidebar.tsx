@@ -36,7 +36,7 @@ export function CalendarSidebar({
       )}
 
       {/* BLOCK KETERANGAN (The Legend) */}
-      <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-8 rounded-4xl border border-white/40 dark:border-white/5 shadow-soft">
+      <div className="bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-8 rounded-2xl border border-white/40 dark:border-white/5 shadow-soft">
         <h2 className="text-[10px] font-black tracking-[0.3em] text-primary uppercase mb-6">
           Keterangan
         </h2>

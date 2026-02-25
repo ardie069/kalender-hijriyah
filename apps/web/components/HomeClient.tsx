@@ -65,12 +65,6 @@ export default function HomeClient() {
             <Clock userTimezone={userTimezone} />
           </section>
 
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-3xl p-6 flex items-start gap-4">
-              {/* Konten Error */}
-            </div>
-          )}
-
           <section className="animate-in slide-in-from-bottom-8 duration-1000 delay-200">
             <HijriDate
               hijriDate={hijriDate}
@@ -87,7 +81,7 @@ export default function HomeClient() {
 
         {/* KOLOM KANAN: Sidebar Kontrol */}
         <aside className="lg:col-span-5 flex flex-col gap-6 sticky top-24">
-          <div className="rounded-4xl p-6 sm:p-8 shadow-card border transition-all duration-500 bg-card-light dark:bg-card-dark dark:text-white border-gray-100 dark:border-gray-800 shadow-gray-200/50 dark:shadow-emerald-500/5">
+          <div className="rounded-2xl p-6 sm:p-8 shadow-card border transition-all duration-500 bg-card-light dark:bg-card-dark dark:text-white border-gray-100 dark:border-gray-800 shadow-gray-200/50 dark:shadow-emerald-500/5">
             <div className="mb-8">
               <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-6">
                 Metode Perhitungan
@@ -112,7 +106,7 @@ export default function HomeClient() {
           </div>
 
           {/* Quote Section ala Madilog */}
-          <div className="rounded-4xl p-8 border transition-all duration-500 group bg-[#ecfdf5] dark:bg-primary/5 border-primary/10 dark:border-primary/20">
+          <div className="rounded-2xl p-8 border transition-all duration-500 group bg-[#ecfdf5] dark:bg-primary/5 border-primary/10 dark:border-primary/20">
             <p className="italic font-semibold leading-relaxed transition-opacity text-primary-dark dark:text-primary opacity-90 dark:opacity-80 group-hover:opacity-100">
               <q>
                 Waktu bukan sekadar angka, melainkan gerak materi di ruang

@@ -9,7 +9,7 @@ export function YearlyMonthCard({ month, onClick }: YearlyMonthCardProps) {
   return (
     <div
       onClick={onClick}
-      className="group cursor-pointer bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-8 rounded-4xl border border-white/40 dark:border-white/5 hover:border-primary/40 transition-all duration-500 hover:scale-[1.03] shadow-soft"
+      className="group cursor-pointer bg-white/40 dark:bg-card-dark/40 backdrop-blur-xl p-8 rounded-2xl border border-white/40 dark:border-white/5 hover:border-primary/40 transition-all duration-500 hover:scale-[1.03] shadow-soft"
     >
       <div className="flex justify-between items-start mb-6">
         <div>

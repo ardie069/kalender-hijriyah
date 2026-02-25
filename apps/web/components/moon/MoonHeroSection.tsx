@@ -1,7 +1,7 @@
 export default function MoonHeroSection() {
   return (
     <header className="flex flex-col md:flex-row items-start md:items-center gap-8 mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="p-6 bg-emerald-500/10 rounded-4xl shadow-glow border border-primary/20">
+      <div className="p-6 bg-emerald-500/10 rounded-2xl shadow-glow border border-primary/20">
         <span className="text-6xl md:text-7xl block animate-pulse">🌙</span>
       </div>
       <div>

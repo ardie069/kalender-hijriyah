@@ -47,7 +47,7 @@ export default function Clock({ userTimezone }: ClockProps) {
   return (
     <div className="group relative animate-in fade-in slide-in-from-left-10 duration-1000">
       {/* Glow Aura - Dialektika Cahaya & Waktu */}
-      <div className="absolute -inset-1 bg-linear-to-br from-primary/20 via-transparent to-emerald-500/10 rounded-5xl blur-2xl opacity-30 group-hover:opacity-60 transition-opacity duration-1000"></div>
+      <div className="absolute -inset-1 bg-linear-to-br from-primary/20 via-transparent to-emerald-500/10 rounded-3xl blur-2xl opacity-30 group-hover:opacity-60 transition-opacity duration-1000"></div>
 
       <div
         className={`
@@ -93,9 +93,7 @@ export default function Clock({ userTimezone }: ClockProps) {
 
           {/* Jam: Angka Dominan */}
           <div className="mb-4 relative">
-            <h2
-              className="text-7xl sm:text-8xl font-black tabular-nums tracking-tighter transition-all duration-500 text-gray-900 dark:text-white dark:drop-shadow-[0_0_25px_rgba(255,255,255,0.1)]"
-            >
+            <h2 className="text-7xl sm:text-8xl font-black tabular-nums tracking-tighter transition-all duration-500 text-gray-900 dark:text-white dark:drop-shadow-[0_0_25px_rgba(255,255,255,0.1)]">
               {mounted ? time.clock : "00.00.00"}
             </h2>
           </div>

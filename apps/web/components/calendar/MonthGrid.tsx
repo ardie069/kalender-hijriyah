@@ -1,7 +1,15 @@
 import { HIJRI_MONTHS_INDONESIA_GRAMMAR as HIJRI_MONTHS } from "@/lib/constants";
 import type { DateSystem } from "@/types/calendar";
 
-const WEEK_DAYS = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jum'at", "Sabtu"];
+const WEEK_DAYS = [
+  "Ahad",
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jum'at",
+  "Sabtu",
+];
 
 interface MonthGridProps {
   monthId: number;
@@ -12,7 +20,7 @@ interface MonthGridProps {
 export function MonthGrid({ monthId, year, system }: MonthGridProps) {
   const currentMonth = HIJRI_MONTHS.find((m) => m.id === monthId);
   return (
-    <div className="bg-white/60 dark:bg-card-dark/40 backdrop-blur-3xl rounded-5xl border border-white/40 dark:border-white/5 shadow-soft p-6 md:p-12 animate-in zoom-in-95 duration-700">
+    <div className="bg-white/60 dark:bg-card-dark/40 backdrop-blur-3xl rounded-3xl border border-white/40 dark:border-white/5 shadow-soft p-6 md:p-12 animate-in zoom-in-95 duration-700">
       <header className="flex justify-between items-end mb-12">
         <div>
           <h2 className="text-4xl sm:text-5xl font-black tracking-tighter text-gray-900 dark:text-white uppercase">

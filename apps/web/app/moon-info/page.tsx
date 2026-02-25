@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { useMoon } from "@/hooks/use-moon";
 import MoonHeroSection from "@/components/moon/MoonHeroSection";
 import MoonVisualizationCard from "@/components/moon/MoonVisualizationCard";
+import MoonVisibilitySimulator from "@/components/moon/MoonVisibilitySimulator";
 import MoonSidebar from "@/components/moon/MoonSidebar";
 import RukyatWarningBanner from "@/components/moon/RukyatWarningBanner";
 import MoonSkeleton from "@/components/moon/MoonSkeleton";
 
 export default function MoonInfoPage() {
   const { data, loading, error, lat } = useMoon();
+  const [method, setMethod] = useState<"hisab" | "rukyat">("hisab");
 
   if (loading) return <MoonSkeleton />;
 
@@ -25,22 +28,33 @@ export default function MoonInfoPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8 space-y-8">
-            {/* Kirim data telemetry ke visualisasi */}
-            <MoonVisualizationCard
-              illumination={data?.telemetry.illumination ?? 0}
-              phaseName={data?.status.phase_name ?? "Loading..."}
-              age={data?.telemetry.age_days ?? 0}
-              distance={data?.telemetry.distance_km ?? "0"}
-              elongation={data?.telemetry.elongation ?? 0}
-              altitude={data?.telemetry.altitude ?? 0} // <--- Kirim Altitude
-              lat={lat ?? -6.2} // <--- Kirim Latitude dari hook lokasi lu
-            />
-          </div>
+            {method === "hisab" && (
+              <MoonVisualizationCard
+                illumination={data?.telemetry.illumination ?? 0}
+                phaseName={data?.status.phase_name ?? "Loading..."}
+                age={data?.telemetry.age_days ?? 0}
+                distance={data?.telemetry.distance_km ?? "0"}
+                elongation={data?.telemetry.elongation ?? 0}
+                altitude={data?.telemetry.altitude ?? 0}
+                lat={lat ?? 0}
+                is_rukyat_time={data?.status.is_rukyat_time ?? false}
+              />
+            )}
 
-          <MoonSidebar telemetry={data?.telemetry} />
+            {method === "rukyat" && data && (
+              <MoonVisibilitySimulator
+                telemetry={data?.telemetry}
+                status={data?.status}
+              />
+            )}
+          </div>
+          <MoonSidebar
+            telemetry={data?.telemetry}
+            method={method}
+            onMethodChange={setMethod}
+          />
         </div>
 
-        {/* Banner otomatis berubah berdasarkan API */}
         {data?.status.is_rukyat_time && (
           <RukyatWarningBanner isMet={data?.status.is_mabims_met} />
         )}
