@@ -4,9 +4,8 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        // Pastikan ada :path* supaya semua yang di belakang /api ikut diteruskan
         source: "/api/:path*",
-        destination: "http://localhost:8000/api/:path*",
+        destination: "http://127.0.0.1:8000/api/:path*",
       },
     ];
   },
