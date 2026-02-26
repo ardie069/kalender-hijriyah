@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowUpFromLine, Radius } from "lucide-react";
 import Metric from "./Metric";
 import StatCard from "./StatCard";
 
@@ -135,7 +136,7 @@ export default function MoonVisualizationCard({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <StatCard
-          icon="vertical_align_top"
+          icon={<ArrowUpFromLine />}
           label="Altitude Bulan"
           value={`${altitude.toFixed(2)}°`}
           desc={
@@ -154,7 +155,7 @@ export default function MoonVisualizationCard({
         />
 
         <StatCard
-          icon="schedule"
+          icon={<Radius />}
           label={is_rukyat_time ? "Status Visibilitas" : "Elongasi Sudut"}
           value={
             is_rukyat_time

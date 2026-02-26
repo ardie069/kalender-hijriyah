@@ -56,7 +56,7 @@ export default function MoonInfoPage() {
         </div>
 
         {data?.status.is_rukyat_time && (
-          <RukyatWarningBanner isMet={data?.status.is_mabims_met} />
+          <RukyatWarningBanner isMet={!!data?.status.is_visible} />
         )}
       </div>
     </main>
