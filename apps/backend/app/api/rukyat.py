@@ -5,14 +5,15 @@ import pytz
 from app.core.methods.base import HijriContext
 from app.core.astronomy.skyfield_adapter import SkyfieldAdapter
 from app.core.services.rukyat_service import RukyatService
-from app.core.services.rukyat_national_service import RukyatNationalService
+from app.schemas.rukyat import RukyatEvaluateResponse
 
 router = APIRouter()
 
 adapter = SkyfieldAdapter(ephemeris_path="data/de421.bsp")
+service = RukyatService()
 
 
-def create_context(lat: float, lon: float, timezone: str):
+def _build_context(lat: float, lon: float, timezone: str) -> HijriContext:
     tz = pytz.timezone(timezone)
     now_local = datetime.now(tz)
 
@@ -29,27 +30,13 @@ def create_context(lat: float, lon: float, timezone: str):
     )
 
 
-@router.get("/rukyat/evaluate")
+@router.get("/rukyat/evaluate", response_model=RukyatEvaluateResponse)
 async def evaluate_rukyat(
     lat: float = Query(...),
     lon: float = Query(...),
     timezone: str = Query("Asia/Jakarta"),
     region: str = Query("indonesia"),
+    mode: str = Query("local"),
 ):
-    context = create_context(lat, lon, timezone)
-
-    service = RukyatService()
-    return service.evaluate_local_rukyat(context, region)
-
-
-@router.get("/rukyat/national")
-async def evaluate_rukyat_national(
-    lat: float = Query(...),
-    lon: float = Query(...),
-    timezone: str = Query("Asia/Jakarta"),
-    region: str = Query("indonesia"),
-):
-    context = create_context(lat, lon, timezone)
-
-    service = RukyatNationalService()
-    return service.evaluate(context, region)
+    context = _build_context(lat, lon, timezone)
+    return service.evaluate(context, region, mode)
