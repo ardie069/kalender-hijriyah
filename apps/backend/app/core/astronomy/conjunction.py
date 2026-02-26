@@ -1,6 +1,6 @@
-from functools import lru_cache
 from skyfield import almanac
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 
 _TS = None
 _EARTH = None
@@ -41,15 +41,12 @@ def get_conjunction_time(
     return _cached_conjunction(jd_key)
 
 
-def get_previous_conjunction(dt_utc, adapter):
-
-    if dt_utc.tzinfo is None:
-        raise ValueError("dt_utc must be timezone-aware")
-
-    dt_utc = dt_utc.astimezone(timezone.utc)
-
-    ts = adapter.ts
-    eph = adapter.eph
+@lru_cache(maxsize=128)
+def _get_previous_conjunction_cached(jd_bucket: float, ts, eph):
+    """
+    Cache berdasarkan bucket JD agar tidak bergantung bulan Gregorian.
+    """
+    dt_utc = ts.ut1_jd(jd_bucket).utc_datetime()
 
     t1 = ts.from_datetime(dt_utc - timedelta(days=32))
     t2 = ts.from_datetime(dt_utc)
@@ -60,9 +57,27 @@ def get_previous_conjunction(dt_utc, adapter):
     new_moons = [t for t, p in zip(times, phases) if p == 0]
 
     if not new_moons:
-        raise RuntimeError("No conjunction found in 32-day window")
+        raise RuntimeError("No conjunction found")
 
     return new_moons[-1].utc_datetime()
+
+
+def get_previous_conjunction(dt_utc, adapter):
+
+    if dt_utc.tzinfo is None:
+        raise ValueError("dt_utc must be timezone-aware")
+
+    dt_utc = dt_utc.astimezone(timezone.utc)
+
+    jd_now = adapter.ts.from_datetime(dt_utc).ut1
+
+    jd_bucket = round(jd_now, 0)
+
+    return _get_previous_conjunction_cached(
+        jd_bucket,
+        adapter.ts,
+        adapter.eph,
+    )
 
 
 def _get_diff_lon(jd, ts, earth, sun, moon):
