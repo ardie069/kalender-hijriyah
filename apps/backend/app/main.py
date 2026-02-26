@@ -10,7 +10,8 @@ from fastapi.responses import FileResponse
 
 from app.deps.rate_limit import limiter
 from app.api.hijri import router as hijri_router
-from app.api.moon import router as moon
+from app.api.moon import router as moon_router
+from app.api.rukyat import router as rukyat_router
 
 
 load_dotenv()
@@ -57,7 +58,8 @@ app.add_middleware(
 )
 
 app.include_router(hijri_router, prefix="/api")
-app.include_router(moon, prefix="/api", tags=["Lunar"])
+app.include_router(moon_router, prefix="/api", tags=["Lunar"])
+app.include_router(rukyat_router, prefix="/api", tags=["Rukyat"])
 
 
 @app.get("/")

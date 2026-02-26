@@ -10,7 +10,7 @@ class LunarTelemetryService:
         self.adapter = adapter
 
     def get_full_analysis(
-        self, lat: float, lon: float, dt: datetime = None
+        self, lat: float, lon: float, dt: datetime = None, criteria="MABIMS"
     ) -> Dict[str, Any]:
         """
         Menghasilkan paket data lengkap untuk Dashboard Info Bulan.
@@ -31,13 +31,16 @@ class LunarTelemetryService:
 
         is_relevant_time = is_waxing and age_days < 3 and telemetry["altitude"] > 0
 
-        mabims = CRITERIA_REGISTRY["MABIMS"]
+        rule = CRITERIA_REGISTRY[criteria]
 
         if is_relevant_time:
-            is_met = (
-                telemetry["altitude"] >= mabims["altitude_min"]
-                and telemetry["elongation"] >= mabims["elongation_min"]
-            )
+            if rule["type"] == "numeric":
+                is_met = (
+                    telemetry["altitude"] >= rule["altitude_min"]
+                    and telemetry["elongation"] >= rule["elongation_min"]
+                )
+            if rule["type"] == "wujud":
+                is_met = telemetry["altitude"] > 0 and age_days > 0
         else:
             is_met = False
 
@@ -53,7 +56,8 @@ class LunarTelemetryService:
             "status": {
                 "phase_name": phase_name,
                 "is_waning": not is_waxing,
-                "is_mabims_met": is_met,
+                "criteria_used": criteria,
+                "is_visible": is_met,
                 "is_rukyat_time": is_relevant_time,
                 "observation_ref": f"{'North' if lat >= 0 else 'South'} Hemisphere",
             },

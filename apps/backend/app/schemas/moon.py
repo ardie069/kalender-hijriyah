@@ -13,7 +13,8 @@ class MoonTelemetry(BaseModel):
 class MoonStatus(BaseModel):
     phase_name: str
     is_waning: bool
-    is_mabims_met: bool
+    criteria_used: str
+    is_visible: bool
     is_rukyat_time: bool
     observation_ref: str
 
