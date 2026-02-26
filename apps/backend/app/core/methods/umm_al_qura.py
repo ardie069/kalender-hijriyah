@@ -13,7 +13,6 @@ class UmmAlQuraMethod(BaseHijriMethod):
         baseline, _ = calculate_baseline_hijri(
             context.now_local,
             context.timezone,
-            context.ts,
         )
 
         ref_lat, ref_lon, ref_tz = (
@@ -27,8 +26,6 @@ class UmmAlQuraMethod(BaseHijriMethod):
             ref_lat,
             ref_lon,
             ref_tz,
-            context.ts,
-            context.eph,
         )
 
         after_sunset = (

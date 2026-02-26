@@ -24,7 +24,7 @@ class BaseUGHCMethod(BaseHijriMethod):
     def calculate(self, context):
         # 1. Baseline Aritmatika (Jangkar)
         baseline, noon_jd = calculate_baseline_hijri(
-            context.now_local, context.timezone, context.ts
+            context.now_local, context.timezone,
         )
 
         # 2. Maghrib Lokal User (Ganti Hari)
@@ -33,8 +33,6 @@ class BaseUGHCMethod(BaseHijriMethod):
             context.lat,
             context.lon,
             context.timezone,
-            context.ts,
-            context.eph,
         )
         after_sunset = context.now_local >= sunset_local if sunset_local else False
 
@@ -51,15 +49,9 @@ class BaseUGHCMethod(BaseHijriMethod):
             )
 
         # 4. Evaluasi Akhir Bulan (Tanggal 29)
-        # Scan fakta material dunia
         scan = GlobalVisibilityRegistry.scan_global(
             context.now_local.date(),
             self.CRITERIA,
-            context.ts,
-            context.eph,
-            context.sun,
-            context.moon,
-            context.earth,
         )
 
         # --- LOGIKA KEPUTUSAN KHGT MUHAMMADIYAH ---
@@ -76,17 +68,13 @@ class BaseUGHCMethod(BaseHijriMethod):
                 is_new_month = True
             # 2a. Di tempat lain + Konjungsi sebelum Fajr NZ
             else:
-                conj_jd = calculate_conjunction(
-                    noon_jd, context.ts, context.earth, context.sun, context.moon
-                )
-                conj_dt_utc = jd_to_datetime(conj_jd, context.ts)
+                conj_jd = calculate_conjunction(noon_jd)
+                conj_dt_utc = jd_to_datetime(conj_jd)
                 nz_fajr = get_fajr_time(
                     conj_dt_utc.date(),
                     NZ_LOCATION["lat"],
                     NZ_LOCATION["lon"],
                     "UTC",
-                    context.ts,
-                    context.eph,
                 )
 
                 if nz_fajr and conj_dt_utc < nz_fajr.astimezone(pytz.utc):

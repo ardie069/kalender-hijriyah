@@ -1,7 +1,9 @@
-from skyfield.api import load, wgs84
+from skyfield.api import wgs84
 from skyfield.almanac import fraction_illuminated
 import numpy as np
 from datetime import timezone
+
+from ...deps.astronomy import get_provider
 
 
 class SkyfieldAdapter:
@@ -9,23 +11,26 @@ class SkyfieldAdapter:
     Astronomical Adapter Layer.
     Bertanggung jawab hanya pada perhitungan astronomi murni.
     Tidak mengandung logika kalender atau keputusan fiqh.
+
+    Sekarang menggunakan AstronomyProvider singleton, sehingga tidak
+    ada duplikasi loading ephemeris.
     """
 
     _instance = None
 
-    def __new__(cls, ephemeris_path="data/de421.bsp"):
+    def __new__(cls, ephemeris_path=None):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._initialize(ephemeris_path)
+            cls._instance._initialize()
         return cls._instance
 
-    def _initialize(self, ephemeris_path):
-        self.ts = load.timescale()
-        self.eph = load(ephemeris_path)
-
-        self.earth = self.eph["earth"]
-        self.moon = self.eph["moon"]
-        self.sun = self.eph["sun"]
+    def _initialize(self):
+        provider = get_provider()
+        self.ts = provider.ts
+        self.eph = provider.eph
+        self.earth = provider.earth
+        self.moon = provider.moon
+        self.sun = provider.sun
 
     # ==========================================================
     # INTERNAL UTILITIES
@@ -104,7 +109,7 @@ class SkyfieldAdapter:
 
     def get_altaz_data(self, dt, lat, lon):
         """Ambil data Altitude dan Azimuth untuk Matahari dan Bulan"""
-        observer = self.earth + self.topos(lat, lon)
+        observer = self.get_observer(lat, lon)
         t = self.ts.from_datetime(dt)
 
         # Hitung posisi Matahari

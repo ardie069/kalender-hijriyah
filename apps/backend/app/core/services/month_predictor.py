@@ -5,45 +5,26 @@ from app.core.methods.factory import get_method_instance
 from app.core.methods.base import HijriContext
 
 
-def predict_end_of_month(lat, lon, method, timezone, *, ts, eph, sun, moon, earth):
+def predict_end_of_month(lat, lon, method, timezone, **kwargs):
+    """
+    Memprediksi akhir bulan Hijriyah.
+    **kwargs kept for backward compat (ts, eph, sun, moon, earth no longer needed).
+    """
     tz = pytz.timezone(timezone)
     now_local = datetime.now(tz)
 
     # 1. Hitung kondisi hari ini dulu
     method_instance = get_method_instance(method)
-    context_today = HijriContext(
-        lat=lat,
-        lon=lon,
-        timezone=timezone,
-        now_local=now_local,
-        ts=ts,
-        eph=eph,
-        sun=sun,
-        moon=moon,
-        earth=earth,
-    )
+    context_today = HijriContext.from_request(lat, lon, timezone, now_local)
     result_today = method_instance.calculate(context_today)
     hijri_now = result_today.hijri_date
 
     # 2. Cari kapan tanggal 29 di bulan berjalan
-    # Rumus Madilog: (29 - hari_sekarang) adalah sisa hari menuju hari evaluasi
     days_to_29 = 29 - hijri_now["day"]
-
-    # Target simulasi: Maghrib di hari ke-29 Hijriyah
     simulation_local = now_local + timedelta(days=days_to_29)
 
     # 3. Jalankan Simulasi di Masa Depan
-    context_sim = HijriContext(
-        lat=lat,
-        lon=lon,
-        timezone=timezone,
-        now_local=simulation_local,
-        ts=ts,
-        eph=eph,
-        sun=sun,
-        moon=moon,
-        earth=earth,
-    )
+    context_sim = HijriContext.from_request(lat, lon, timezone, simulation_local)
     result_sim = method_instance.calculate(context_sim)
 
     # 4. Ambil Keputusan dari Hasil Simulasi
@@ -56,8 +37,6 @@ def predict_end_of_month(lat, lon, method, timezone, *, ts, eph, sun, moon, eart
     next_month = 1 if month == 12 else month + 1
     next_year = year + 1 if month == 12 else year
 
-    # Jika decision adalah new_month, berarti bulan ini cuma 29 hari
-    # Jika decision adalah istikmal, berarti bulan ini genap 30 hari
     is_istikmal = decision == "istikmal_30"
     offset_from_29 = 2 if is_istikmal else 1
 

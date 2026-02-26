@@ -1,17 +1,8 @@
-from ..services.engine import (
-    calculate_baseline_hijri,
-    calculate_sunset,
-    check_historical_lag,
-)
-from ..calendar.hijri_date import (
-    increment_hijri_day,
-    decrement_hijri_day,
-    start_new_month,
-)
-
 from ..services.visibility_scan import GlobalVisibilityRegistry
+from ..calendar.hijri_date import start_new_month
 from ..config import REGIONAL_RUKYAT_CONFIG
 
+from ._shared import prepare_hijri_baseline, handle_before_sunset, handle_normal_day
 from .base import BaseHijriMethod, HijriResult
 
 
@@ -21,60 +12,17 @@ class LocalRukyatMethod(BaseHijriMethod):
         self.region = region
 
     def calculate(self, context):
-        baseline, noon_jd = calculate_baseline_hijri(
-            context.now_local,
-            context.timezone,
-            context.ts,
+        baseline, after_sunset, sunset_local = prepare_hijri_baseline(
+            context, criteria="MABIMS",
         )
-
-        is_lagging = check_historical_lag(
-            baseline,
-            noon_jd,
-            context.lat,
-            context.lon,
-            context.timezone,
-            context.ts,
-            context.eph,
-            context.sun,
-            context.moon,
-            context.earth,
-            criteria="MABIMS",
-        )
-
-        if is_lagging:
-            baseline = decrement_hijri_day(baseline)
-
-        sunset_local = calculate_sunset(
-            context.now_local.date(),
-            context.lat,
-            context.lon,
-            context.timezone,
-            context.ts,
-            context.eph,
-        )
-
-        after_sunset = context.now_local >= sunset_local if sunset_local else False
 
         if not after_sunset:
-            return HijriResult(
-                hijri_date=baseline,
-                metadata={
-                    "type": "local_rukyat",
-                    "decision": "before_maghrib",
-                },
-            )
+            return handle_before_sunset(baseline, "local_rukyat")
 
         if baseline["day"] != 29:
-            final_date = increment_hijri_day(baseline)
+            return handle_normal_day(baseline, "local_rukyat")
 
-            return HijriResult(
-                hijri_date=final_date,
-                metadata={
-                    "type": "local_rukyat",
-                    "decision": "normal_increment",
-                },
-            )
-
+        # Evaluasi hari ke-29
         if self.mode == "individual":
             sites = [
                 {
@@ -84,7 +32,6 @@ class LocalRukyatMethod(BaseHijriMethod):
                     "timezone": context.timezone,
                 }
             ]
-
             criteria = "MABIMS"
 
         elif self.mode == "national":
@@ -94,19 +41,13 @@ class LocalRukyatMethod(BaseHijriMethod):
             region_config = REGIONAL_RUKYAT_CONFIG[self.region]
             sites = region_config["sites"]
             criteria = region_config["criteria"]
-        
+
         result = GlobalVisibilityRegistry.scan_global(
             context.now_local.date(),
-            sites,
             criteria,
-            context.ts,
-            context.eph,
-            context.sun,
-            context.moon,
-            context.earth,
         )
 
-        if result["visible"]:
+        if result["visible"] if "visible" in result else result.get("anywhere_before_24utc", False):
             final_date = start_new_month(baseline)
             decision = "new_month"
         else:
@@ -118,6 +59,6 @@ class LocalRukyatMethod(BaseHijriMethod):
             metadata={
                 "type": "local_rukyat",
                 "decision": decision,
-                "visibility": result["best_visibility"],
+                "visibility": result.get("best_visibility"),
             },
         )

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from datetime import datetime, timezone
 from app.schemas.moon import MoonInfoResponse
 from app.core.services.lunar_telemetry import LunarTelemetryService
@@ -7,10 +7,8 @@ from app.core.config import REGIONAL_RUKYAT_CONFIG
 
 router = APIRouter()
 
-
-def get_lunar_service():
-    adapter = SkyfieldAdapter(ephemeris_path="data/de421.bsp")
-    return LunarTelemetryService(adapter)
+# Singleton — SkyfieldAdapter sekarang otomatis menggunakan AstronomyProvider
+_service = LunarTelemetryService(SkyfieldAdapter())
 
 
 @router.get("/moon/info", response_model=MoonInfoResponse)
@@ -19,7 +17,6 @@ async def get_moon_info(
     lon: float = Query(..., description="Longitude observer"),
     method: str = Query("local_rukyat"),
     region: str | None = Query(None),
-    service: LunarTelemetryService = Depends(get_lunar_service),
 ):
     if method == "local_rukyat":
         if region and region in REGIONAL_RUKYAT_CONFIG:
@@ -31,6 +28,6 @@ async def get_moon_info(
 
     now = datetime.now(timezone.utc)
 
-    analysis = service.get_full_analysis(lat, lon, now, criteria=criteria)
+    analysis = _service.get_full_analysis(lat, lon, now, criteria=criteria)
 
     return analysis

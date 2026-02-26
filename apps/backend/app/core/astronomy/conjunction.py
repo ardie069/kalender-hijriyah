@@ -1,60 +1,47 @@
+"""
+Conjunction calculation — waktu konjungsi (ijtimak) bulan-matahari.
+
+Astronomy objects diakses dari AstronomyProvider singleton.
+"""
+
 from skyfield import almanac
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta, timezone
 from functools import lru_cache
 
-_TS = None
-_EARTH = None
-_SUN = None
-_MOON = None
 
-
-def setup_conjunction_dependencies(ts, earth, sun, moon):
-    global _TS, _EARTH, _SUN, _MOON
-    _TS = ts
-    _EARTH = earth
-    _SUN = sun
-    _MOON = moon
+def _get_astro():
+    from app.deps.astronomy import get_provider
+    return get_provider()
 
 
 @lru_cache(maxsize=256)
 def _cached_conjunction(jd_key: float) -> float:
-    return _compute_conjunction(
-        jd_key,
-        _TS,
-        _EARTH,
-        _SUN,
-        _MOON,
-    )
+    p = _get_astro()
+    return _compute_conjunction(jd_key, p.ts, p.earth, p.sun, p.moon)
 
 
-def get_conjunction_time(
-    jd_start,
-    ts,
-    earth,
-    sun,
-    moon,
-):
-    if _TS is None:
-        setup_conjunction_dependencies(ts, earth, sun, moon)
-
+def get_conjunction_time(jd_start, ts=None, earth=None, sun=None, moon=None):
+    """
+    Public API — menerima parameter opsional untuk backward compatibility.
+    Kunci cache menggunakan JD yang dibulatkan.
+    """
     jd_key = round(jd_start, 3)
     return _cached_conjunction(jd_key)
 
 
 @lru_cache(maxsize=128)
-def _get_previous_conjunction_cached(jd_bucket: float, ts, eph):
-    """
-    Cache berdasarkan bucket JD agar tidak bergantung bulan Gregorian.
-    """
-    dt_utc = ts.ut1_jd(jd_bucket).utc_datetime()
+def _get_previous_conjunction_cached(jd_bucket: float):
+    """Cache berdasarkan bucket JD agar tidak bergantung bulan Gregorian."""
+    p = _get_astro()
+    dt_utc = p.ts.ut1_jd(jd_bucket).utc_datetime()
 
-    t1 = ts.from_datetime(dt_utc - timedelta(days=32))
-    t2 = ts.from_datetime(dt_utc)
+    t1 = p.ts.from_datetime(dt_utc - timedelta(days=32))
+    t2 = p.ts.from_datetime(dt_utc)
 
-    f = almanac.moon_phases(eph)
+    f = almanac.moon_phases(p.eph)
     times, phases = almanac.find_discrete(t1, t2, f)
 
-    new_moons = [t for t, p in zip(times, phases) if p == 0]
+    new_moons = [t for t, ph in zip(times, phases) if ph == 0]
 
     if not new_moons:
         raise RuntimeError("No conjunction found")
@@ -62,22 +49,22 @@ def _get_previous_conjunction_cached(jd_bucket: float, ts, eph):
     return new_moons[-1].utc_datetime()
 
 
-def get_previous_conjunction(dt_utc, adapter):
+def get_previous_conjunction(dt_utc, adapter=None):
+    """
+    Get previous conjunction before dt_utc.
+    adapter parameter kept for backward compat but no longer needed.
+    """
+    p = _get_astro()
 
     if dt_utc.tzinfo is None:
         raise ValueError("dt_utc must be timezone-aware")
 
     dt_utc = dt_utc.astimezone(timezone.utc)
 
-    jd_now = adapter.ts.from_datetime(dt_utc).ut1
-
+    jd_now = p.ts.from_datetime(dt_utc).ut1
     jd_bucket = round(jd_now, 0)
 
-    return _get_previous_conjunction_cached(
-        jd_bucket,
-        adapter.ts,
-        adapter.eph,
-    )
+    return _get_previous_conjunction_cached(jd_bucket)
 
 
 def _get_diff_lon(jd, ts, earth, sun, moon):

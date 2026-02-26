@@ -10,7 +10,6 @@ from app.schemas.hijri import (
     HijriMethod,
     HijriEndMonthResponse,
 )
-from app.deps.astronomy import ts, eph, sun, moon, earth
 from app.core.methods.factory import get_method_instance
 from app.core.methods.base import HijriContext
 
@@ -45,18 +44,7 @@ def hijri_date(
     now: str = Query(None),
 ):
     now_local = resolve_now(timezone, now)
-
-    context = HijriContext(
-        lat=lat,
-        lon=lon,
-        timezone=timezone,
-        now_local=now_local,
-        ts=ts,
-        eph=eph,
-        sun=sun,
-        moon=moon,
-        earth=earth,
-    )
+    context = HijriContext.from_request(lat, lon, timezone, now_local)
 
     method_instance = get_method_instance(method)
     result = method_instance.calculate(context)
@@ -88,11 +76,6 @@ def hijri_predict_end(
         lon=lon,
         method=method,
         timezone=timezone,
-        ts=ts,
-        eph=eph,
-        sun=sun,
-        moon=moon,
-        earth=earth,
     )
 
     return HijriEndMonthResponse(

@@ -19,7 +19,7 @@ class LunarTelemetryService:
             dt = datetime.now(timezone.utc)
 
         telemetry = self.adapter.get_moon_telemetry(dt, lat, lon)
-        last_conjunction = get_previous_conjunction(dt, self.adapter)
+        last_conjunction = get_previous_conjunction(dt)
         age_delta = dt - last_conjunction
         age_days = age_delta.total_seconds() / 86400
 
@@ -31,7 +31,9 @@ class LunarTelemetryService:
 
         is_relevant_time = is_waxing and age_days < 3 and telemetry["altitude"] > 0
 
-        rule = CRITERIA_REGISTRY[criteria]
+        # Gunakan CRITERIA_REGISTRY untuk evaluasi — menghindari duplikasi
+        rule = CRITERIA_REGISTRY.get(criteria, CRITERIA_REGISTRY["MABIMS"])
+        is_met = False
 
         if is_relevant_time:
             if rule["type"] == "numeric":
@@ -39,10 +41,8 @@ class LunarTelemetryService:
                     telemetry["altitude"] >= rule["altitude_min"]
                     and telemetry["elongation"] >= rule["elongation_min"]
                 )
-            if rule["type"] == "wujud":
+            elif rule["type"] == "wujud":
                 is_met = telemetry["altitude"] > 0 and age_days > 0
-        else:
-            is_met = False
 
         return {
             "telemetry": {

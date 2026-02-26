@@ -1,5 +1,5 @@
 import pytz
-from typing import Dict, Any, List
+from typing import Dict, Any
 from .engine import (
     calculate_baseline_hijri,
     calculate_sunset,
@@ -20,7 +20,7 @@ class RukyatService:
         self, context, region: str = "indonesia", mode: str = "local"
     ) -> Dict[str, Any]:
         baseline, _ = calculate_baseline_hijri(
-            context.now_local, context.timezone, context.ts
+            context.now_local, context.timezone,
         )
 
         baseline["month_name"] = HIJRI_MONTHS[baseline["month"] - 1]
@@ -51,15 +51,13 @@ class RukyatService:
             context.lat,
             context.lon,
             context.timezone,
-            context.ts,
-            context.eph,
         )
 
         if not sunset_local:
             return {"is_rukyat_day": True, "error": "Sunset gagal dihitung."}
 
         vis = self._process_visibility(
-            context, context.lat, context.lon, sunset_local, criteria
+            context.lat, context.lon, sunset_local, criteria,
         )
 
         return {
@@ -68,7 +66,7 @@ class RukyatService:
             # Data untuk Simulator V4
             "altitude_at_sunset": vis["moon_altitude"],
             "azimuth_at_sunset": vis.get("azimuth_moon", 0),
-            "azimuth_diff": vis.get("azimuth_diff", 0),  # Selisih Moon - Sun
+            "azimuth_diff": vis.get("azimuth_diff", 0),
             "elongation_at_sunset": vis["elongation"],
             "moon_age_hours": vis["moon_age_hours"],
             "is_visible": vis["is_visible"],
@@ -92,17 +90,14 @@ class RukyatService:
                 site["lat"],
                 site["lon"],
                 site["timezone"],
-                context.ts,
-                context.eph,
             )
             if not sunset_local:
                 continue
 
             vis = self._process_visibility(
-                context, site["lat"], site["lon"], sunset_local, criteria
+                site["lat"], site["lon"], sunset_local, criteria,
             )
 
-            # Scoring terbaik untuk visualisasi nasional
             score = vis["moon_altitude"] + vis["elongation"]
             if score > best_score:
                 best_score = score
@@ -129,22 +124,12 @@ class RukyatService:
 
     # ── Helper: Perhitungan Visibilitas ──────────────────────────────
 
-    def _process_visibility(self, context, lat, lon, sunset_local, criteria):
+    def _process_visibility(self, lat, lon, sunset_local, criteria):
         sunset_utc = sunset_local.astimezone(pytz.utc)
-        sunset_jd = jd_from_datetime(sunset_utc, context.ts)
+        sunset_jd = jd_from_datetime(sunset_utc)
 
-        conj_jd = calculate_conjunction(
-            sunset_jd, context.ts, context.earth, context.sun, context.moon
-        )
+        conj_jd = calculate_conjunction(sunset_jd)
 
         return calculate_visibility(
-            sunset_utc,
-            lat,
-            lon,
-            conj_jd,
-            context.ts,
-            context.sun,
-            context.moon,
-            context.earth,
-            criteria=criteria,
+            sunset_utc, lat, lon, conj_jd, criteria=criteria,
         )

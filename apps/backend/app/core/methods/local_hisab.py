@@ -1,81 +1,33 @@
 from ..services.engine import (
-    calculate_baseline_hijri,
-    calculate_sunset,
     calculate_conjunction,
     calculate_visibility,
-    check_historical_lag,
 )
-from ..calendar.hijri_date import (
-    increment_hijri_day,
-    decrement_hijri_day,
-    start_new_month,
-)
-
+from ..calendar.hijri_date import start_new_month
 from ..calendar.julian import jd_from_datetime
-import pytz
 
+from ._shared import prepare_hijri_baseline, handle_before_sunset, handle_normal_day
 from .base import BaseHijriMethod, HijriResult
+
+import pytz
 
 
 class LocalHisabMethod(BaseHijriMethod):
     def calculate(self, context):
-        baseline, noon_jd = calculate_baseline_hijri(
-            context.now_local,
-            context.timezone,
-            context.ts,
+        baseline, after_sunset, sunset_local = prepare_hijri_baseline(
+            context, criteria="Wujudul Hilal",
         )
-
-        is_lagging = check_historical_lag(
-            baseline,
-            noon_jd,
-            context.lat,
-            context.lon,
-            context.timezone,
-            context.ts,
-            context.eph,
-            context.sun,
-            context.moon,
-            context.earth,
-            criteria="Wujudul Hilal",
-        )
-
-        if is_lagging:
-            baseline = decrement_hijri_day(baseline)
-
-        sunset_local = calculate_sunset(
-            context.now_local.date(),
-            context.lat,
-            context.lon,
-            context.timezone,
-            context.ts,
-            context.eph,
-        )
-
-        after_sunset = context.now_local >= sunset_local if sunset_local else False
 
         if not after_sunset:
-            return HijriResult(
-                hijri_date=baseline,
-                metadata={
-                    "type": "local_hisab",
-                    "decision": "before_maghrib",
-                },
-            )
+            return handle_before_sunset(baseline, "local_hisab")
 
         if baseline["day"] != 29:
-            final_date = increment_hijri_day(baseline)
+            return handle_normal_day(baseline, "local_hisab")
 
-            return HijriResult(
-                hijri_date=final_date,
-                metadata={"type": "local_hisab", "decision": "normal_increment"},
-            )
-
+        # Evaluasi hari ke-29: cek konjungsi vs sunset
         sunset_utc = sunset_local.astimezone(pytz.utc)
-        sunset_jd = jd_from_datetime(sunset_utc, context.ts)
+        sunset_jd = jd_from_datetime(sunset_utc)
 
-        conj_jd = calculate_conjunction(
-            sunset_jd, context.ts, context.earth, context.sun, context.moon
-        )
+        conj_jd = calculate_conjunction(sunset_jd)
 
         if conj_jd < sunset_jd:
             final_date = start_new_month(baseline)

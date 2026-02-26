@@ -1,3 +1,9 @@
+"""
+Visibility scan global — UGHC/KHGT global visibility scanning.
+
+Registry anti-pattern dihapus. Astronomy objects diakses dari provider.
+"""
+
 from functools import lru_cache
 import pytz
 from datetime import datetime, time
@@ -11,42 +17,17 @@ from .engine import (
     calculate_visibility,
 )
 
-_TS_REGISTRY = {}
-_EPH_REGISTRY = {}
-_EARTH_REGISTRY = {}
-_SUN_REGISTRY = {}
-_MOON_REGISTRY = {}
+
+def _get_astro():
+    from app.deps.astronomy import get_provider
+    return get_provider()
 
 
 class GlobalVisibilityRegistry:
 
     @staticmethod
-    def _store_dependencies(ts, eph, sun, moon, earth):
-        _TS_REGISTRY[id(ts)] = ts
-        _EPH_REGISTRY[id(eph)] = eph
-        _SUN_REGISTRY[id(sun)] = sun
-        _MOON_REGISTRY[id(moon)] = moon
-        _EARTH_REGISTRY[id(earth)] = earth
-
-    @staticmethod
     @lru_cache(maxsize=64)
-    def _cached_scan(
-        date_key,
-        criteria,
-        lat_step,
-        lon_step,
-        ts_id,
-        eph_id,
-        sun_id,
-        moon_id,
-        earth_id,
-    ):
-        ts = _TS_REGISTRY[ts_id]
-        eph = _EPH_REGISTRY[eph_id]
-        sun = _SUN_REGISTRY[sun_id]
-        moon = _MOON_REGISTRY[moon_id]
-        earth = _EARTH_REGISTRY[earth_id]
-
+    def _cached_scan(date_key, criteria, lat_step, lon_step):
         sites = generate_global_grid(lat_step=lat_step, lon_step=lon_step)
 
         result = {
@@ -63,33 +44,27 @@ class GlobalVisibilityRegistry:
 
         for site in sites:
             sunset_local = calculate_sunset(
-                date_key, site["lat"], site["lon"], "UTC", ts, eph
+                date_key, site["lat"], site["lon"], "UTC",
             )
             if not sunset_local:
                 continue
 
             sunset_utc = sunset_local.astimezone(pytz.utc)
-            # Hilal hanya valid jika sunset di titik tersebut terjadi pada hari yang sama secara UTC
-            # (Penting untuk membatasi scan agar tidak meluber ke hari berikutnya)
             if sunset_utc.date() != date_key:
                 continue
+
+            sunset_jd = jd_from_datetime(sunset_utc)
+            conj_jd = calculate_conjunction(sunset_jd)
 
             vis = calculate_visibility(
                 sunset_utc,
                 site["lat"],
                 site["lon"],
-                calculate_conjunction(
-                    jd_from_datetime(sunset_utc, ts), ts, earth, sun, moon
-                ),
-                ts,
-                sun,
-                moon,
-                earth,
+                conj_jd,
                 criteria=criteria,
             )
 
             if vis["is_visible"]:
-                # Logika KHGT Butir 1 & 2
                 if sunset_utc <= end_of_day_utc:
                     result["anywhere_before_24utc"] = True
                 else:
@@ -114,39 +89,26 @@ class GlobalVisibilityRegistry:
         cls,
         date,
         criteria,
-        ts,
-        eph,
-        sun,
-        moon,
-        earth,
+        ts=None,
+        eph=None,
+        sun=None,
+        moon=None,
+        earth=None,
         lat_step=10,
         lon_step=15,
     ):
+        """
+        ts/eph/sun/moon/earth params kept for backward compat
+        but are no longer used — accessed from provider.
+        """
 
-        cache_key = _make_key(
-            date,
-            criteria,
-            lat_step,
-            lon_step,
-        )
+        cache_key = _make_key(date, criteria, lat_step, lon_step)
 
         cached = get_cache(cache_key)
         if cached:
             return cached
 
-        cls._store_dependencies(ts, eph, sun, moon, earth)
-
-        result = cls._cached_scan(
-            date,
-            criteria,
-            lat_step,
-            lon_step,
-            id(ts),
-            id(eph),
-            id(sun),
-            id(moon),
-            id(earth),
-        )
+        result = cls._cached_scan(date, criteria, lat_step, lon_step)
 
         set_cache(cache_key, result)
 
