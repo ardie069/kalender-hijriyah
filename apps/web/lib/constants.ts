@@ -15,7 +15,23 @@ export const HIJRI_MONTHS_INDONESIA_GRAMMAR = [
   { id: 12, name: "Zulhijah", desc: "Ibadah Haji", isSpecial: true },
 ];
 
+export const HIJRI_MONTHS_INTERNATIONAL_GRAMMAR = [
+  { id: 1, name: "Muharram", desc: "Start of Year" },
+  { id: 2, name: "Shafar", desc: "Travel Month" },
+  { id: 3, name: "Rabiul Awwal", desc: "Birth of the Prophet" },
+  { id: 4, name: "Rabiul Akhir", desc: "Winter Solstice" },
+  { id: 5, name: "Jumadil Ula", desc: "Start of Dry Season" },
+  { id: 6, name: "Jumadil Akhir", desc: "End of Dry Season" },
+  { id: 7, name: "Rajab", desc: "Holy Month" },
+  { id: 8, name: "Sha'ban", desc: "Preparation" },
+  { id: 9, name: "Ramadan", desc: "Obligatory Fasting", isSpecial: true },
+  { id: 10, name: "Syawwal", desc: "Eid al-Fitr", isSpecial: true },
+  { id: 11, name: "Dhul Qa'dah", desc: "Calmiring Month" },
+  { id: 12, name: "Dhul Hijjah", desc: "Hajj Month", isSpecial: true },
+];
+
 export type HijriMonth = (typeof HIJRI_MONTHS_INDONESIA_GRAMMAR)[number];
+export type HijriMonthInternational = (typeof HIJRI_MONTHS_INTERNATIONAL_GRAMMAR)[number];
 
 export const METHODS: { id: HijriMethod; label: string; icon: string }[] = [
   { id: "ughc", label: "KHGT", icon: "🌍" },
