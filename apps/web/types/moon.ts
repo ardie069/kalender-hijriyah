@@ -22,11 +22,25 @@ export interface MoonDataResponse {
   timestamp: string;
 }
 
+export interface MoonPosition {
+  altitude: number;
+  elongation: number;
+  moon_age_hours: number;
+}
+
 export interface RukyatResponse {
   is_rukyat_day: boolean;
   sunset_time?: string;
-  altitude_at_sunset?: number;
-  elongation_at_sunset?: number;
+  moon_position?: MoonPosition;
   is_visible?: boolean;
   criteria_used?: string;
+  is_visible_national?: boolean;
+  best_site?: string;
+  hijri_date?: {
+    year: number;
+    month: number;
+    day: number;
+    month_name: string;
+  };
+  error?: string;
 }

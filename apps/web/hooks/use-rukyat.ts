@@ -11,7 +11,10 @@ interface UseRukyatResult {
   reload: () => void;
 }
 
-export function useRukyat(region: string = "indonesia"): UseRukyatResult {
+export function useRukyat(
+  region: string = "indonesia",
+  mode: "local" | "national" = "local",
+): UseRukyatResult {
   const [data, setData] = useState<RukyatResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +52,7 @@ export function useRukyat(region: string = "indonesia"): UseRukyatResult {
       setLon(loc.lon);
 
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-      const res = await fetchRukyat(loc.lat, loc.lon, timezone, region);
+      const res = await fetchRukyat(loc.lat, loc.lon, timezone, region, mode);
 
       setData(res);
     } catch (err) {
@@ -59,7 +61,7 @@ export function useRukyat(region: string = "indonesia"): UseRukyatResult {
     } finally {
       setLoading(false);
     }
-  }, [resolveLocation, region]);
+  }, [resolveLocation, region, mode]);
 
   useEffect(() => {
     loadRukyat();

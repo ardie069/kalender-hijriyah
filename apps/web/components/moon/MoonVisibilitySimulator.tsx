@@ -26,17 +26,20 @@ export default function MoonVisibilitySimulator({
   const updateOffset = (key: keyof typeof offsets, val: number) =>
     setOffsets((prev) => ({ ...prev, [key]: val }));
 
-  const simulationDays = useMemo(() => {
-    const d29Alt = rukyatData?.altitude_at_sunset ?? telemetry.altitude - 2.5;
-    const d29Elon = rukyatData?.elongation_at_sunset ?? 0;
+  const isDay29 = rukyatData?.is_rukyat_day === true;
+  const moonPos = rukyatData?.moon_position;
 
-    const days = [
-      {
+  const simulationDays = useMemo(() => {
+    const days = [];
+
+    // Day 29 card — hanya muncul jika backend mengonfirmasi hari ke-29
+    if (isDay29 && moonPos) {
+      days.push({
         id: "day29" as const,
         title: "Day 29: Penentuan Hilal",
         desc: `Kondisi kritis penentuan bulan baru berdasarkan kriteria ${rukyatData?.criteria_used || "MABIMS"}.`,
-        alt: d29Alt,
-        elong: d29Elon,
+        alt: moonPos.altitude,
+        elong: moonPos.elongation,
         isOrange: false,
         icon: <EyeOff className="w-4 h-4" />,
         badge: (
@@ -46,29 +49,41 @@ export default function MoonVisibilitySimulator({
             {rukyatData?.is_visible ? "Sighting Possible" : "Impossible"}
           </span>
         ),
-        show: true,
-      },
-      {
-        id: "day30" as const,
-        title: "Observation Follow-up",
-        desc: "Simulasi posisi hilal satu hari setelah hari rukyat (H+1 Isbat).",
-        alt: telemetry.altitude,
-        elong: telemetry.elongation,
-        isOrange: true,
-        icon: <Navigation className="w-4 h-4 rotate-45" />,
-        badge: null,
-        show: true,
-      },
-    ];
-    return days.filter((day) => day.show);
-  }, [telemetry, rukyatData]);
+      });
+    }
+
+    // Observation follow-up card — selalu tampil dengan data real-time
+    days.push({
+      id: "day30" as const,
+      title: "Observation Follow-up",
+      desc: "Simulasi posisi hilal satu hari setelah hari rukyat (H+1 Isbat).",
+      alt: telemetry.altitude,
+      elong: telemetry.elongation,
+      isOrange: true,
+      icon: <Navigation className="w-4 h-4 rotate-45" />,
+      badge: null,
+    });
+
+    return days;
+  }, [telemetry, rukyatData, isDay29, moonPos]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <SimulatorHeader
-        sunsetTime="17:54"
-        moonAltitudeAtSunset={telemetry.altitude}
-        elongation={telemetry.elongation}
+        sunsetTime={
+          rukyatData?.sunset_time
+            ? new Date(rukyatData.sunset_time).toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "—"
+        }
+        moonAltitudeAtSunset={
+          isDay29 && moonPos ? moonPos.altitude : telemetry.altitude
+        }
+        elongation={
+          isDay29 && moonPos ? moonPos.elongation : telemetry.elongation
+        }
       />
 
       <div className="flex flex-col gap-12">

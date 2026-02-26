@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMoon } from "@/hooks/use-moon";
+import { useRukyat } from "@/hooks/use-rukyat";
 import MoonHeroSection from "@/components/moon/MoonHeroSection";
 import MoonVisualizationCard from "@/components/moon/MoonVisualizationCard";
 import MoonVisibilitySimulator from "@/components/moon/MoonVisibilitySimulator";
@@ -11,6 +12,7 @@ import MoonSkeleton from "@/components/moon/MoonSkeleton";
 
 export default function MoonInfoPage() {
   const { data, loading, error, lat } = useMoon();
+  const { data: rukyatData } = useRukyat();
   const [method, setMethod] = useState<"hisab" | "rukyat">("hisab");
 
   if (loading) return <MoonSkeleton />;
@@ -43,8 +45,9 @@ export default function MoonInfoPage() {
 
             {method === "rukyat" && data && (
               <MoonVisibilitySimulator
-                telemetry={data?.telemetry}
-                status={data?.status}
+                telemetry={data.telemetry}
+                status={data.status}
+                rukyatData={rukyatData}
               />
             )}
           </div>
