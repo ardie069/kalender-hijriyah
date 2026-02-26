@@ -1,6 +1,5 @@
 import { Moon, Sparkles, Sun } from "lucide-react";
 
-
 interface LocalSliderProps {
   value: number;
   onChange: (val: number) => void;
@@ -8,9 +7,15 @@ interface LocalSliderProps {
   elong: number;
 }
 
-export default function LocalSlider({ value, onChange, alt, elong }: LocalSliderProps) {
+export default function LocalSlider({
+  value,
+  onChange,
+  alt,
+}: LocalSliderProps) {
   const isAbove = alt > 0;
-  const maxRange = Math.min(120, Math.max(45, Math.ceil(elong * 5)));
+
+  const lagTime = Math.ceil(alt * 4);
+  const maxRange = isAbove ? Math.max(15, lagTime) : 30;
 
   return (
     <div className="space-y-3">
@@ -25,24 +30,39 @@ export default function LocalSlider({ value, onChange, alt, elong }: LocalSlider
               <Moon className="w-3 h-3" />
             )}
           </div>
-          <span className="text-[10px] font-black uppercase text-gray-400">
-            T + {value} Menit
-          </span>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase text-gray-400">
+              T + {value} Menit
+            </span>
+            {isAbove && value === lagTime && (
+              <span className="text-[8px] font-bold text-orange-500 uppercase leading-none">
+                Moonset Point ⚓
+              </span>
+            )}
+          </div>
         </div>
-        {value >= 15 && value <= 25 && isAbove && (
+
+        {/* Best view biasanya 15-25 menit setelah sunset, tapi hanya jika belum moonset */}
+        {value >= 15 && value < lagTime && (
           <span className="text-[9px] font-black text-primary flex items-center gap-1 uppercase animate-pulse">
             <Sparkles className="w-3 h-3" /> Best View
           </span>
         )}
       </div>
+
       <input
         type="range"
         min="0"
         max={maxRange}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value))}
-        className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-primary bg-gray-200 dark:bg-gray-800`}
+        className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-primary bg-gray-200 dark:bg-gray-800 transition-all"
       />
+
+      <div className="flex justify-between text-[8px] font-bold text-gray-500 uppercase px-1">
+        <span>Sunset</span>
+        {isAbove && <span>Moonset ({lagTime}m)</span>}
+      </div>
     </div>
   );
 }

@@ -1,38 +1,24 @@
 import pytz
-
+from typing import Dict, Any, List
 from .engine import (
     calculate_baseline_hijri,
     calculate_sunset,
     calculate_conjunction,
     calculate_visibility,
 )
-
 from ..calendar.julian import jd_from_datetime
-from ..config import REGIONAL_RUKYAT_CONFIG
-
-HIJRI_MONTHS = [
-    "Muharam",
-    "Safar",
-    "Rabiulawal",
-    "Rabiulakhir",
-    "Jumadilawal",
-    "Jumadilakhir",
-    "Rajab",
-    "Syakban",
-    "Ramadan",
-    "Syawal",
-    "Zulkaidah",
-    "Zulhijah",
-]
+from ..config import REGIONAL_RUKYAT_CONFIG, HIJRI_MONTHS
 
 
 class RukyatService:
     """
-    Unified Rukyat Service — menangani evaluasi rukyat lokal (single-site)
-    dan nasional (multi-site) dalam satu class modular.
+    Unified Rukyat Service — Menangani evaluasi lokal & nasional.
+    Sudah terstandarisasi untuk Frontend & Pydantic Schema.
     """
 
-    def evaluate(self, context, region: str = "indonesia", mode: str = "local"):
+    def evaluate(
+        self, context, region: str = "indonesia", mode: str = "local"
+    ) -> Dict[str, Any]:
         baseline, _ = calculate_baseline_hijri(
             context.now_local, context.timezone, context.ts
         )
@@ -54,12 +40,12 @@ class RukyatService:
 
         if mode == "national":
             return self._evaluate_national(context, region_config, criteria)
-        else:
-            return self._evaluate_local(context, criteria)
 
-    # ── Local (single-site) ───────────────────────────────────────────
+        return self._evaluate_local(context, criteria)
 
-    def _evaluate_local(self, context, criteria: str):
+    # ── Local (Single-Site) ───────────────────────────────────────────
+
+    def _evaluate_local(self, context, criteria: str) -> Dict[str, Any]:
         sunset_local = calculate_sunset(
             context.now_local.date(),
             context.lat,
@@ -68,51 +54,37 @@ class RukyatService:
             context.ts,
             context.eph,
         )
+
         if not sunset_local:
-            return {
-                "is_rukyat_day": True,
-                "error": "Sunset could not be calculated",
-            }
+            return {"is_rukyat_day": True, "error": "Sunset gagal dihitung."}
 
-        sunset_utc = sunset_local.astimezone(pytz.utc)
-        sunset_jd = jd_from_datetime(sunset_utc, context.ts)
-
-        conj_jd = calculate_conjunction(
-            sunset_jd, context.ts, context.earth, context.sun, context.moon
-        )
-
-        vis = calculate_visibility(
-            sunset_utc,
-            context.lat,
-            context.lon,
-            conj_jd,
-            context.ts,
-            context.sun,
-            context.moon,
-            context.earth,
-            criteria=criteria,
+        vis = self._process_visibility(
+            context, context.lat, context.lon, sunset_local, criteria
         )
 
         return {
             "is_rukyat_day": True,
             "sunset_time": sunset_local.isoformat(),
-            "moon_position": {
-                "altitude": vis["moon_altitude"],
-                "elongation": vis["elongation"],
-                "moon_age_hours": vis["moon_age_hours"],
-            },
+            # Data untuk Simulator V4
+            "altitude_at_sunset": vis["moon_altitude"],
+            "azimuth_at_sunset": vis.get("azimuth_moon", 0),
+            "azimuth_diff": vis.get("azimuth_diff", 0),  # Selisih Moon - Sun
+            "elongation_at_sunset": vis["elongation"],
+            "moon_age_hours": vis["moon_age_hours"],
             "is_visible": vis["is_visible"],
             "criteria_used": criteria,
+            "site_name": "Local Positioning System",
         }
 
-    # ── National (multi-site) ─────────────────────────────────────────
+    # ── National (Multi-Site) ─────────────────────────────────────────
 
-    def _evaluate_national(self, context, region_config: dict, criteria: str):
+    def _evaluate_national(
+        self, context, region_config: dict, criteria: str
+    ) -> Dict[str, Any]:
         sites = region_config["sites"]
-
-        any_visible = False
         best_visibility = None
         best_score = -999
+        any_visible = False
 
         for site in sites:
             sunset_local = calculate_sunset(
@@ -126,55 +98,53 @@ class RukyatService:
             if not sunset_local:
                 continue
 
-            sunset_utc = sunset_local.astimezone(pytz.utc)
-            sunset_jd = jd_from_datetime(sunset_utc, context.ts)
-
-            conj_jd = calculate_conjunction(
-                sunset_jd,
-                context.ts,
-                context.earth,
-                context.sun,
-                context.moon,
+            vis = self._process_visibility(
+                context, site["lat"], site["lon"], sunset_local, criteria
             )
 
-            vis = calculate_visibility(
-                sunset_utc,
-                site["lat"],
-                site["lon"],
-                conj_jd,
-                context.ts,
-                context.sun,
-                context.moon,
-                context.earth,
-                criteria=criteria,
-            )
-
+            # Scoring terbaik untuk visualisasi nasional
             score = vis["moon_altitude"] + vis["elongation"]
-
             if score > best_score:
                 best_score = score
-                best_visibility = {
-                    **vis,
-                    "site": site["name"],
-                }
+                best_visibility = {**vis, "site": site["name"], "sunset": sunset_local}
 
             if vis["is_visible"]:
                 any_visible = True
 
-        # Build moon_position from best site data
-        moon_position = None
-        if best_visibility:
-            moon_position = {
-                "altitude": best_visibility["moon_altitude"],
-                "elongation": best_visibility["elongation"],
-                "moon_age_hours": best_visibility.get("moon_age_hours", 0),
-            }
+        if not best_visibility:
+            return {"is_rukyat_day": True, "error": "Gagal menghitung data nasional."}
 
         return {
             "is_rukyat_day": True,
             "is_visible": any_visible,
-            "is_visible_national": any_visible,
+            "sunset_time": best_visibility["sunset"].isoformat(),
+            "altitude_at_sunset": best_visibility["moon_altitude"],
+            "azimuth_at_sunset": best_visibility.get("azimuth_moon", 0),
+            "azimuth_diff": best_visibility.get("azimuth_diff", 0),
+            "elongation_at_sunset": best_visibility["elongation"],
+            "moon_age_hours": best_visibility["moon_age_hours"],
             "criteria_used": criteria,
-            "best_site": best_visibility.get("site") if best_visibility else None,
-            "moon_position": moon_position,
+            "site_name": best_visibility["site"],
         }
+
+    # ── Helper: Perhitungan Visibilitas ──────────────────────────────
+
+    def _process_visibility(self, context, lat, lon, sunset_local, criteria):
+        sunset_utc = sunset_local.astimezone(pytz.utc)
+        sunset_jd = jd_from_datetime(sunset_utc, context.ts)
+
+        conj_jd = calculate_conjunction(
+            sunset_jd, context.ts, context.earth, context.sun, context.moon
+        )
+
+        return calculate_visibility(
+            sunset_utc,
+            lat,
+            lon,
+            conj_jd,
+            context.ts,
+            context.sun,
+            context.moon,
+            context.earth,
+            criteria=criteria,
+        )

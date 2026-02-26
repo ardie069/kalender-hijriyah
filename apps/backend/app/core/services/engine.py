@@ -1,6 +1,7 @@
 import pytz
 from datetime import datetime, time, timedelta
 from functools import lru_cache
+from skyfield.api import wgs84
 
 from ..calendar.julian import jd_from_datetime, jd_to_datetime, julian_to_hijri
 from ..astronomy.conjunction import get_conjunction_time
@@ -107,9 +108,22 @@ def calculate_visibility(sunset_utc, lat, lon, conj_jd, ts, sun, moon, earth, cr
     """
     Visibilitas Hilal
     """
-    return evaluate_visibility(
+    vis = evaluate_visibility(
         sunset_utc, lat, lon, conj_jd, ts, sun, moon, earth, criteria=criteria
     )
+
+    observer = earth + wgs84.latlon(lat, lon)
+    t = ts.from_datetime(sunset_utc)
+
+    sun_pos = observer.at(t).observe(sun).apparent().altaz()
+    moon_pos = observer.at(t).observe(moon).apparent().altaz()
+
+    return {
+        **vis,
+        "azimuth_moon": round(moon_pos[1].degrees, 2),
+        "azimuth_sun": round(sun_pos[1].degrees, 2),
+        "azimuth_diff": round(moon_pos[1].degrees - sun_pos[1].degrees, 2),
+    }
 
 
 def check_historical_lag(

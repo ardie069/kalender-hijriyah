@@ -15,9 +15,6 @@ export default function SimulatorHeader({
 }: SimulatorHeaderProps) {
   const isMoonAboveHorizon = moonAltitudeAtSunset > 0;
 
-  // LOGIKA DINAMIS RANGE:
-  // Secara kasar, 1 derajat altitude/elongasi butuh ~4 menit untuk terbenam.
-  // Kita buat range minimal 30 menit dan maksimal (elongasi * 5) atau plafon 120 menit.
   const dynamicMaxRange = isMoonAboveHorizon
     ? Math.min(120, Math.max(45, Math.ceil(elongation * 5)))
     : 30;

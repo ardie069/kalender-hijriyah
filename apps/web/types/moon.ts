@@ -21,11 +21,13 @@ export interface MoonDataResponse {
   status: MoonStatus;
   timestamp: string;
 }
-
 export interface MoonPosition {
   altitude: number;
   elongation: number;
   moon_age_hours: number;
+  azimuth_diff: number;
+  azimuth_moon?: number;
+  azimuth_sun?: number;
 }
 
 export interface RukyatResponse {
@@ -36,6 +38,7 @@ export interface RukyatResponse {
   criteria_used?: string;
   is_visible_national?: boolean;
   best_site?: string;
+  site_name?: string;
   hijri_date?: {
     year: number;
     month: number;

@@ -1,3 +1,20 @@
+HIJRI_MONTHS = [
+    "Muharram",
+    "Shafar",
+    "Rabiul awwal",
+    "Rabiul akhir",
+    "Jumadil awwal",
+    "Jumadil akhir",
+    "Rajab",
+    "Sha'ban",
+    "Ramadan",
+    "Shawwal",
+    "Dhul Qa'dah",
+    "Dhul Hijjah",
+]
+
+# ====== Location =======
+
 AL_HARAM_LOCATION = {
     "lat": 21.4225,
     "lon": 39.8262,

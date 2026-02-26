@@ -101,3 +101,23 @@ class SkyfieldAdapter:
         angle = np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
 
         return float(angle)
+
+    def get_altaz_data(self, dt, lat, lon):
+        """Ambil data Altitude dan Azimuth untuk Matahari dan Bulan"""
+        observer = self.earth + self.topos(lat, lon)
+        t = self.ts.from_datetime(dt)
+
+        # Hitung posisi Matahari
+        sun_astrometric = observer.at(t).observe(self.sun)
+        sun_alt, sun_az, _ = sun_astrometric.apparent().altaz()
+
+        # Hitung posisi Bulan
+        moon_astrometric = observer.at(t).observe(self.moon)
+        moon_alt, moon_az, _ = moon_astrometric.apparent().altaz()
+
+        return {
+            "sun_az": sun_az.degrees,
+            "sun_alt": sun_alt.degrees,
+            "moon_az": moon_az.degrees,
+            "moon_alt": moon_alt.degrees,
+        }

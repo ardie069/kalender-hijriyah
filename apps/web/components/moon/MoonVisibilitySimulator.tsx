@@ -32,7 +32,6 @@ export default function MoonVisibilitySimulator({
   const simulationDays = useMemo(() => {
     const days = [];
 
-    // Day 29 card — hanya muncul jika backend mengonfirmasi hari ke-29
     if (isDay29 && moonPos) {
       days.push({
         id: "day29" as const,
@@ -40,6 +39,7 @@ export default function MoonVisibilitySimulator({
         desc: `Kondisi kritis penentuan bulan baru berdasarkan kriteria ${rukyatData?.criteria_used || "MABIMS"}.`,
         alt: moonPos.altitude,
         elong: moonPos.elongation,
+        azDiff: moonPos.azimuth_diff || 0,
         isOrange: false,
         icon: <EyeOff className="w-4 h-4" />,
         badge: (
@@ -59,6 +59,7 @@ export default function MoonVisibilitySimulator({
       desc: "Simulasi posisi hilal satu hari setelah hari rukyat (H+1 Isbat).",
       alt: telemetry.altitude,
       elong: telemetry.elongation,
+      azDiff: telemetry.azimuth - 275,
       isOrange: true,
       icon: <Navigation className="w-4 h-4 rotate-45" />,
       badge: null,
@@ -101,6 +102,7 @@ export default function MoonVisibilitySimulator({
             visual={
               <SkyBox
                 alt={day.alt}
+                azimuthDiff={day.azDiff}
                 offset={offsets[day.id]}
                 isOrange={day.isOrange}
                 label={`${day.title} View`}
@@ -115,8 +117,9 @@ export default function MoonVisibilitySimulator({
                       className={`w-4 h-4 ${day.id === "day29" ? "text-primary" : ""}`}
                     />
                   }
-                  label="Altitude"
-                  value={`${(day.alt - offsets[day.id] * 0.25).toFixed(2)}°`}
+                  label="Current Alt"
+                  // Hasilnya akan 0.00 saat slider mentok di lagTime
+                  value={`${Math.max(0, day.alt - offsets[day.id] * 0.25).toFixed(2)}°`}
                 />
                 <MiniStat
                   icon={
@@ -133,7 +136,7 @@ export default function MoonVisibilitySimulator({
               <LocalSlider
                 value={offsets[day.id]}
                 onChange={(val) => updateOffset(day.id, val)}
-                alt={day.alt}
+                alt={day.alt} // Altitude dasar saat sunset (T+0)
                 elong={day.elong}
               />
             }
