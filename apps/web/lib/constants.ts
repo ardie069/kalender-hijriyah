@@ -39,3 +39,25 @@ export const METHODS: { id: HijriMethod; label: string; icon: string }[] = [
   { id: "local_hisab", label: "Hisab", icon: "🔢" },
   { id: "local_rukyat", label: "Rukyat", icon: "🔭" },
 ];
+
+export interface GregorianMonth {
+  id: number;
+  name: string;
+  desc: string;
+}
+
+export const GREGORIAN_MONTHS: GregorianMonth[] = [
+  { id: 1, name: "Januari", desc: "Awal Tahun" },
+  { id: 2, name: "Februari", desc: "Bulan Pendek" },
+  { id: 3, name: "Maret", desc: "Awal Musim" },
+  { id: 4, name: "April", desc: "Musim Semi" },
+  { id: 5, name: "Mei", desc: "Bulan Buruh" },
+  { id: 6, name: "Juni", desc: "Pertengahan" },
+  { id: 7, name: "Juli", desc: "Bulan Kemerdekaan" },
+  { id: 8, name: "Agustus", desc: "Hari Kemerdekaan" },
+  { id: 9, name: "September", desc: "Awal Semester" },
+  { id: 10, name: "Oktober", desc: "Bulan Kesehatan" },
+  { id: 11, name: "November", desc: "Bulan Pahlawan" },
+  { id: 12, name: "Desember", desc: "Akhir Tahun" },
+];
+

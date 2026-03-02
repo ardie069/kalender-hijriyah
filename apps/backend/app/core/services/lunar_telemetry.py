@@ -31,7 +31,6 @@ class LunarTelemetryService:
 
         is_relevant_time = is_waxing and age_days < 3 and telemetry["altitude"] > 0
 
-        # Gunakan CRITERIA_REGISTRY untuk evaluasi — menghindari duplikasi
         rule = CRITERIA_REGISTRY.get(criteria, CRITERIA_REGISTRY["MABIMS"])
         is_met = False
 
@@ -69,9 +68,9 @@ class LunarTelemetryService:
         Logika Kategorisasi Fase Bulan (The Terminator Logic)
         """
         if illum < 1:
-            return "Bulan Baru (Ijtimak)"
-        if illum > 98:
-            return "Bulan Purnama"
+            return "Bulan Baru (New Moon)"
+        if illum > 99.5:
+            return "Bulan Purnama (Full Moon)"
 
         if is_waxing:
             if illum < 45:

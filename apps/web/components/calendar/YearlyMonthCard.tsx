@@ -1,11 +1,23 @@
-import type { HijriMonth } from "@/lib/constants";
+import type { DateSystem } from "@/types/calendar";
+
+interface MonthInfo {
+  id: number;
+  name: string;
+  desc: string;
+  isSpecial?: boolean;
+}
 
 interface YearlyMonthCardProps {
-  month: HijriMonth;
+  month: MonthInfo;
+  dateSystem: DateSystem;
   onClick: () => void;
 }
 
-export function YearlyMonthCard({ month, onClick }: YearlyMonthCardProps) {
+export function YearlyMonthCard({
+  month,
+  dateSystem,
+  onClick,
+}: YearlyMonthCardProps) {
   return (
     <div
       onClick={onClick}
@@ -14,7 +26,9 @@ export function YearlyMonthCard({ month, onClick }: YearlyMonthCardProps) {
       <div className="flex justify-between items-start mb-6">
         <div>
           <p className="text-[8px] font-black opacity-30 uppercase tracking-[0.3em] mb-1">
-            Orbit Stage {month.id}
+            {dateSystem === "hijri"
+              ? `Orbit Stage ${month.id}`
+              : `Bulan ke-${month.id}`}
           </p>
           <h3 className="text-2xl font-black text-gray-900 dark:text-white group-hover:text-primary transition-colors">
             {month.name}

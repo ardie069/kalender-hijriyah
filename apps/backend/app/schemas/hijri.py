@@ -55,3 +55,15 @@ class HijriEndMonthResponse(NumPyBaseModel):
     estimated_end_of_month: Optional[HijriDateSchema] = None
     visibility: Optional[HijriAstronomicalDataSchema] = None
     message: Optional[str] = None
+
+
+class GregorianMonthData(NumPyBaseModel):
+    month_id: int
+    month_name: str
+    total_days: int
+    day_1_weekday: int  # 0=Senin (Python weekday)
+
+
+class GregorianYearResponse(NumPyBaseModel):
+    year: int
+    months: list[GregorianMonthData]

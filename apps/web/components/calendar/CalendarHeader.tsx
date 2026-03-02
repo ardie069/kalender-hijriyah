@@ -28,7 +28,9 @@ export function CalendarHeader({
           </span>
         </h1>
         <p className="mt-3 text-[10px] md:text-xs font-black uppercase tracking-[0.4em] opacity-40">
-          {method.toUpperCase()} Engine • Global Simulation 2026
+          {dateSystem === "hijri"
+            ? `${method.toUpperCase()} Engine • Kalender Hijriyah`
+            : "Kalender Masehi • Standard Calendar"}
         </p>
       </div>
 

@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMounted } from "@/hooks/use-mounted";
 import type { Method as HijriMethod } from "@/types/hijri";
-import { HIJRI_MONTHS_INDONESIA_GRAMMAR as HIJRI_MONTHS } from "@/lib/constants";
+import {
+  HIJRI_MONTHS_INDONESIA_GRAMMAR as HIJRI_MONTHS,
+  GREGORIAN_MONTHS,
+} from "@/lib/constants";
 import type { DateSystem, ViewMode } from "@/types/calendar";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { GlobalSettings } from "@/components/calendar/GlobalSettings";
 import { CalendarSidebar } from "@/components/calendar/CalendarSidebar";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
 import { YearlyMonthCard } from "@/components/calendar/YearlyMonthCard";
+import { useCalendar } from "@/hooks/use-calendar";
 
 export default function CalendarPage() {
   const mounted = useMounted();
@@ -19,6 +23,56 @@ export default function CalendarPage() {
   const [year, setYear] = useState(1447);
   const [method, setMethod] = useState<HijriMethod>("umm_al_qura");
   const [dateSystem, setDateSystem] = useState<DateSystem>("hijri");
+
+  // Lokasi default Jakarta — bisa di-extend jadi geolocation nanti
+  const lat = -6.2;
+  const lon = 106.845;
+
+  const { months, loading, error, today } = useCalendar(
+    year,
+    dateSystem,
+    method,
+    lat,
+    lon,
+  );
+
+  // --- Auto-adjust saat pindah mode ---
+  useEffect(() => {
+    if (dateSystem === "gregorian") {
+      setYear(new Date().getFullYear());
+      setSelectedMonth(new Date().getMonth() + 1);
+    } else {
+      setYear(1447);
+      setSelectedMonth(9);
+    }
+  }, [dateSystem]);
+
+  // --- Auto-generate: navigasi bulan melewati batas tahun ---
+  const handleMonthNav = (direction: "prev" | "next") => {
+    const maxMonth = dateSystem === "hijri" ? 12 : 12;
+    if (direction === "next") {
+      if (selectedMonth >= maxMonth) {
+        setYear((y) => y + 1);
+        setSelectedMonth(1);
+      } else {
+        setSelectedMonth((m) => m + 1);
+      }
+    } else {
+      if (selectedMonth <= 1) {
+        setYear((y) => y - 1);
+        setSelectedMonth(maxMonth);
+      } else {
+        setSelectedMonth((m) => m - 1);
+      }
+    }
+  };
+
+  const currentMonthData = months.find((m) => m.month_id === selectedMonth);
+
+  const monthList =
+    dateSystem === "hijri"
+      ? HIJRI_MONTHS.map((m) => ({ id: m.id, name: m.name, desc: m.desc, isSpecial: "isSpecial" in m ? m.isSpecial : false }))
+      : GREGORIAN_MONTHS.map((m) => ({ id: m.id, name: m.name, desc: m.desc, isSpecial: false }));
 
   if (!mounted)
     return (
@@ -50,22 +104,37 @@ export default function CalendarPage() {
             viewMode={viewMode}
             selectedMonth={selectedMonth}
             onMonthSelect={setSelectedMonth}
+            dateSystem={dateSystem}
+            onMonthNav={handleMonthNav}
           />
 
           {/* MAIN CONTENT AREA */}
           <div className="lg:col-span-9">
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-2xl text-sm mb-6">
+                {error}
+              </div>
+            )}
+
             {viewMode === "monthly" ? (
               <MonthGrid
-                monthId={selectedMonth}
+                monthData={currentMonthData}
                 year={year}
                 system={dateSystem}
+                loading={loading}
+                todayDay={
+                  today && today.year === year && today.month === currentMonthData?.month_id
+                    ? today.day
+                    : undefined
+                }
               />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                {HIJRI_MONTHS.map((m) => (
+                {monthList.map((m) => (
                   <YearlyMonthCard
                     key={m.id}
                     month={m}
+                    dateSystem={dateSystem}
                     onClick={() => {
                       setSelectedMonth(m.id);
                       setViewMode("monthly");

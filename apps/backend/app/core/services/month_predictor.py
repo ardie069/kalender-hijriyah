@@ -1,63 +1,114 @@
+# app/core/services/month_predictor.py
 import pytz
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, date
 from app.core.methods.factory import get_method_instance
-from app.core.methods.base import HijriContext
+
+HIJRI_MONTH_NAMES = [
+    "", "Muharam", "Safar", "Rabiulawal", "Rabiulakhir",
+    "Jumadilawal", "Jumadilakhir", "Rajab", "Syakban",
+    "Ramadan", "Syawal", "Zulkaidah", "Zulhijah",
+]
 
 
-def predict_end_of_month(lat, lon, method, timezone, **kwargs):
-    """
-    Memprediksi akhir bulan Hijriyah.
-    **kwargs kept for backward compat (ts, eph, sun, moon, earth no longer needed).
-    """
+class MonthPredictor:
+    def __init__(self, factory):
+        self.factory = factory
+
+    def predict_full_year(self, hijri_year: int, lat, lon, timezone, method):
+        method_instance = get_method_instance(method)
+        calendar_data = []
+
+        # Estimasi 1 Muharram
+        current_gregorian = self._estimate_start_of_hijri_year(
+            hijri_year, lat, lon, timezone, method
+        )
+
+        for m_idx in range(1, 13):
+            day_29_gregorian = current_gregorian + timedelta(days=28)
+            # PANGGIL FACTORY DI SINI
+            context = self.factory.create_context(lat, lon, timezone, day_29_gregorian)
+
+            result = method_instance.calculate(context)
+            meta = result.metadata
+
+            total_days = 30 if meta.get("decision") == "istikmal_30" else 29
+
+            calendar_data.append(
+                {
+                    "month_id": m_idx,
+                    "month_name": HIJRI_MONTH_NAMES[m_idx],
+                    "total_days": total_days,
+                    "start_gregorian": current_gregorian.isoformat(),
+                    "day_1_weekday": current_gregorian.weekday(),
+                    "visibility": meta.get("visibility"),
+                }
+            )
+            current_gregorian += timedelta(days=total_days)
+
+        return calendar_data
+
+    def _estimate_start_of_hijri_year(self, year, lat, lon, tz, method):
+        # Scan +/- 15 hari dari estimasi rata-rata
+        total_days_approx = int((year - 1) * 354.367)
+        base_date = date(622, 7, 19) + timedelta(days=total_days_approx)
+        method_instance = get_method_instance(method)
+        timezone = pytz.timezone(tz)
+
+        current_test = base_date - timedelta(days=10)
+        for _ in range(30):
+            test_dt = datetime.combine(current_test, datetime.min.time()).replace(
+                tzinfo=timezone
+            )
+            ctx = self.factory.create_context(lat, lon, tz, test_dt)
+            res = method_instance.calculate(ctx)
+            if res.hijri_date["month"] == 1 and res.hijri_date["day"] == 1:
+                # Return datetime, bukan date, supaya kompatibel dengan create_context
+                return datetime.combine(current_test, datetime.min.time()).replace(
+                    tzinfo=timezone
+                )
+            current_test += timedelta(days=1)
+        return datetime.combine(base_date, datetime.min.time()).replace(
+            tzinfo=timezone
+        )
+
+
+# --- STANDALONE FUNCTION BUAT API ---
+def predict_end_of_month(lat, lon, method, timezone, context_factory):
+    # Kita panggil lewat method predictor
+    predictor = MonthPredictor(context_factory)
+
     tz = pytz.timezone(timezone)
     now_local = datetime.now(tz)
 
-    # 1. Hitung kondisi hari ini dulu
+    # Logic prediksi satu bulan
     method_instance = get_method_instance(method)
-    context_today = HijriContext.from_request(lat, lon, timezone, now_local)
+    context_today = context_factory.create_context(lat, lon, timezone, now_local)
     result_today = method_instance.calculate(context_today)
     hijri_now = result_today.hijri_date
 
-    # 2. Cari kapan tanggal 29 di bulan berjalan
     days_to_29 = 29 - hijri_now["day"]
     simulation_local = now_local + timedelta(days=days_to_29)
 
-    # 3. Jalankan Simulasi di Masa Depan
-    context_sim = HijriContext.from_request(lat, lon, timezone, simulation_local)
+    context_sim = context_factory.create_context(lat, lon, timezone, simulation_local)
     result_sim = method_instance.calculate(context_sim)
 
-    # 4. Ambil Keputusan dari Hasil Simulasi
-    meta_sim = result_sim.metadata
-    decision = meta_sim.get("decision")
+    is_istikmal = result_sim.metadata.get("decision") == "istikmal_30"
 
-    # Tentukan 1 Syawal (atau bulan berikutnya)
-    year = hijri_now["year"]
-    month = hijri_now["month"]
-    next_month = 1 if month == 12 else month + 1
-    next_year = year + 1 if month == 12 else year
-
-    is_istikmal = decision == "istikmal_30"
-    offset_from_29 = 2 if is_istikmal else 1
-
-    estimated_gregorian = simulation_local + timedelta(days=offset_from_29)
-
+    # ... return dictionary lu yang lama ...
     return {
-        "method": method,
         "current_hijri": hijri_now,
-        "target_simulation_date": simulation_local.date().isoformat(),
         "prediction": {
             "is_istikmal": is_istikmal,
-            "total_days_in_month": 30 if is_istikmal else 29,
             "estimated_next_month_1": {
-                "year": next_year,
-                "month": next_month,
+                "year": (
+                    hijri_now["year"]
+                    if hijri_now["month"] < 12
+                    else hijri_now["year"] + 1
+                ),
+                "month": hijri_now["month"] + 1 if hijri_now["month"] < 12 else 1,
                 "day": 1,
-                "gregorian": estimated_gregorian.date().isoformat(),
             },
         },
-        "visibility_at_29": meta_sim.get("visibility_data")
-        or meta_sim.get("visibility"),
-        "message": f"Berdasarkan metode {method}, bulan ini diperkirakan berjumlah {30 if is_istikmal else 29} hari. "
-        f"1 {next_month} {next_year} H jatuh pada {estimated_gregorian.strftime('%d %B %Y')}.",
+        "visibility_at_29": result_sim.metadata.get("visibility"),
+        "message": "Prediksi berhasil",
     }
