@@ -58,13 +58,13 @@ class BaseUGHCMethod(BaseHijriMethod):
         is_new_month = False
 
         # A. Butir 1: Terpenuhi sebelum 24:00 UTC di mana pun
-        if scan["anywhere_before_24utc"]:
+        if scan.get("anywhere_before_24utc", False):
             is_new_month = True
 
         # B. Butir 2: Terpenuhi setelah 24:00 UTC
-        elif scan["anywhere_after_24utc"] or scan["america_visible"]:
+        elif scan.get("anywhere_after_24utc", False) or scan.get("america_visible", False):
             # 2b. Di Benua Amerika -> Sah
-            if scan["america_visible"]:
+            if scan.get("america_visible", False):
                 is_new_month = True
             # 2a. Di tempat lain + Konjungsi sebelum Fajr NZ
             else:

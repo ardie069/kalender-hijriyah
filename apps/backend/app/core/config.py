@@ -1,4 +1,5 @@
 HIJRI_MONTHS = [
+    "",
     "Muharram",
     "Shafar",
     "Rabiul awwal",
