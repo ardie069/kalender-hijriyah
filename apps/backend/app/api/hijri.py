@@ -1,7 +1,12 @@
+import logging
+import time
+
 from fastapi import APIRouter, Request, Query, HTTPException
 import pytz
 import calendar as cal_mod
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 from app.deps.rate_limit import limiter
 from app.core.services.hijri_explain import explain_hijri_decision
@@ -130,10 +135,22 @@ async def get_yearly_calendar(
     """
     Endpoint utama buat nyuapin data 12 bulan ke Frontend Year View.
     """
+    t0 = time.perf_counter()
+    logger.info(
+        "GET /calendar/year: year=%d method=%s lat=%.2f lon=%.2f",
+        year, method, lat, lon,
+    )
+
     factory = get_ready_factory()
     predictor = MonthPredictor(factory)
 
     data = predictor.predict_full_year(year, lat, lon, timezone, method)
+
+    elapsed = time.perf_counter() - t0
+    logger.info(
+        "GET /calendar/year DONE: year=%d method=%s (%.3fs)",
+        year, method, elapsed,
+    )
 
     return {"year": year, "method": method, "months": data}
 

@@ -1,5 +1,11 @@
 import os
+import logging
 from dotenv import load_dotenv
+
+from app.core.logging_config import setup_logging
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware

@@ -1,12 +1,22 @@
+import logging
+import time
 import pytz
 from datetime import datetime, timedelta, date
+from functools import lru_cache
+
 from app.core.methods.factory import get_method_instance
 from ..config import AL_HARAM_LOCATION, HIJRI_MONTHS
+from ..cache.disk import _make_key, get_cache, set_cache
 
 from app.core.services.engine import (
     calculate_sunset,
     calculate_baseline_hijri,
 )
+
+logger = logging.getLogger(__name__)
+
+# TTL cache untuk hasil predict_full_year: 24 jam
+_YEAR_CACHE_TTL = 86400
 
 
 class MonthPredictor:
@@ -14,12 +24,36 @@ class MonthPredictor:
         self.factory = factory
 
     def predict_full_year(self, hijri_year: int, lat, lon, timezone, method):
+        """
+        Prediksi 12 bulan Hijriyah dalam satu tahun.
+        Hasil di-cache ke disk supaya request berikutnya instan.
+        """
+        t0 = time.perf_counter()
+
         # ── OVERRIDE LOKASI UNTUK UMM AL-QURA ──
-        # Jika metodenya Umm Al-Qura, abaikan lat/lon user, pakai Makkah.
         if method == "umm_al_qura":
             lat = AL_HARAM_LOCATION["lat"]
             lon = AL_HARAM_LOCATION["lon"]
             timezone = AL_HARAM_LOCATION["timezone"]
+
+        # ── CEK DISK CACHE ──
+        cache_key = _make_key(
+            "year", hijri_year, method, round(lat, 2), round(lon, 2), timezone
+        )
+        cached = get_cache(cache_key, ttl_seconds=_YEAR_CACHE_TTL)
+        if cached:
+            elapsed = time.perf_counter() - t0
+            logger.info(
+                "predict_full_year CACHE HIT: year=%d method=%s (%.3fs)",
+                hijri_year, method, elapsed,
+            )
+            return cached
+
+        # ── HITUNG DARI NOL ──
+        logger.info(
+            "predict_full_year COMPUTING: year=%d method=%s lat=%.2f lon=%.2f",
+            hijri_year, method, lat, lon,
+        )
 
         method_instance = get_method_instance(method)
         calendar_data = []
@@ -71,28 +105,47 @@ class MonthPredictor:
             )
             current_maghrib = calculate_sunset(next_month_date, lat, lon, timezone)
 
+        # ── SIMPAN KE CACHE ──
+        set_cache(cache_key, calendar_data)
+
+        elapsed = time.perf_counter() - t0
+        logger.info(
+            "predict_full_year DONE: year=%d method=%s (%.3fs)",
+            hijri_year, method, elapsed,
+        )
+
         return calendar_data
 
     def _estimate_start_of_hijri_year(self, year, lat, lon, tz, method):
-        """Mencari Maghrib yang menandai 1 Muharram."""
-        days_approx = int((year - 1) * 354.36707)
-        base_date = date(622, 7, 19) + timedelta(days=days_approx)
+        """Mencari Maghrib yang menandai 1 Muharram — dengan lru_cache."""
+        return _cached_estimate_start(year, lat, lon, tz)
 
-        # Scan +/- 10 hari
-        scan_start = base_date - timedelta(days=10)
-        for i in range(20):
-            test_date = scan_start + timedelta(days=i)
-            sunset = calculate_sunset(test_date, lat, lon, tz)
-            if not sunset:
-                continue
 
-            h_date, _ = calculate_baseline_hijri(sunset, tz, lat, lon)
+@lru_cache(maxsize=64)
+def _cached_estimate_start(year, lat, lon, tz):
+    """
+    Cache pencarian 1 Muharram supaya tidak scan ulang 20 tanggal.
+    Diekstrak ke module-level function agar bisa pakai lru_cache.
+    """
+    days_approx = int((year - 1) * 354.36707)
+    base_date = date(622, 7, 19) + timedelta(days=days_approx)
 
-            if h_date["month"] == 1 and h_date["day"] == 1:
-                return sunset
+    scan_start = base_date - timedelta(days=10)
+    for i in range(20):
+        test_date = scan_start + timedelta(days=i)
+        sunset = calculate_sunset(test_date, lat, lon, tz)
+        if not sunset:
+            continue
 
-        # Fallback ke Maghrib base_date
-        return calculate_sunset(base_date, lat, lon, tz)
+        h_date, _ = calculate_baseline_hijri(sunset, tz, lat, lon)
+
+        if h_date["month"] == 1 and h_date["day"] == 1:
+            logger.debug("1 Muharram %d ditemukan: %s", year, test_date)
+            return sunset
+
+    # Fallback ke Maghrib base_date
+    logger.warning("1 Muharram %d tidak ditemukan, pakai fallback", year)
+    return calculate_sunset(base_date, lat, lon, tz)
 
 
 # --- STANDALONE FUNCTION BUAT API ---

@@ -107,8 +107,8 @@ kalender-hijriyah/
 
 | Endpoint             | Fungsi                       | Parameter Utama     |
 | -------------------- | ---------------------------- | --------------------|
-| GET /hijri-date      |	Ambil tanggal Hijriyah riil |	method, lat, lon    |
-| GET /hijri-end-month |	Prediksi akhir bulan        |	method, year, month |
+| GET /hijri-date      |  Ambil tanggal Hijriyah riil | method, lat, lon    |
+| GET /hijri-end-month |  Prediksi akhir bulan        | method, year, month |
 
 ---
 

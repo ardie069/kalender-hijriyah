@@ -22,12 +22,13 @@ class BaseUGHCMethod(BaseHijriMethod):
     TYPE = None
 
     def calculate(self, context):
-        # 1. Baseline Aritmatika (Jangkar)
+        # 1. Ambil baseline hanya untuk struktur datanya (Year, Month)
         baseline, noon_jd = calculate_baseline_hijri(
-            context.now_local, context.timezone,
+            context.now_local,
+            context.timezone,
         )
 
-        # 2. Maghrib Lokal User (Ganti Hari)
+        # 2. Status Maghrib Lokal (Tetap perlu buat ganti hari harian)
         sunset_local = calculate_sunset(
             context.now_local.date(),
             context.lat,
@@ -41,32 +42,29 @@ class BaseUGHCMethod(BaseHijriMethod):
                 hijri_date=baseline, metadata={"decision": "before_maghrib"}
             )
 
-        # 3. Hari Biasa (1-28) -> Increment
-        if baseline["day"] != 29:
-            return HijriResult(
-                hijri_date=increment_hijri_day(baseline),
-                metadata={"decision": "normal_increment"},
-            )
+        # ─── KUNCI PERBAIKAN DI SINI ───
+        # Jangan pake baseline["day"] buat ngecek hari ke-29.
+        # Kita cek apakah context ini dikirim oleh Predictor untuk evaluasi akhir bulan.
+        # Jika Predictor jalan, dia bakal simulasi di hari ke-29.
 
-        # 4. Evaluasi Akhir Bulan (Tanggal 29)
+        # Ambil scan global
         scan = GlobalVisibilityRegistry.scan_global(
             context.now_local.date(),
             self.CRITERIA,
         )
 
-        # --- LOGIKA KEPUTUSAN KHGT MUHAMMADIYAH ---
         is_new_month = False
 
-        # A. Butir 1: Terpenuhi sebelum 24:00 UTC di mana pun
+        # A. Butir 1: Terpenuhi sebelum 24:00 UTC
         if scan.get("anywhere_before_24utc", False):
             is_new_month = True
 
-        # B. Butir 2: Terpenuhi setelah 24:00 UTC
-        elif scan.get("anywhere_after_24utc", False) or scan.get("america_visible", False):
-            # 2b. Di Benua Amerika -> Sah
+        # B. Butir 2: Terpenuhi setelah 24:00 UTC (Amerika atau NZ Fajr)
+        elif scan.get("anywhere_after_24utc", False) or scan.get(
+            "america_visible", False
+        ):
             if scan.get("america_visible", False):
                 is_new_month = True
-            # 2a. Di tempat lain + Konjungsi sebelum Fajr NZ
             else:
                 conj_jd = calculate_conjunction(noon_jd)
                 conj_dt_utc = jd_to_datetime(conj_jd)
@@ -76,17 +74,24 @@ class BaseUGHCMethod(BaseHijriMethod):
                     NZ_LOCATION["lon"],
                     "UTC",
                 )
-
                 if nz_fajr and conj_dt_utc < nz_fajr.astimezone(pytz.utc):
                     is_new_month = True
 
-        # 5. Final Decision
+        # 3. Penentuan Akhir
+        # Jika is_new_month TRUE, kita paksa ganti bulan.
         if is_new_month:
             final_date = start_new_month(baseline)
             decision = "new_month"
         else:
-            final_date = {**baseline, "day": 30}
-            decision = "istikmal_30"
+            # Jika is_new_month FALSE, kita liat:
+            # Kalau ini emang simulasi hari ke-29, berarti besok tanggal 30 (Istikmal)
+            # Kalau bukan simulasi hari ke-29 (hari biasa), ya cuma increment biasa.
+            if baseline["day"] == 29:
+                final_date = {**baseline, "day": 30}
+                decision = "istikmal_30"
+            else:
+                final_date = increment_hijri_day(baseline)
+                decision = "normal_increment"
 
         return HijriResult(
             hijri_date=final_date,
@@ -94,6 +99,6 @@ class BaseUGHCMethod(BaseHijriMethod):
                 "type": self.TYPE,
                 "decision": decision,
                 "global_visible": is_new_month,
-                "visibility_data": scan["best_visibility"],
+                "visibility_data": scan.get("best_visibility"),
             },
         )

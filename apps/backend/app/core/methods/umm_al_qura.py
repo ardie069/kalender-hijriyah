@@ -17,43 +17,44 @@ from .base import BaseHijriMethod, HijriResult
 
 class UmmAlQuraMethod(BaseHijriMethod):
     def calculate(self, context):
-        # 1. Baseline Aritmatika
+        # 1. Hitung baseline tanggal Hijriyah berdasarkan kalender aritmatik (jangkar)
         baseline, _ = calculate_baseline_hijri(context.now_local, context.timezone)
 
+        # 2. Referensi Umm Al-Qura selalu menggunakan koordinat Ka'bah (Makkah)
         ref_lat, ref_lon, ref_tz = (
-            AL_HARAM_LOCATION["lat"],
+            AL_HARAM_LOCATION["lat"], 
             AL_HARAM_LOCATION["lon"],
             AL_HARAM_LOCATION["timezone"],
         )
         makkah_tz = pytz.timezone(ref_tz)
         local_now_makkah = context.now_local.astimezone(makkah_tz)
 
-        # 2. Cari Sunset Makkah
         sunset_makkah = calculate_sunset(
-            local_now_makkah.date(), ref_lat, ref_lon, ref_tz
+            local_now_makkah.date(), ref_lat, ref_lon, ref_tz 
         )
 
+        # 3. Cek apakah waktu sekarang sudah melewati Maghrib di Makkah
         if not sunset_makkah or local_now_makkah < sunset_makkah:
+            # Jika belum Maghrib, gunakan tanggal hari ini (baseline)
             return HijriResult(
                 hijri_date=baseline,
                 metadata={"type": "umm_al_qura", "decision": "before_maghrib"},
             )
 
-        # 3. Logika Evaluasi
         if baseline["day"] == 29:
             p = get_provider()
-            sunset_utc = sunset_makkah.astimezone(pytz.utc)
+            sunset_utc = sunset_makkah.astimezone(pytz.utc) 
             sunset_jd = jd_from_datetime(sunset_utc)
 
-            # A. Cek Ijtima'
+            # Kriteria 1: Konjungsi terjadi sebelum matahari terbenam di Makkah
             conj_jd = calculate_conjunction(sunset_jd)
             is_conj_before_sunset = conj_jd < sunset_jd
 
-            # B. Cek Moonset vs Sunset (Umm Al-Qura Standard)
+            # Kriteria 2: Bulan terbenam setelah matahari terbenam di Makkah
             t0 = p.ts.from_datetime(sunset_utc - timedelta(hours=1))
             t1 = p.ts.from_datetime(sunset_utc + timedelta(hours=1))
 
-            # Pake search discrete buat nyari kejadian moonset yang presisi
+            # Cari event moonset di sekitar waktu sunset
             f = almanac.risings_and_settings(
                 p.eph, p.moon, wgs84.latlon(ref_lat, ref_lon)
             )
@@ -61,22 +62,23 @@ class UmmAlQuraMethod(BaseHijriMethod):
 
             moonset_jd = None
             for t, event in zip(times, events):
-                if event == 0:  # 0 = Set (Terbenam)
+                if event == 0:
                     moonset_jd = t.tt
                     break
 
-            # Jika moonset tidak terdeteksi di range 2 jam, pake altitude check (safety)
+            # Fallback jika event moonset tidak ditemukan dalam window 2 jam
             if moonset_jd is None:
                 t_sunset = p.ts.from_datetime(sunset_utc)
                 observer = p.earth + wgs84.latlon(ref_lat, ref_lon)
                 alt, _, _ = observer.at(t_sunset).observe(p.moon).apparent().altaz()
+                # Jika altitude > 0 (dengan koreksi refraksi sederhana), berarti belum terbenam
                 is_moonset_after_sunset = (
                     alt.degrees + 0.25
-                ) > 0  # Koreksi semidiameter
+                ) > 0
             else:
                 is_moonset_after_sunset = moonset_jd > sunset_jd
 
-            # Keputusan Final
+            # Keputusan: Jika kedua kriteria terpenuhi, besok bulan baru
             if is_conj_before_sunset and is_moonset_after_sunset:
                 final_date = start_new_month(baseline)
                 decision = "new_month"
@@ -91,7 +93,7 @@ class UmmAlQuraMethod(BaseHijriMethod):
                 "is_moonset_after_sunset": is_moonset_after_sunset,
             }
         else:
-            # Hari Biasa
+            # Jika bukan tanggal 29, cukup increment hari secara normal
             final_date = increment_hijri_day(baseline)
             metadata = {"type": "umm_al_qura", "decision": "normal_increment"}
 
