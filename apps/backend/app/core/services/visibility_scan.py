@@ -50,52 +50,36 @@ class GlobalVisibilityRegistry:
         )
 
         for site in sites:
-            # 1. Ambil sunset lokal untuk tanggal tersebut
-            sunset_local = calculate_sunset(
-                date_key, site["lat"], site["lon"], site.get("timezone", "UTC")
-            )
-            if not sunset_local:
-                continue
+            # Gunakan Timezone Offset berdasarkan Bujur (Longitude)
+            # Karena sunset di Amerika (Barat) bisa loncat ke hari berikutnya di UTC
+            offset = int(site["lon"] / 15)
+            tz_name = f"Etc/GMT{-offset:+d}" if offset != 0 else "UTC"
+            
+            sunset_local = calculate_sunset(date_key, site["lat"], site["lon"], tz_name)
+            if not sunset_local: continue
 
             sunset_utc = sunset_local.astimezone(pytz.utc)
-
-            # ─── FIX: JANGAN SKIP JIKA TANGGAL BERBEDA ───
-            # Kita hanya perlu pastikan sunset ini terjadi dalam rentang
-            # wajar setelah ijtima' (misal dalam 24 jam dari date_key)
-
             sunset_jd = jd_from_datetime(sunset_utc)
             conj_jd = calculate_conjunction(sunset_jd)
 
-            # 2. Hitung visibilitas
-            vis = calculate_visibility(
-                sunset_utc,
-                site["lat"],
-                site["lon"],
-                conj_jd,
-                criteria=criteria,
-            )
+            # 2. PANGGIL EVALUATOR
+            vis = calculate_visibility(sunset_utc, site["lat"], site["lon"], conj_jd, criteria=criteria)
 
-            if vis["is_visible"]:
-                # Cek Batas 24:00 UTC
+            if vis.get("is_visible"):
+                # Penentuan KHGT: Hilal terlihat di mana saja di dunia
                 if sunset_utc <= threshold_24utc:
                     result["anywhere_before_24utc"] = True
                 else:
                     result["anywhere_after_24utc"] = True
 
-                # Cek Sinyal Amerika (Kunci UGHC)
-                if site.get("is_america", False):
+                # FLAG KRUSIAL: Pastikan is_america benar di generate_global_grid
+                if site.get("is_america", False) or (-170 <= site["lon"] <= -30):
                     result["america_visible"] = True
 
-                # Tracking Hilal Terbaik
                 score = vis["moon_altitude"] + vis["elongation"]
                 if score > best_score:
                     best_score = score
-                    result["best_visibility"] = {
-                        **vis,
-                        "lat": site["lat"],
-                        "lon": site["lon"],
-                        "sunset_utc": sunset_utc.isoformat(),
-                    }
+                    result["best_visibility"] = {**vis, "lat": site["lat"], "lon": site["lon"]}
 
         return result
 

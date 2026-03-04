@@ -10,7 +10,6 @@ interface CalendarSidebarProps {
   selectedMonth: number;
   onMonthSelect: (monthId: number) => void;
   dateSystem: DateSystem;
-  onMonthNav: (direction: "prev" | "next") => void;
 }
 
 export function CalendarSidebar({
@@ -18,7 +17,6 @@ export function CalendarSidebar({
   selectedMonth,
   onMonthSelect,
   dateSystem,
-  onMonthNav,
 }: CalendarSidebarProps) {
   const monthList =
     dateSystem === "hijri"
@@ -36,41 +34,23 @@ export function CalendarSidebar({
   return (
     <aside className="lg:col-span-3 flex flex-col gap-8">
       {viewMode === "monthly" && (
-        <>
-          {/* Navigasi Prev / Next */}
-          <div className="flex items-center justify-between px-2">
+        <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2 scrollbar-hide">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-4 px-4">
+            {dateSystem === "hijri" ? "Bulan Hijriyah" : "Bulan Masehi"}
+          </p>
+          {monthList.map((m) => (
             <button
-              onClick={() => onMonthNav("prev")}
-              className="btn btn-ghost btn-sm rounded-xl text-xs font-black opacity-60 hover:opacity-100"
+              key={m.id}
+              onClick={() => onMonthSelect(m.id)}
+              className={`w-full flex items-center justify-between p-4 rounded-3xl transition-all duration-300 border cursor-pointer ${selectedMonth === m.id ? "bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-[1.02]" : "bg-white/40 dark:bg-card-dark/40 border-gray-100 dark:border-white/5 opacity-60 hover:opacity-100"}`}
             >
-              ← Prev
+              <span className="text-xs font-black tracking-tight">
+                {m.name}
+              </span>
+              <span className="text-xs">{m.isSpecial ? "✨" : ""}</span>
             </button>
-            <button
-              onClick={() => onMonthNav("next")}
-              className="btn btn-ghost btn-sm rounded-xl text-xs font-black opacity-60 hover:opacity-100"
-            >
-              Next →
-            </button>
-          </div>
-
-          <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2 scrollbar-hide">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-4 px-4">
-              {dateSystem === "hijri" ? "Bulan Hijriyah" : "Bulan Masehi"}
-            </p>
-            {monthList.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => onMonthSelect(m.id)}
-                className={`w-full flex items-center justify-between p-4 rounded-3xl transition-all duration-300 border cursor-pointer ${selectedMonth === m.id ? "bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-[1.02]" : "bg-white/40 dark:bg-card-dark/40 border-gray-100 dark:border-white/5 opacity-60 hover:opacity-100"}`}
-              >
-                <span className="text-xs font-black tracking-tight">
-                  {m.name}
-                </span>
-                <span className="text-xs">{m.isSpecial ? "✨" : ""}</span>
-              </button>
-            ))}
-          </div>
-        </>
+          ))}
+        </div>
       )}
 
       {/* BLOCK KETERANGAN (The Legend) */}

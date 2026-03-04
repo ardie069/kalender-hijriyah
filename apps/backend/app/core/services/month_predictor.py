@@ -1,16 +1,22 @@
 import logging
 import time
 import pytz
+import concurrent.futures
 from datetime import datetime, timedelta, date
 from functools import lru_cache
 
 from app.core.methods.factory import get_method_instance
-from ..config import AL_HARAM_LOCATION, HIJRI_MONTHS
+from ..config import AL_HARAM_LOCATION, HIJRI_MONTHS, NZ_LOCATION
 from ..cache.disk import _make_key, get_cache, set_cache
+from ..services.visibility_scan import GlobalVisibilityRegistry
+from ..calendar.hijri_date import start_new_month
+from ..calendar.julian import jd_from_datetime, jd_to_datetime
+from ..astronomy.sun_times import get_fajr_time
 
 from app.core.services.engine import (
     calculate_sunset,
     calculate_baseline_hijri,
+    calculate_conjunction,
 )
 
 logger = logging.getLogger(__name__)
@@ -18,67 +24,130 @@ logger = logging.getLogger(__name__)
 # TTL cache untuk hasil predict_full_year: 24 jam
 _YEAR_CACHE_TTL = 86400
 
+# UGHC methods — bisa di-shortcut langsung via scan_global
+_UGHC_CRITERIA = {
+    "ughc": "TURKEY_2016_TOPOCENTRIC",
+}
+
+# Grid step untuk predictor — cukup rapat agar tidak miss Alaska/Western America
+_PREDICTOR_LAT_STEP = 5
+_PREDICTOR_LON_STEP = 10
+
 
 class MonthPredictor:
     def __init__(self, factory):
         self.factory = factory
 
+    def _is_ughc_method(self, method: str) -> bool:
+        return method in _UGHC_CRITERIA
+
+    def _predict_ughc_month(self, m_idx, day_29_date, method):
+        """
+        Fast path untuk UGHC: langsung panggil scan_global
+        tanpa melalui calculate() yang redundan.
+
+        Logika harus IDENTIK dengan BaseUGHCMethod.calculate() di ughc_base.py:
+        - Butir 1: Hilal terlihat sebelum 24:00 UTC → bulan baru
+        - Butir 2: Hilal terlihat setelah 24:00 UTC:
+          - Jika di Amerika → bulan baru
+          - Jika bukan Amerika → cek konjungsi < NZ fajr → bulan baru
+        """
+        criteria = _UGHC_CRITERIA[method]
+
+        scan = GlobalVisibilityRegistry.scan_global(
+            day_29_date,
+            criteria,
+            lat_step=_PREDICTOR_LAT_STEP,
+            lon_step=_PREDICTOR_LON_STEP,
+        )
+
+        is_new_month = False
+
+        # A. Butir 1: Terpenuhi sebelum 24:00 UTC
+        if scan.get("anywhere_before_24utc", False):
+            is_new_month = True
+
+        # B. Butir 2: Terpenuhi setelah 24:00 UTC (Amerika atau NZ Fajr)
+        elif scan.get("anywhere_after_24utc", False) or scan.get(
+            "america_visible", False
+        ):
+            if scan.get("america_visible", False):
+                is_new_month = True
+            else:
+                # NZ Fajr check — konjungsi harus terjadi sebelum Fajr di NZ
+                noon_dt = datetime.combine(day_29_date, datetime.min.time()).replace(
+                    tzinfo=pytz.utc
+                ) + timedelta(hours=12)
+                noon_jd = jd_from_datetime(noon_dt)
+                conj_jd = calculate_conjunction(noon_jd)
+                conj_dt_utc = jd_to_datetime(conj_jd)
+                nz_fajr = get_fajr_time(
+                    conj_dt_utc.date(),
+                    NZ_LOCATION["lat"],
+                    NZ_LOCATION["lon"],
+                    "UTC",
+                )
+                if nz_fajr and conj_dt_utc < nz_fajr.astimezone(pytz.utc):
+                    is_new_month = True
+
+        total_days = 29 if is_new_month else 30
+        decision = "new_month" if is_new_month else "istikmal_30"
+        visibility_data = scan.get("best_visibility")
+
+        return total_days, decision, visibility_data
+
     def predict_full_year(self, hijri_year: int, lat, lon, timezone, method):
-        """
-        Prediksi 12 bulan Hijriyah dalam satu tahun.
-        Hasil di-cache ke disk supaya request berikutnya instan.
-        """
         t0 = time.perf_counter()
 
-        # ── OVERRIDE LOKASI UNTUK UMM AL-QURA ──
         if method == "umm_al_qura":
-            lat = AL_HARAM_LOCATION["lat"]
-            lon = AL_HARAM_LOCATION["lon"]
-            timezone = AL_HARAM_LOCATION["timezone"]
+            lat, lon, timezone = (
+                AL_HARAM_LOCATION["lat"],
+                AL_HARAM_LOCATION["lon"],
+                AL_HARAM_LOCATION["timezone"],
+            )
 
-        # ── CEK DISK CACHE ──
+        # 1. CEK DISK CACHE
         cache_key = _make_key(
             "year", hijri_year, method, round(lat, 2), round(lon, 2), timezone
         )
         cached = get_cache(cache_key, ttl_seconds=_YEAR_CACHE_TTL)
         if cached:
-            elapsed = time.perf_counter() - t0
-            logger.info(
-                "predict_full_year CACHE HIT: year=%d method=%s (%.3fs)",
-                hijri_year, method, elapsed,
-            )
             return cached
 
-        # ── HITUNG DARI NOL ──
-        logger.info(
-            "predict_full_year COMPUTING: year=%d method=%s lat=%.2f lon=%.2f",
-            hijri_year, method, lat, lon,
-        )
-
-        method_instance = get_method_instance(method)
-        calendar_data = []
-
+        # 2. ESTIMASI AWAL TAHUN
         current_maghrib = self._estimate_start_of_hijri_year(
             hijri_year, lat, lon, timezone, method
         )
 
+        # ─── OPTIMALISASI: PRE-FETCH UGHC ───
+        # Jika UGHC, kita scan 12 bulan sekaligus di background (Parallel)
+        if self._is_ughc_method(method):
+            self._pre_fetch_ughc_scans(current_maghrib.date(), _UGHC_CRITERIA[method])
+
+        method_instance = (
+            None if self._is_ughc_method(method) else get_method_instance(method)
+        )
+        calendar_data = []
+
+        # 3. LOOP SEQUENTIAL (Sekarang cepat karena data sudah di-cache/pre-fetched)
         for m_idx in range(1, 13):
             day_29_date = current_maghrib.date() + timedelta(days=28)
             maghrib_29 = calculate_sunset(day_29_date, lat, lon, timezone)
 
             if not maghrib_29:
-                total_days = 30
-                visibility_data = None
+                total_days, decision, visibility_data = 30, "fallback", None
+            elif self._is_ughc_method(method):
+                # Panggil fungsi lama lu, tapi sekarang isinya CACHE HIT dari pre-fetch
+                total_days, decision, visibility_data = self._predict_ughc_month(
+                    m_idx, day_29_date, method
+                )
             else:
                 sim_time = maghrib_29
                 context = self.factory.create_context(lat, lon, timezone, sim_time)
                 result = method_instance.calculate(context)
-
-                # Logika ganti bulan yang method-agnostic
                 result_month = result.hijri_date.get("month", m_idx)
                 total_days = 29 if result_month != m_idx else 30
-
-                # Gunakan metadata ughc atau visibility standar
+                decision = result.metadata.get("decision", "unknown")
                 visibility_data = result.metadata.get(
                     "visibility"
                 ) or result.metadata.get("visibility_data")
@@ -91,30 +160,49 @@ class MonthPredictor:
                     "start_gregorian": current_maghrib.date().isoformat(),
                     "day_1_weekday": current_maghrib.weekday(),
                     "visibility": visibility_data,
-                    "decision": (
-                        result.metadata.get("decision")
-                        if "result" in locals()
-                        else "fallback"
-                    ),
+                    "decision": decision,
                 }
             )
 
-            current_month_days = total_days
-            next_month_date = current_maghrib.date() + timedelta(
-                days=current_month_days
+            # Update jangkar untuk bulan berikutnya
+            current_maghrib = calculate_sunset(
+                current_maghrib.date() + timedelta(days=total_days), lat, lon, timezone
             )
-            current_maghrib = calculate_sunset(next_month_date, lat, lon, timezone)
 
-        # ── SIMPAN KE CACHE ──
         set_cache(cache_key, calendar_data)
-
-        elapsed = time.perf_counter() - t0
-        logger.info(
-            "predict_full_year DONE: year=%d method=%s (%.3fs)",
-            hijri_year, method, elapsed,
-        )
-
+        logger.info(f"predict_full_year DONE in {time.perf_counter() - t0:.3f}s")
         return calendar_data
+
+    def _pre_fetch_ughc_scans(self, start_date, criteria):
+        """
+        Melakukan scan global secara paralel untuk 12-24 tanggal potensial.
+        Menggunakan ProcessPoolExecutor untuk CPU-bound task (Skyfield).
+        """
+        logger.info("Starting parallel pre-fetch for UGHC global scans...")
+
+        # Kita kumpulkan semua tanggal potensial (hari ke-29 dan 30 tiap bulan)
+        # Karena kita belum tahu durasi pastinya, kita ambil window 29-31 hari dari start.
+        potential_dates = []
+        for i in range(12):
+            base = start_date + timedelta(days=int(i * 29.5))  # rata-rata bulan sinodik
+            potential_dates.extend(
+                [
+                    base + timedelta(days=28),
+                    base + timedelta(days=29),
+                    base + timedelta(days=30),
+                ]
+            )
+
+        # Filter unik agar tidak scan tanggal yang sama
+        unique_dates = sorted(list(set(potential_dates)))
+
+        # Eksekusi paralel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            # ThreadPool cukup karena scan_global sendiri punya internal caching dan IO disk
+            executor.map(
+                lambda d: GlobalVisibilityRegistry.scan_global(d, criteria),
+                unique_dates,
+            )
 
     def _estimate_start_of_hijri_year(self, year, lat, lon, tz, method):
         """Mencari Maghrib yang menandai 1 Muharram — dengan lru_cache."""

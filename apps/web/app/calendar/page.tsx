@@ -37,30 +37,38 @@ export default function CalendarPage() {
   );
 
   // --- Auto-adjust saat pindah mode ---
+  // Hanya reset year kalau nilainya "bocor" dari sistem lain,
+  // agar tidak trigger re-fetch yang tidak perlu.
   useEffect(() => {
     if (dateSystem === "gregorian") {
       setYear(new Date().getFullYear());
       setSelectedMonth(new Date().getMonth() + 1);
     } else {
-      setYear(1447);
+      setYear((prev) => (prev > 1500 ? 1447 : prev));
       setSelectedMonth(9);
     }
   }, [dateSystem]);
 
   // --- Auto-generate: navigasi bulan melewati batas tahun ---
   const handleMonthNav = (direction: "prev" | "next") => {
-    const maxMonth = dateSystem === "hijri" ? 12 : 12;
+    const maxMonth = 12;
     if (direction === "next") {
       if (selectedMonth >= maxMonth) {
-        setYear((y) => y + 1);
-        setSelectedMonth(1);
+        if (dateSystem === "gregorian") {
+          setYear((y) => y + 1);
+          setSelectedMonth(1);
+        }
+        // Hijri: tetap di bulan 12 (Dzulhijjah)
       } else {
         setSelectedMonth((m) => m + 1);
       }
     } else {
       if (selectedMonth <= 1) {
-        setYear((y) => y - 1);
-        setSelectedMonth(maxMonth);
+        if (dateSystem === "gregorian") {
+          setYear((y) => y - 1);
+          setSelectedMonth(maxMonth);
+        }
+        // Hijri: tetap di bulan 1 (Muharram)
       } else {
         setSelectedMonth((m) => m - 1);
       }

@@ -6,7 +6,6 @@ interface CalendarHeaderProps {
   dateSystem: DateSystem;
   method: HijriMethod;
   viewMode: ViewMode;
-  onYearChange: (newYear: number) => void;
   onViewModeChange: (newMode: ViewMode) => void;
 }
 
@@ -15,7 +14,6 @@ export function CalendarHeader({
   dateSystem,
   method,
   viewMode,
-  onYearChange,
   onViewModeChange,
 }: CalendarHeaderProps) {
   return (
@@ -37,19 +35,16 @@ export function CalendarHeader({
       {/* View & Year Switcher */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="join bg-card-light dark:bg-card-dark border border-gray-100 dark:border-white/5 rounded-2xl p-1 shadow-soft">
-          <button
-            onClick={() => onYearChange(year - 1)}
-            className="btn btn-ghost btn-sm join-item"
-          >
-            ←
-          </button>
-          <span className="px-4 py-1 text-sm font-black">{year}</span>
-          <button
-            onClick={() => onYearChange(year + 1)}
-            className="btn btn-ghost btn-sm join-item"
-          >
-            →
-          </button>
+          {dateSystem === "gregorian" ? (
+            <span className="px-4 py-1 text-sm font-black">{year}</span>
+          ) : (
+            <span className="px-5 py-2 text-sm font-black flex items-center gap-2">
+              {year}
+              <span className="text-[8px] uppercase tracking-widest opacity-50 font-bold">
+                H
+              </span>
+            </span>
+          )}
         </div>
         <div className="flex bg-gray-200/50 dark:bg-white/5 p-1 rounded-2xl border border-gray-100 dark:border-white/5">
           <button
