@@ -35,7 +35,7 @@ def _init_provider() -> AstronomyProvider:
     loader = Loader(str(DATA_DIR), expire=False)
     try:
         ts = loader.timescale()
-        eph = loader("de440.bsp")
+        eph = loader("de421.bsp")
         earth, sun, moon = eph["earth"], eph["sun"], eph["moon"]
     except Exception as e:
         raise RuntimeError(f"Gagal memuat data astronomi: {e}")
