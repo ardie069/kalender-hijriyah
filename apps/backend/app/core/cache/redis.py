@@ -18,13 +18,12 @@ CACHE_VERSION = "v3"
 
 
 def _make_key(prefix, *args):
-    """Bikin key unik dengan namespace dan versioning."""
     raw = "|".join(str(a) for a in args)
     hashed = hashlib.sha256(raw.encode()).hexdigest()
     return f"hijri:{CACHE_VERSION}:{prefix}:{hashed[:16]}"
 
 
-def get_cache(key):
+def get_cache(key, **kwargs):
     if not r:
         return None
     try:

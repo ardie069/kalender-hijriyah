@@ -2,15 +2,25 @@ import logging
 import time
 import pytz
 import concurrent.futures
+import os
 from datetime import datetime, timedelta, date
 from functools import lru_cache
 
 from app.core.methods.factory import get_method_instance
 from ..config import AL_HARAM_LOCATION, HIJRI_MONTHS
-from ..cache.disk import _make_key, get_cache, set_cache
 from ..services.visibility_scan import GlobalVisibilityRegistry
 from ..services.ughc_decision import evaluate_ughc_decision
 from ..calendar.julian import jd_from_datetime
+
+# ─── KUNCI: SMART CACHE SWITCHER ───
+if os.getenv("VERCEL") == "1":
+    from ..cache.redis import _make_key, get_cache, set_cache
+
+    cache_type = "REDIS"
+else:
+    from ..cache.disk import _make_key, get_cache, set_cache
+
+    cache_type = "DISK"
 
 from app.core.services.engine import (
     calculate_sunset,
@@ -19,15 +29,8 @@ from app.core.services.engine import (
 
 logger = logging.getLogger(__name__)
 
-# TTL cache untuk hasil predict_full_year: 24 jam
 _YEAR_CACHE_TTL = 86400
-
-# UGHC methods — menggunakan kriteria GEOSENTRIK sesuai standar KHGT
-_UGHC_CRITERIA = {
-    "ughc": "TURKEY_2016_GEOCENTRIC",
-}
-
-# Grid step untuk predictor — cukup rapat agar tidak miss Alaska/Western America
+_UGHC_CRITERIA = {"ughc": "TURKEY_2016_GEOCENTRIC"}
 _PREDICTOR_LAT_STEP = 5
 _PREDICTOR_LON_STEP = 10
 
@@ -40,12 +43,8 @@ class MonthPredictor:
         return method in _UGHC_CRITERIA
 
     def _predict_ughc_month(self, m_idx, day_29_date, method):
-        """
-        Fast path untuk UGHC: delegasi ke shared evaluate_ughc_decision.
-        """
         criteria = _UGHC_CRITERIA[method]
-
-        # Hitung noon JD untuk NZ fajr check
+        # Noon JD untuk NZ fajr check
         noon_dt = datetime.combine(day_29_date, datetime.min.time()).replace(
             tzinfo=pytz.utc
         ) + timedelta(hours=12)
@@ -59,11 +58,11 @@ class MonthPredictor:
             lon_step=_PREDICTOR_LON_STEP,
         )
 
-        total_days = 29 if is_new_month else 30
-        decision = "new_month" if is_new_month else "istikmal_30"
-        visibility_data = scan.get("best_visibility")
-
-        return total_days, decision, visibility_data
+        return (
+            29 if is_new_month else 30,
+            "new_month" if is_new_month else "istikmal_30",
+            scan.get("best_visibility"),
+        )
 
     def predict_full_year(self, hijri_year: int, lat, lon, timezone, method):
         t0 = time.perf_counter()
@@ -75,12 +74,15 @@ class MonthPredictor:
                 AL_HARAM_LOCATION["timezone"],
             )
 
-        # 1. CEK DISK CACHE
+        # 1. CEK CACHE (Redis/Disk otomatis terpilih)
         cache_key = _make_key(
             "year", hijri_year, method, round(lat, 2), round(lon, 2), timezone
         )
-        cached = get_cache(cache_key, ttl_seconds=_YEAR_CACHE_TTL)
+
+        # NOTE: Kita hapus ttl_seconds= di sini karena redis.get_cache pake **kwargs
+        cached = get_cache(cache_key)
         if cached:
+            logger.info(f"predict_full_year {cache_type} HIT: {hijri_year} {method}")
             return cached
 
         # 2. ESTIMASI AWAL TAHUN
@@ -88,8 +90,7 @@ class MonthPredictor:
             hijri_year, lat, lon, timezone, method
         )
 
-        # ─── OPTIMALISASI: PRE-FETCH UGHC ───
-        # Jika UGHC, kita scan 12 bulan sekaligus di background (Parallel)
+        # 3. PRE-FETCH PARALEL (Hanya untuk UGHC)
         if self._is_ughc_method(method):
             self._pre_fetch_ughc_scans(current_maghrib.date(), _UGHC_CRITERIA[method])
 
@@ -98,7 +99,7 @@ class MonthPredictor:
         )
         calendar_data = []
 
-        # 3. LOOP SEQUENTIAL (Sekarang cepat karena data sudah di-cache/pre-fetched)
+        # 4. LOOP SEQUENTIAL
         for m_idx in range(1, 13):
             day_29_date = current_maghrib.date() + timedelta(days=28)
             maghrib_29 = calculate_sunset(day_29_date, lat, lon, timezone)
@@ -106,7 +107,6 @@ class MonthPredictor:
             if not maghrib_29:
                 total_days, decision, visibility_data = 30, "fallback", None
             elif self._is_ughc_method(method):
-                # Panggil fungsi lama lu, tapi sekarang isinya CACHE HIT dari pre-fetch
                 total_days, decision, visibility_data = self._predict_ughc_month(
                     m_idx, day_29_date, method
                 )
@@ -133,27 +133,21 @@ class MonthPredictor:
                 }
             )
 
-            # Update jangkar untuk bulan berikutnya
             current_maghrib = calculate_sunset(
                 current_maghrib.date() + timedelta(days=total_days), lat, lon, timezone
             )
 
-        set_cache(cache_key, calendar_data)
-        logger.info(f"predict_full_year DONE in {time.perf_counter() - t0:.3f}s")
+        # SIMPAN KE CACHE
+        set_cache(cache_key, calendar_data, ttl=_YEAR_CACHE_TTL)
+        logger.info(
+            f"predict_full_year DONE: {time.perf_counter() - t0:.3f}s ({cache_type} saved)"
+        )
         return calendar_data
 
     def _pre_fetch_ughc_scans(self, start_date, criteria):
-        """
-        Melakukan scan global secara paralel untuk 12-24 tanggal potensial.
-        Menggunakan ProcessPoolExecutor untuk CPU-bound task (Skyfield).
-        """
-        logger.info("Starting parallel pre-fetch for UGHC global scans...")
-
-        # Kita kumpulkan semua tanggal potensial (hari ke-29 dan 30 tiap bulan)
-        # Karena kita belum tahu durasi pastinya, kita ambil window 29-31 hari dari start.
         potential_dates = []
         for i in range(12):
-            base = start_date + timedelta(days=int(i * 29.5))  # rata-rata bulan sinodik
+            base = start_date + timedelta(days=int(i * 29.5))
             potential_dates.extend(
                 [
                     base + timedelta(days=28),
@@ -162,46 +156,30 @@ class MonthPredictor:
                 ]
             )
 
-        # Filter unik agar tidak scan tanggal yang sama
         unique_dates = sorted(list(set(potential_dates)))
-
-        # Eksekusi paralel
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            # ThreadPool cukup karena scan_global sendiri punya internal caching dan IO disk
             executor.map(
                 lambda d: GlobalVisibilityRegistry.scan_global(d, criteria),
                 unique_dates,
             )
 
     def _estimate_start_of_hijri_year(self, year, lat, lon, tz, method):
-        """Mencari Maghrib yang menandai 1 Muharram — dengan lru_cache."""
         return _cached_estimate_start(year, lat, lon, tz)
 
 
 @lru_cache(maxsize=64)
 def _cached_estimate_start(year, lat, lon, tz):
-    """
-    Cache pencarian 1 Muharram supaya tidak scan ulang 20 tanggal.
-    Diekstrak ke module-level function agar bisa pakai lru_cache.
-    """
     days_approx = int((year - 1) * 354.36707)
     base_date = date(622, 7, 19) + timedelta(days=days_approx)
-
     scan_start = base_date - timedelta(days=10)
     for i in range(20):
         test_date = scan_start + timedelta(days=i)
         sunset = calculate_sunset(test_date, lat, lon, tz)
         if not sunset:
             continue
-
         h_date, _ = calculate_baseline_hijri(sunset, tz, lat, lon)
-
         if h_date["month"] == 1 and h_date["day"] == 1:
-            logger.debug("1 Muharram %d ditemukan: %s", year, test_date)
             return sunset
-
-    # Fallback ke Maghrib base_date
-    logger.warning("1 Muharram %d tidak ditemukan, pakai fallback", year)
     return calculate_sunset(base_date, lat, lon, tz)
 
 
