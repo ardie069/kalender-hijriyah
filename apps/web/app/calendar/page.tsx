@@ -92,7 +92,7 @@ export default function CalendarPage() {
   );
 
   useEffect(() => {
-    if (today && !hasSynced) {
+    if (today && today.system === dateSystem && !hasSynced) {
       const timer = setTimeout(() => {
         setYear(today.year);
         setSelectedMonth(today.month);
@@ -100,10 +100,11 @@ export default function CalendarPage() {
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [today, hasSynced]);
+  }, [today, dateSystem, hasSynced]);
 
   // ─── 4. DISPLAY LOGIC ───
-  const displayYear = year ?? today?.year ?? initialYear;
+  const activeToday = today?.system === dateSystem ? today : null;
+  const displayYear = year ?? activeToday?.year ?? initialYear;
   const initialMonth = useMemo(() => {
     const now = new Date();
 
@@ -135,24 +136,24 @@ export default function CalendarPage() {
     return Math.min(Math.max(estimatedMonth, 1), 12);
   }, [dateSystem]);
 
-  const currentMonthId = selectedMonth ?? today?.month ?? initialMonth;
+  const currentMonthId = selectedMonth ?? activeToday?.month ?? initialMonth;
 
   const currentMonthData = months.find((m) => m.month_id === currentMonthId);
 
   const monthList = useMemo(() => {
     return dateSystem === "hijri"
       ? HIJRI_MONTHS.map((m) => ({
-          id: m.id,
-          name: m.name,
-          desc: m.desc,
-          isSpecial: "isSpecial" in m ? m.isSpecial : false,
-        }))
+        id: m.id,
+        name: m.name,
+        desc: m.desc,
+        isSpecial: "isSpecial" in m ? m.isSpecial : false,
+      }))
       : GREGORIAN_MONTHS.map((m) => ({
-          id: m.id,
-          name: m.name,
-          desc: m.desc,
-          isSpecial: false,
-        }));
+        id: m.id,
+        name: m.name,
+        desc: m.desc,
+        isSpecial: false,
+      }));
   }, [dateSystem]);
 
   if (!mounted)

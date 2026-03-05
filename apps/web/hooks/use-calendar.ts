@@ -11,6 +11,7 @@ export interface TodayInfo {
   month: number;
   day: number;
   year: number;
+  system: DateSystem;
 }
 
 export function useCalendar(
@@ -35,7 +36,7 @@ export function useCalendar(
 
         const hijriRes = await fetchHijriDate(lat, lon, method, "Asia/Jakarta");
         const hd = hijriRes.hijri_date;
-        setToday({ year: hd.year, month: hd.month, day: hd.day });
+        setToday({ year: hd.year, month: hd.month, day: hd.day, system: "hijri" });
 
         if (year !== null) {
           const calRes = await fetchYearlyCalendar(year, lat, lon, method);
@@ -55,6 +56,7 @@ export function useCalendar(
           year: now.getFullYear(),
           month: now.getMonth() + 1,
           day: now.getDate(),
+          system: "gregorian",
         });
 
         if (year !== null) {
