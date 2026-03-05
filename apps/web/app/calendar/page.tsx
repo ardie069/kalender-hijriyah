@@ -19,12 +19,26 @@ export default function CalendarPage() {
   const mounted = useMounted();
 
   const [viewMode, setViewMode] = useState<ViewMode>("monthly");
-  const [dateSystem, setDateSystem] = useState<DateSystem>("hijri");
-  const [method, setMethod] = useState<HijriMethod>("umm_al_qura");
+  const [dateSystem, setDateSystemState] = useState<DateSystem>("hijri");
+  const [method, setMethodState] = useState<HijriMethod>("umm_al_qura");
 
   const [year, setYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [hasSynced, setHasSynced] = useState(false);
+
+  const setDateSystem = (val: DateSystem) => {
+    setHasSynced(false);
+    setYear(null);
+    setSelectedMonth(null);
+    setDateSystemState(val);
+  };
+
+  const setMethod = (val: HijriMethod) => {
+    setHasSynced(false);
+    setYear(null);
+    setSelectedMonth(null);
+    setMethodState(val);
+  };
 
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(
     null,
@@ -56,63 +70,69 @@ export default function CalendarPage() {
   }, []);
 
   const initialYear = useMemo(() => {
-    if (dateSystem === "gregorian") {
-      return new Date().getFullYear();
-    }
-
     try {
-      const formatter = new Intl.DateTimeFormat("en-u-ca-islamic-uma", {
-        year: "numeric",
-      });
-      const parts = formatter.formatToParts(new Date());
-      const yearPart = parts.find((p) => p.type === "year");
+      const now = new Date();
+      const gregYear = now.getFullYear();
 
-      return yearPart ? parseInt(yearPart.value) : 1400;
-    } catch {
-      return 1400;
+      if (dateSystem === "gregorian") return gregYear;
+
+      return Math.floor((gregYear - 622) * 1.0307);
+    } catch (err) {
+      console.error("Error calculating initial year:", err);
+      return new Date().getFullYear();
     }
   }, [dateSystem]);
 
   const { months, loading, error, today } = useCalendar(
-    year ?? initialYear,
+    year,
     dateSystem,
     method,
     location?.lat ?? null,
     location?.lon ?? null,
   );
 
-  // ─── 3. SINKRONISASI OTOMATIS ───
-  // Sync year & month based on 'today' data when it arrives
-  if (today && !hasSynced) {
-    setYear(today.year);
-    setSelectedMonth(today.month);
-    setHasSynced(true);
-  }
-
-  // ─── 4. STATE RESET ON SYSTEM CHANGE ───
-  const [prevSystem, setPrevSystem] = useState({ dateSystem, method });
-  if (prevSystem.dateSystem !== dateSystem || prevSystem.method !== method) {
-    setPrevSystem({ dateSystem, method });
-    setHasSynced(false);
-    setYear(null);
-    setSelectedMonth(null);
-  }
+  useEffect(() => {
+    if (today && !hasSynced) {
+      const timer = setTimeout(() => {
+        setYear(today.year);
+        setSelectedMonth(today.month);
+        setHasSynced(true);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [today, hasSynced]);
 
   // ─── 4. DISPLAY LOGIC ───
   const displayYear = year ?? today?.year ?? initialYear;
   const initialMonth = useMemo(() => {
+    const now = new Date();
+
     if (dateSystem === "gregorian") {
-      return new Date().getMonth() + 1;
+      return now.getMonth() + 1;
     }
 
+    // ─── DYNAMIC HIJRI MONTH DETECTION ───
     try {
-      const formatter = new Intl.DateTimeFormat("en-u-ca-islamic-uma", {
+      const formatter = new Intl.DateTimeFormat("id-ID-u-ca-islamic-uma", {
         month: "numeric",
       });
-      return parseInt(formatter.format(new Date()));
-    } catch {
-      return 1;
+
+      const hijriMonth = parseInt(formatter.format(now).replace(/\D/g, ""));
+
+      if (hijriMonth >= 1 && hijriMonth <= 12) {
+        return hijriMonth;
+      }
+    } catch (e) {
+      console.error("Failed to detect Hijri month using Intl:", e);
     }
+
+    const startOfHijriYear = new Date(now.getFullYear(), 5, 26);
+    const diffDays = Math.floor(
+      (now.getTime() - startOfHijriYear.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const estimatedMonth = Math.floor(diffDays / 29.5) + 1;
+
+    return Math.min(Math.max(estimatedMonth, 1), 12);
   }, [dateSystem]);
 
   const currentMonthId = selectedMonth ?? today?.month ?? initialMonth;

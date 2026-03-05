@@ -14,7 +14,7 @@ export interface TodayInfo {
 }
 
 export function useCalendar(
-  year: number,
+  year: number | null,
   dateSystem: DateSystem,
   method: Method,
   lat: number | null,
@@ -33,48 +33,50 @@ export function useCalendar(
       if (dateSystem === "hijri") {
         if (lat === null || lon === null) return;
 
-        // Fetch calendar + current hijri date in parallel
-        const [calRes, hijriRes] = await Promise.all([
-          fetchYearlyCalendar(year, lat, lon, method),
-          fetchHijriDate(lat, lon, method, "Asia/Jakarta"),
-        ]);
-
-        setMonths(
-          calRes.months.map((m) => ({
-            month_id: m.month_id,
-            month_name: m.month_name,
-            total_days: m.total_days,
-            day_1_weekday: m.day_1_weekday,
-            start_gregorian: m.start_gregorian,
-          })),
-        );
-
-        // Set today dari hijri-date endpoint
+        const hijriRes = await fetchHijriDate(lat, lon, method, "Asia/Jakarta");
         const hd = hijriRes.hijri_date;
         setToday({ year: hd.year, month: hd.month, day: hd.day });
-      } else {
-        const res = await fetchGregorianCalendar(year);
-        setMonths(
-          res.months.map((m) => ({
-            month_id: m.month_id,
-            month_name: m.month_name,
-            total_days: m.total_days,
-            day_1_weekday: m.day_1_weekday,
-          })),
-        );
 
-        // Today untuk Masehi — dari client
+        if (year !== null) {
+          const calRes = await fetchYearlyCalendar(year, lat, lon, method);
+          setMonths(
+            calRes.months.map((m) => ({
+              month_id: m.month_id,
+              month_name: m.month_name,
+              total_days: m.total_days,
+              day_1_weekday: m.day_1_weekday,
+              start_gregorian: m.start_gregorian,
+            })),
+          );
+        }
+      } else {
         const now = new Date();
         setToday({
           year: now.getFullYear(),
           month: now.getMonth() + 1,
           day: now.getDate(),
         });
+
+        if (year !== null) {
+          const res = await fetchGregorianCalendar(year);
+          setMonths(
+            res.months.map((m) => ({
+              month_id: m.month_id,
+              month_name: m.month_name,
+              total_days: m.total_days,
+              day_1_weekday: m.day_1_weekday,
+            })),
+          );
+        }
       }
     } catch {
       setError("Gagal memuat data kalender.");
     } finally {
-      setLoading(false);
+      if (year !== null) {
+        setLoading(false);
+      } else {
+        setLoading(false);
+      }
     }
   }, [year, dateSystem, method, lat, lon]);
 
