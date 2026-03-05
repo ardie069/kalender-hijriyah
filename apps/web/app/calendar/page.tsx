@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMounted } from "@/hooks/use-mounted";
 import type { Method as HijriMethod } from "@/types/hijri";
 import {
@@ -24,6 +24,7 @@ export default function CalendarPage() {
 
   const [year, setYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [hasSynced, setHasSynced] = useState(false);
 
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(
     null,
@@ -36,75 +37,90 @@ export default function CalendarPage() {
         const data = await response.json();
         if (data.latitude && data.longitude) {
           setLocation({ lat: data.latitude, lon: data.longitude });
-        } else {
-          throw new Error("Invalid IP data");
         }
-      } catch (err) {
-        console.error("IP Geolocation failed:", err);
-        setLocation({ lat: 0, lon: 0 });
+      } catch {
+        setLocation({ lat: -6.2, lon: 106.845 });
       }
     };
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLocation({
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-          });
-        },
-        () => {
-          console.warn("GPS denied/error, falling back to IP...");
-          fetchIPLocation();
-        },
-        { timeout: 10000, enableHighAccuracy: false },
+        (pos) =>
+          setLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        () => fetchIPLocation(),
+        { timeout: 5000 },
       );
     } else {
       fetchIPLocation();
     }
   }, []);
 
-  const lat = location?.lat ?? null;
-  const lon = location?.lon ?? null;
+  const initialYear = useMemo(() => {
+    if (dateSystem === "gregorian") {
+      return new Date().getFullYear();
+    }
 
-  const { months, loading, error, today } = useCalendar(
-    year ?? (dateSystem === "hijri" ? 1446 : new Date().getFullYear()),
-    dateSystem,
-    method,
-    lat,
-    lon,
-  );
+    try {
+      const formatter = new Intl.DateTimeFormat("en-u-ca-islamic-uma", {
+        year: "numeric",
+      });
+      const parts = formatter.formatToParts(new Date());
+      const yearPart = parts.find((p) => p.type === "year");
 
-  const [hasSynced, setHasSynced] = useState(false);
-
-  useEffect(() => {
-    const frameId = requestAnimationFrame(() => {
-      setHasSynced(false);
-      setYear(null);
-    });
-    return () => cancelAnimationFrame(frameId);
+      return yearPart ? parseInt(yearPart.value) : 1400;
+    } catch {
+      return 1400;
+    }
   }, [dateSystem]);
 
-  useEffect(() => {
-    if (today && !hasSynced) {
-      const frameId = requestAnimationFrame(() => {
-        setYear(today.year);
-        setSelectedMonth(today.month);
-        setHasSynced(true);
-      });
-      return () => cancelAnimationFrame(frameId);
-    }
-  }, [today, dateSystem, hasSynced]);
-
-  const currentMonthData = months.find(
-    (m) => m.month_id === (selectedMonth ?? today?.month),
+  const { months, loading, error, today } = useCalendar(
+    year ?? initialYear,
+    dateSystem,
+    method,
+    location?.lat ?? null,
+    location?.lon ?? null,
   );
-  const displayYear =
-    year ??
-    (today?.year || (dateSystem === "hijri" ? 1446 : new Date().getFullYear()));
 
-  const monthList =
-    dateSystem === "hijri"
+  // ─── 3. SINKRONISASI OTOMATIS ───
+  // Sync year & month based on 'today' data when it arrives
+  if (today && !hasSynced) {
+    setYear(today.year);
+    setSelectedMonth(today.month);
+    setHasSynced(true);
+  }
+
+  // ─── 4. STATE RESET ON SYSTEM CHANGE ───
+  const [prevSystem, setPrevSystem] = useState({ dateSystem, method });
+  if (prevSystem.dateSystem !== dateSystem || prevSystem.method !== method) {
+    setPrevSystem({ dateSystem, method });
+    setHasSynced(false);
+    setYear(null);
+    setSelectedMonth(null);
+  }
+
+  // ─── 4. DISPLAY LOGIC ───
+  const displayYear = year ?? today?.year ?? initialYear;
+  const initialMonth = useMemo(() => {
+    if (dateSystem === "gregorian") {
+      return new Date().getMonth() + 1;
+    }
+
+    try {
+      const formatter = new Intl.DateTimeFormat("en-u-ca-islamic-uma", {
+        month: "numeric",
+      });
+      return parseInt(formatter.format(new Date()));
+    } catch {
+      return 1;
+    }
+  }, [dateSystem]);
+
+  const currentMonthId = selectedMonth ?? today?.month ?? initialMonth;
+
+  const currentMonthData = months.find((m) => m.month_id === currentMonthId);
+
+  const monthList = useMemo(() => {
+    return dateSystem === "hijri"
       ? HIJRI_MONTHS.map((m) => ({
           id: m.id,
           name: m.name,
@@ -117,6 +133,7 @@ export default function CalendarPage() {
           desc: m.desc,
           isSpecial: false,
         }));
+  }, [dateSystem]);
 
   if (!mounted)
     return (
@@ -144,7 +161,7 @@ export default function CalendarPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <CalendarSidebar
             viewMode={viewMode}
-            selectedMonth={selectedMonth ?? today?.month ?? 1}
+            selectedMonth={currentMonthId}
             onMonthSelect={setSelectedMonth}
             dateSystem={dateSystem}
           />
@@ -161,7 +178,7 @@ export default function CalendarPage() {
                 monthData={currentMonthData}
                 year={displayYear}
                 system={dateSystem}
-                loading={loading}
+                loading={loading || !hasSynced}
                 todayDay={today?.day}
               />
             ) : (
