@@ -6,17 +6,15 @@ from datetime import datetime, timedelta, date
 from functools import lru_cache
 
 from app.core.methods.factory import get_method_instance
-from ..config import AL_HARAM_LOCATION, HIJRI_MONTHS, NZ_LOCATION
+from ..config import AL_HARAM_LOCATION, HIJRI_MONTHS
 from ..cache.disk import _make_key, get_cache, set_cache
 from ..services.visibility_scan import GlobalVisibilityRegistry
-from ..calendar.hijri_date import start_new_month
-from ..calendar.julian import jd_from_datetime, jd_to_datetime
-from ..astronomy.sun_times import get_fajr_time
+from ..services.ughc_decision import evaluate_ughc_decision
+from ..calendar.julian import jd_from_datetime
 
 from app.core.services.engine import (
     calculate_sunset,
     calculate_baseline_hijri,
-    calculate_conjunction,
 )
 
 logger = logging.getLogger(__name__)
@@ -24,9 +22,9 @@ logger = logging.getLogger(__name__)
 # TTL cache untuk hasil predict_full_year: 24 jam
 _YEAR_CACHE_TTL = 86400
 
-# UGHC methods — bisa di-shortcut langsung via scan_global
+# UGHC methods — menggunakan kriteria GEOSENTRIK sesuai standar KHGT
 _UGHC_CRITERIA = {
-    "ughc": "TURKEY_2016_TOPOCENTRIC",
+    "ughc": "TURKEY_2016_GEOCENTRIC",
 }
 
 # Grid step untuk predictor — cukup rapat agar tidak miss Alaska/Western America
@@ -43,52 +41,23 @@ class MonthPredictor:
 
     def _predict_ughc_month(self, m_idx, day_29_date, method):
         """
-        Fast path untuk UGHC: langsung panggil scan_global
-        tanpa melalui calculate() yang redundan.
-
-        Logika harus IDENTIK dengan BaseUGHCMethod.calculate() di ughc_base.py:
-        - Butir 1: Hilal terlihat sebelum 24:00 UTC → bulan baru
-        - Butir 2: Hilal terlihat setelah 24:00 UTC:
-          - Jika di Amerika → bulan baru
-          - Jika bukan Amerika → cek konjungsi < NZ fajr → bulan baru
+        Fast path untuk UGHC: delegasi ke shared evaluate_ughc_decision.
         """
         criteria = _UGHC_CRITERIA[method]
 
-        scan = GlobalVisibilityRegistry.scan_global(
+        # Hitung noon JD untuk NZ fajr check
+        noon_dt = datetime.combine(day_29_date, datetime.min.time()).replace(
+            tzinfo=pytz.utc
+        ) + timedelta(hours=12)
+        noon_jd = jd_from_datetime(noon_dt)
+
+        is_new_month, scan = evaluate_ughc_decision(
             day_29_date,
+            noon_jd,
             criteria,
             lat_step=_PREDICTOR_LAT_STEP,
             lon_step=_PREDICTOR_LON_STEP,
         )
-
-        is_new_month = False
-
-        # A. Butir 1: Terpenuhi sebelum 24:00 UTC
-        if scan.get("anywhere_before_24utc", False):
-            is_new_month = True
-
-        # B. Butir 2: Terpenuhi setelah 24:00 UTC (Amerika atau NZ Fajr)
-        elif scan.get("anywhere_after_24utc", False) or scan.get(
-            "america_visible", False
-        ):
-            if scan.get("america_visible", False):
-                is_new_month = True
-            else:
-                # NZ Fajr check — konjungsi harus terjadi sebelum Fajr di NZ
-                noon_dt = datetime.combine(day_29_date, datetime.min.time()).replace(
-                    tzinfo=pytz.utc
-                ) + timedelta(hours=12)
-                noon_jd = jd_from_datetime(noon_dt)
-                conj_jd = calculate_conjunction(noon_jd)
-                conj_dt_utc = jd_to_datetime(conj_jd)
-                nz_fajr = get_fajr_time(
-                    conj_dt_utc.date(),
-                    NZ_LOCATION["lat"],
-                    NZ_LOCATION["lon"],
-                    "UTC",
-                )
-                if nz_fajr and conj_dt_utc < nz_fajr.astimezone(pytz.utc):
-                    is_new_month = True
 
         total_days = 29 if is_new_month else 30
         decision = "new_month" if is_new_month else "istikmal_30"

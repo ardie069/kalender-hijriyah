@@ -74,27 +74,27 @@ def calculate_conjunction(sunset_jd):
     return _calculate_conjunction_cached(jd_key)
 
 
-def calculate_month_conjunction(now_local):
-    p = _get_astro()
-    now_utc = now_local.astimezone(pytz.utc)
-    jd_key = round(jd_from_datetime(now_utc), 3)
-    return _calculate_conjunction_cached(jd_key)
-
 
 def calculate_visibility(sunset_utc, lat, lon, conj_jd, criteria):
     """Visibilitas Hilal — enriched with azimuth data."""
     p = _get_astro()
+    from ..astronomy.criteria_registry import CRITERIA_REGISTRY
 
     vis = evaluate_visibility(
         sunset_utc, lat, lon, conj_jd, p.ts, p.sun, p.moon, p.earth,
         criteria=criteria,
     )
 
-    observer = p.earth + wgs84.latlon(lat, lon)
+    criteria_def = CRITERIA_REGISTRY.get(criteria, {})
     t = p.ts.from_datetime(sunset_utc)
 
-    sun_pos = observer.at(t).observe(p.sun).apparent().altaz()
-    moon_pos = observer.at(t).observe(p.moon).apparent().altaz()
+    # Untuk metadata azimuth, kita SELALU gunakan observer toposentrik
+    # karena altaz() Skyfield tidak dapat dipanggil dari observer geosentris.
+    # Ingat: Nilai yang digunakan untuk keputusan (elongasi & altitude) sudah
+    # dihitung dengan benar sesuai kriteria di dalam evaluate_visibility().
+    observer_for_az = p.earth + wgs84.latlon(lat, lon)
+    sun_pos = observer_for_az.at(t).observe(p.sun).apparent().altaz()
+    moon_pos = observer_for_az.at(t).observe(p.moon).apparent().altaz()
 
     return {
         **vis,

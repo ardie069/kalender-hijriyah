@@ -2,6 +2,7 @@
 Sun times — sunset & fajr calculation.
 
 Astronomy objects diakses dari AstronomyProvider singleton.
+Simplified API: hanya satu signature per fungsi.
 """
 
 from functools import lru_cache
@@ -20,8 +21,18 @@ def _cached_sunset(year: int, month: int, day: int, lat: float, lon: float, time
     p = _get_astro()
     observer = wgs84.latlon(lat, lon)
 
-    t0 = p.ts.utc(year, month, day, 0, 0)
-    t1 = p.ts.utc(year, month, day, 23, 59)
+    # Base search window on LOCAL time, not UTC!
+    tz = pytz.timezone(timezone)
+    from datetime import datetime
+    try:
+        t0_local = tz.localize(datetime(year, month, day, 0, 0))
+        t1_local = tz.localize(datetime(year, month, day, 23, 59, 59))
+    except (ValueError, OSError):
+        # Fallback for weird edge cases or invalid dates
+        return None
+
+    t0 = p.ts.from_datetime(t0_local)
+    t1 = p.ts.from_datetime(t1_local)
 
     f = almanac.sunrise_sunset(p.eph, observer)
     times, events = almanac.find_discrete(t0, t1, f)
@@ -41,19 +52,19 @@ def get_sunset_time(year_or_date, month_or_lat=None, day_or_lon=None,
                     lat_or_tz=None, lon_or_ts=None, timezone_or_eph=None,
                     ts=None, eph=None):
     """
-    Flexible API:
+    Flexible API (backward compat):
       - get_sunset_time(year, month, day, lat, lon, timezone)  # new style
-      - get_sunset_time(date, lat, lon, timezone, ts, eph)     # old style (ts/eph ignored)
+      - get_sunset_time(date, lat, lon, timezone, ...)          # old style
     """
-    # Detect old-style call: first arg is a date object
-    if hasattr(year_or_date, 'year') and hasattr(year_or_date, 'month') and hasattr(year_or_date, 'day') and not isinstance(year_or_date, int):
-        date = year_or_date
-        lat = round(month_or_lat, 4)
-        lon = round(day_or_lon, 4)
-        tz = lat_or_tz
-        return _cached_sunset(date.year, date.month, date.day, lat, lon, tz)
+    if hasattr(year_or_date, 'year') and not isinstance(year_or_date, int):
+        # Old-style: (date, lat, lon, timezone, ...)
+        d = year_or_date
+        return _cached_sunset(
+            d.year, d.month, d.day,
+            round(month_or_lat, 4), round(day_or_lon, 4), lat_or_tz
+        )
 
-    # New-style call
+    # New-style: (year, month, day, lat, lon, timezone)
     return _cached_sunset(
         year_or_date, month_or_lat, day_or_lon,
         round(lat_or_tz, 4), round(lon_or_ts, 4),
@@ -66,8 +77,18 @@ def _cached_fajr(year: int, month: int, day: int, lat: float, lon: float, timezo
     p = _get_astro()
     observer = wgs84.latlon(lat, lon)
 
-    t0 = p.ts.utc(year, month, day, 0, 0)
-    t1 = p.ts.utc(year, month, day, 12, 0)
+    # Base search window on LOCAL time, not UTC!
+    tz = pytz.timezone(timezone)
+    from datetime import datetime
+    try:
+        t0_local = tz.localize(datetime(year, month, day, 0, 0))
+        t1_local = tz.localize(datetime(year, month, day, 12, 0))
+    except ValueError:
+        # Fallback for weird edge cases
+        return None
+
+    t0 = p.ts.from_datetime(t0_local)
+    t1 = p.ts.from_datetime(t1_local)
 
     sun = p.eph["sun"]
 

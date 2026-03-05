@@ -1,12 +1,17 @@
+from functools import lru_cache
+
+
 def is_america_continent(lon: float) -> bool:
     """Check jika bujur berada di Benua Amerika (-170 s/d -35)."""
     return -170 <= lon <= -35
 
 
-def generate_global_grid(lat_step=5, lon_step=10, min_lat=-65, max_lat=65):
+@lru_cache(maxsize=8)
+def generate_global_grid(lat_step=5, lon_step=10, min_lat=-60, max_lat=60):
     """
-    Grid lebih rapat (5/10) biar gak ada hilal yang nyelip.
-    Timezone dinamis berdasarkan bujur.
+    Grid titik observasi global.
+    Di-cache via lru_cache agar tidak di-regenerate setiap pemanggilan.
+    Return sebagai tuple of tuples (hashable) agar bisa di-cache oleh lru_cache.
     """
     sites = []
     lat = min_lat
@@ -14,7 +19,6 @@ def generate_global_grid(lat_step=5, lon_step=10, min_lat=-65, max_lat=65):
         lon = -180
         while lon < 180:
             offset = round(lon / 15)
-
             tz_name = f"Etc/GMT{-offset:+d}" if offset != 0 else "UTC"
 
             sites.append(

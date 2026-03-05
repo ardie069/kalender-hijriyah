@@ -4,7 +4,7 @@ from .base import HijriContext
 from .umm_al_qura import UmmAlQuraMethod
 from .local_hisab import LocalHisabMethod
 from .local_rukyat import LocalRukyatMethod
-from .ughc_topocentric import UGHCMethod
+from .ughc_geocentric import UGHCGeocentricMethod
 
 
 class ContextFactory:
@@ -31,7 +31,7 @@ def get_method_instance(method: str):
         "umm_al_qura": UmmAlQuraMethod,
         "local_hisab": LocalHisabMethod,
         "local_rukyat": LocalRukyatMethod,
-        "ughc": UGHCMethod,
+        "ughc": UGHCGeocentricMethod,
     }
     if method not in classes:
         raise ValueError(f"Metode '{method}' tidak ditemukan.")
