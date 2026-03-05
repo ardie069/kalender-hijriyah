@@ -53,6 +53,72 @@ REGIONAL_RUKYAT_CONFIG = {
             },
         ],
     },
+    "malaysia": {
+        "criteria": "MABIMS",
+        "sites": [
+            {
+                "name": "Kuala Lumpur",
+                "lat": 3.14,
+                "lon": 101.69,
+                "timezone": "Asia/Kuala_Lumpur",
+            },
+        ],
+    },
+    "singapore": {
+        "criteria": "MABIMS",
+        "sites": [
+            {
+                "name": "Singapore",
+                "lat": 1.29,
+                "lon": 103.85,
+                "timezone": "Asia/Singapore",
+            },
+        ],
+    },
+    "thailand": {
+        "criteria": "MABIMS",
+        "sites": [
+            {
+                "name": "Bangkok",
+                "lat": 13.75,
+                "lon": 100.51,
+                "timezone": "Asia/Bangkok",
+            },
+        ],
+    },
+    "vietnam": {
+        "criteria": "MABIMS",
+        "sites": [
+            {
+                "name": "Hanoi",
+                "lat": 21.00,
+                "lon": 105.85,
+                "timezone": "Asia/Ho_Chi_Minh",
+            },
+        ],
+    },
+    "philippines": {
+        "criteria": "MABIMS",
+        "sites": [
+            {
+                "name": "Manila",
+                "lat": 14.60,
+                "lon": 120.98,
+                "timezone": "Asia/Manila",
+            },
+        ],
+    },
+    "brunei": {
+        "criteria": "MABIMS",
+        "sites": [
+            {
+                "name": "Bandar Seri Begawan",
+                "lat": 4.91,
+                "lon": 114.94,
+                "timezone": "Asia/Brunei",
+            },
+        ],
+    },
     "turkey": {
         "criteria": "TURKEY_2016_TOPOCENTRIC",
         "sites": [
