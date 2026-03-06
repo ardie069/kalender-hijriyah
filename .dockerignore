@@ -1,18 +1,24 @@
-# Jangan copy history Git (Bikin image berat!)
+# Git history
 .git
 .gitignore
 
-# Jangan copy file sampah OS & IDE
+# Temp files
 .vscode/
 .DS_Store
 Thumbs.db
 *.log
 
-# Jangan copy binary hasil build lokal (Biar gak konflik sama Linux Docker)
+# Build artifacts
 main
 dist/
 build/
 
-# Jangan copy file env sensitif
+# Binaries
+*.exe
+*.bin
+*.out
+
+# Env files
 .env
 .env*
+!.env.example

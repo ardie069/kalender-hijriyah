@@ -1,9 +1,10 @@
 package services
 
 import (
+	"time"
+
 	"github.com/ardie069/kalender-hijriyah/internal/astronomy"
 	"github.com/ardie069/kalender-hijriyah/internal/calendar"
-	"time"
 )
 
 type LocationInfo struct {
@@ -99,18 +100,31 @@ func (s *HijriService) GetFullCalendarInfo(t time.Time, lat, lon float64) HijriR
 		// C. Jalankan Evaluasi berdasarkan Metode
 		switch m {
 		case "UGHC_KHGT":
-			result.HijriDate.Day = displayDay + 1
 			pred.IsNewMonth = s.Cal.ScanGlobalUGHC(sunset29, nextIjtima)
+			if displayDay >= 29 {
+				result.HijriDate = calendar.PredictHijriDate(tUTC, pred.IsNewMonth, currentH.Month, currentH.Year)
+			} else {
+				result.HijriDate.Day = displayDay + 1
+			}
 
 		case "UMM_AL_QURA":
-			result.HijriDate.Day = displayDay + 1
 			// Umm Al-Qura punya logic sendiri di Makkah
 			pred.IsNewMonth = calendar.IsUmmAlQura(nextIjtima, sunset29, moonset29)
+			if displayDay >= 29 {
+				result.HijriDate = calendar.PredictHijriDate(tUTC, pred.IsNewMonth, currentH.Month, currentH.Year)
+			} else {
+				result.HijriDate.Day = displayDay + 1
+			}
 
 		default:
 			// Metode Lokal (MABIMS, Wujudul Hilal, dkk)
 			resLocal := s.Cal.EvaluateLocalHisab(m, sunset29, tel29.Altitude, tel29.Elongation, sunset29, moonset29, nextIjtima)
 			pred.IsNewMonth = resLocal.IsNewMonth
+			if displayDay >= 29 {
+				result.HijriDate = calendar.PredictHijriDate(tUTC, pred.IsNewMonth, currentH.Month, currentH.Year)
+			} else {
+				result.HijriDate.Day = displayDay + 1
+			}
 		}
 
 		result.Prediction = pred

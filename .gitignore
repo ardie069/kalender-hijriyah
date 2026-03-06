@@ -6,6 +6,12 @@
 # Distribution files and build artifacts
 dist/
 build/
+main
+
+# Binaries
+*.exe
+*.bin
+*.out
 
 # IDE and editor specific files
 .vscode/

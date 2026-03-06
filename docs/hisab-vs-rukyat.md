@@ -1,33 +1,29 @@
-# 🌙 Hisab vs Rukyat
+# 🌙 Hisab vs Rukyat di API v4
 
-Hisab dan rukyat **bukan dua cara yang setara** secara epistemologis.
+Kalender Hijriyah API v4 tidak menyatukan Hisab dan Rukyat, melainkan menampilkannya secara transparan dalam objek `methods`.
 
-## Hisab
+## Hisab (Wujudul Hilal)
 
-- Berbasis konjungsi matematis
-- Menggunakan waktu ijtimak (new moon)
-- Deterministik
-- Cocok untuk prediksi dan perencanaan
+- Menggunakan syarat *Sunset harus terjadi sesudah Ijtima (konjungsi)*.
+- Altitude > 0° saat Maghrib.
+- Deterministik murni geometris bumi-bulan-matahari.
 
-Konsekuensi:
+## Rukyat (Imkanur Rukyat / MABIMS Baru 2021)
 
-- Bulan baru bisa ditetapkan meski hilal belum mungkin terlihat
+- Berbasis kriteria ekspektasi visibilitas optik.
+- Kriteria ketat yang dianut negara-negara MABIMS:
+  - **Ketinggian (Altitude) ≥ 3°**
+  - **Elongasi ≥ 6.4°**
 
-## Rukyat
+## Kalender Hijriyah Global Tunggal (KHGT / UGHC)
 
-- Berbasis observasi (atau kemungkinan observasi)
-- Menggunakan kriteria imkanur rukyat
-- Lebih ketat
-- Tidak selalu sejalan dengan hisab
+- Diadopsi dari **Kongres Turki 2016**.
+- Bertujuan menyatukan kalender Islam sedunia menggunakan Hisab Imkanur Rukyat *Global*.
+- Kriteria global:
+  - Hilal harus mencapai **Elongasi ≥ 8°** dan **Altitude Geosentrik ≥ 5°** di *mana pun* di bumi (parameter optimal diukur di pantai barat benua Amerika).
+  - Terdapat limitasi 24:00 UTC dan *override* jam fajar di Selandia Baru untuk memastikan tidak terjadi keterlambatan masuk bulan kalender di zona timur awal.
 
-Kriteria umum:
+## Implikasi API v4
 
-- Usia bulan ≥ 8 jam
-- Ketinggian bulan ≥ 3°
-- Elongasi ≥ 6.4°
-
-## Implikasi Sistem
-
-- Jika hisab dan rukyat berbeda, sistem **tidak memaksa konvergensi**
-- Rukyat hanya mengevaluasi pada **hari ke-29 setelah Maghrib**
-- Tidak ada “lompat hari” (29 → 1 → 2)
+- Jika metode berbeda hasil, *field* `is_new_month` akan menampilkan hasil divergen secara lugas.
+- API mengkalkulasi transisi murni pada Maghrib *lokal* pengamat untuk menghindari kebingungan perubahan kalender jam 12 malam.

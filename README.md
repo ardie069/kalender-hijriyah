@@ -1,114 +1,85 @@
-# 🕌 Kalender Hijriyah Digital — Lunar Analytics 🌙
+# 🕌 Kalender Hijriyah Digital API — Lunar Analytics v4 🌙
 
-[![Framework: Next.js 15](https://img.shields.io/badge/Frontend-Next.js%2015-000000?style=flat-square&logo=nextdotjs)](https://nextjs.org/)
-[![Backend: FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Engine: Skyfield](https://img.shields.io/badge/Engine-Skyfield%20API-10b981?style=flat-square)](https://rhodesmill.org/skyfield/)
+[![Go Release](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat-square&logo=go)](https://go.dev/)
+[![Framework: Gin](https://img.shields.io/badge/Framework-Gin-009688?style=flat-square&logo=gin)](https://gin-gonic.com/)
+[![Engine: SPICE Toolkit](https://img.shields.io/badge/Engine-SPICE%20C--Kernel-10b981?style=flat-square)](https://naif.jpl.nasa.gov/naif/toolkit.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 > **"Sains adalah obor yang membakar kegelapan ghaib dengan cahaya logika materialistik."**
-> Aplikasi ini adalah sintesis antara presisi astronomi modern dan kearifan lokal dalam satu ekosistem digital.
+> API Server Kalender Hijriyah v4 ini adalah sintesis antara presisi astronomi modern dan kearifan lokal dalam satu ekosistem digital berbasis Golang.
 
-Aplikasi ini menampilkan **tanggal Hijriyah secara akurat dan konsisten** berdasarkan lokasi geografis, posisi matahari terbenam (Maghrib), dan berbagai metode penetapan global maupun lokal. Kami memisahkan secara tegas antara **Logika Falak (Backend)** dan **Estetika User Experience (Frontend)** untuk menjaga validitas data.
-
----
-
-## 🧠 Filosofi Madilog & Dialektika Falak
-
-Proyek ini dibangun di atas prinsip **Materialisme, Dialektika, dan Logika**:
-
-1. **Materialisme**: Data astronomi didasarkan pada pergerakan benda langit riil menggunakan ephemeris NASA JPL DE421.
-2. **Dialektika**: Menjembatani perbedaan metode (Hisab vs Rukyat) melalui transparansi data visibilitas hilal.
-3. **Logika**: Memastikan tidak ada perubahan tanggal di tengah malam; hari baru dimulai tepat saat Matahari terbenam.
+Aplikasi ini berfokus murni pada penyediaan REST API untuk perhitungan **tanggal Hijriyah secara akurat dan konsisten** berdasarkan lokasi geografis, posisi matahari terbenam (Maghrib), dan berbagai metode penetapan global maupun lokal menggunakan standar data ephemeris **NASA JPL SPICE**.
 
 ---
 
-## ✨ Fitur Utama (v2.0 - 2026 Edition)
+## 🧠 Filosofi Pembangunan v4
 
-- 📡 **Real-time Hijri Telemetry**: Sinkronisasi otomatis berdasarkan koordinat GPS dan zona waktu pengguna.
-- 🌅 **Sunset-Based Transition**: Logika pergantian hari saat Maghrib, bukan pukul 00:00.
+Proyek ini telah dire-write dari Python/FastAPI ke **Golang** untuk memaksimalkan performa dan konkurensi, menggunakan binding ke pustaka **NASA SPICE (CSPICE)**.
+
+1. **Materialisme**: Data astronomi dikalkulasi dari ephemeris riil NASA JPL `de440.bsp` untuk tingkat ketelitian luar angkasa.
+2. **Dialektika**: Menjembatani perbedaan metode penetapan Hijriyah (UGHC, Umm al-Qura, MABIMS) di dalam satu platform.
+3. **Logika**: Memastikan pergantian hari Hijriyah **tepat saat Matahari terbenam** (Maghrib lokal pengamat).
+
+---
+
+## ✨ Fitur Utama (v4 API Release)
+
+- 📡 **Real-time Lunar Telemetry**: Sinkronisasi dan perhitungan lintasan matahari dan bulan dengan CSPICE.
+- 🌅 **Precise Sunset/Fajr Bisection**: Bisection search presisi tinggi 24 jam untuk mendeteksi maghrib dan subuh lintas batasan zona waktu.
 - 🧪 **Multi-Method Engine**:
-  - 🌍 **KHGT (Global)**: Kalender Hijriyah Global Tunggal.
-  - 🕋 **Umm al-Qura**: Standar otoritas Mekkah.
-  - 🔢 **Hisab Lokal**: Berdasarkan kriteria Wujudul Hilal.
-  - 🔭 **Rukyat Lokal**: Simulasi visibilitas hilal berbasis kriteria MABIMS.
-- 🔮 **Predictive Analytics**: Prediksi apakah bulan berjalan berjumlah 29 atau 30 hari (Istikmal).
-- 🗺️ **Global Hilal Map**: Integrasi pelacakan posisi hilal di seluruh belahan dunia.
-- ✨ **Local Wisdom**: Integrasi Nama Weton (khusus wilayah Jawa).
-- 🎨 **Emerald-Scientific UI**: Desain "Lunar Aura" yang mendukung Dark/Light mode secara *seamless*.
+  - 🌍 **UGHC/KHGT**: Kalender Hijriyah Global Tunggal (Turki 2016).
+  - 🕋 **Umm al-Qura**: Standar otoritas Makkah.
+  - 🔢 **Hisab Lokal**: Berdasarkan kriteria MABIMS dan Wujudul Hilal.
+- 🔮 **Global Scan Optimizations**: Scan visibilitas komprehensif dari barat (Benua Amerika) untuk hisab global dengan koreksi ekuinoks/midnight UTC.
 
 ---
 
 ## 🔧 Teknologi & Arsitektur
 
-### Backend (The Engine)
+### Backend API Server
 
-- **FastAPI**: *High-performance* Python framework untuk pemrosesan data asinkron.
-- **Skyfield**: Library astronomi untuk kalkulasi posisi planet dan satelit dengan tingkat akurasi tinggi.
-- **Julian Day Calculation**: Standar internal perhitungan waktu astronomis.
-- **Vercel Serverless**: Infrastruktur backend yang *scalable* dan enteng.
-
-### Frontend (The Dashboard)
-
-- **Next.js 15**: Menggunakan *App Router* dan *Server Components* untuk performa maksimal.
-- **Tailwind CSS v4 + DaisyUI**: Estetika bento-grid dengan sentuhan *Glassmorphism*.
-- **TypeScript**: Menjamin keamanan tipe data antara API dan UI.
-- **Zustand/Context**: Manajemen state tema dan preferensi pengguna.
+- **Golang**: Bahasa yang sangat cepat dengan concurrency yang handal.
+- **Gin**: HTTP Web framework yang simpel dan kencang.
+- **CGO & CSPICE**: Toolkit geometri navigasi antariksa standar NASA yang dilinked via CGO.
+- **Docker**: Siap deploy dimana saja secara konsisten dengan multi-stage build.
 
 ---
 
-## 🚀 Instalasi & Development
+## 🚀 Deployment & Build
 
-### 1. Clone & Setup
+API v4 ini dapat dijalankan menggunakan Docker untuk kemudahan dan keandalan pustaka CSPICE *shared object*.
 
 ```bash
-git clone [https://github.com/ardie069/kalender-hijriyah.git](https://github.com/ardie069/kalender-hijriyah.git)
+git clone https://github.com/ardie069/kalender-hijriyah.git
 cd kalender-hijriyah
+
+# Build & Run dengan Docker Compose
+docker-compose up --build -d
 ```
 
-### 2. Backend (FastAPI)
+API Server akan menyala secara lokal pada `http://localhost:8080`.
 
-```bash
-cd apps/backend
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-API akan tersedia di `http://127.0.0.1:8000`.
-
-### 3. Frontend (Next.js)
-
-```bash
-cd apps/web
-pnpm install
-pnpm dev
-```
-
-Dashboard akan tersedia di `http://localhost:3000`.
-
-## 📁 Struktur Proyek (Atomic Design)
+## 📁 Struktur Proyek 
 
 ```plaintext
 kalender-hijriyah/
-├── apps/
-│   ├── backend/          # Python FastAPI (Falak Logic)
-│   │   ├── app/          # Core API & Astronomical Service
-│   │   └── data/         # Ephemeris Files (de421.bsp)
-│   └── web/              # Next.js 15 (Emerald UI)
-│       ├── components/   # Atomic UI Components
-│       ├── context/      # Theme & Auth Context
-│       └── hooks/        # Custom React Hooks (useHijri)
-├── docs/                 # Documentation & Research
+├── cmd/
+│   └── api/              # Entry point Gin API Server
+├── data/                 # SPICE Kernels (de440.bsp, naif0012.tls, dll)
+├── internal/
+│   ├── api/              # HTTP Handlers
+│   ├── astronomy/        # SPICE CGO Bindings & Kalkulator Orbit
+│   ├── calendar/         # Logika KHGT, Umm al-Qura, MABIMS
+│   └── services/         # Orkestrasi Kalender Utama
+├── docs/                 # Dokumentasi Metode Hijriyah
 └── README.md
 ```
 
 🌐 API Endpoints Utama
 
-| Endpoint             | Fungsi                       | Parameter Utama     |
-| -------------------- | ---------------------------- | --------------------|
-| GET /hijri-date      |  Ambil tanggal Hijriyah riil | method, lat, lon    |
-| GET /hijri-end-month |  Prediksi akhir bulan        | method, year, month |
+| Endpoint             | Method | Fungsi                       | Parameter Query        |
+| -------------------- | ------ | ---------------------------- | ---------------------- |
+| `/api/v4/hijri/date` | GET    | Perhitungan prediksi bulan   | date (ISO), lat, lon   |
 
 ---
 
