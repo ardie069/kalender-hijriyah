@@ -5,37 +5,27 @@ import (
 	"os"
 )
 
-// NAIF ID (Tetep simpen di sini buat referensi)
-const (
-	NAIF_SUN   = "SUN"
-	NAIF_EARTH = "EARTH"
-	NAIF_MOON  = "MOON"
-)
-
 type EphemerisManager struct {
 	Kernels []string
 }
 
-// NewEphemerisManager bakal mastiin semua file kernel ada sebelum aplikasi jalan
 func NewEphemerisManager(kernelPaths ...string) (*EphemerisManager, error) {
+	em := &EphemerisManager{Kernels: kernelPaths}
+
 	for _, path := range kernelPaths {
+		// Cek filenya ada apa nggak
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			return nil, fmt.Errorf("kernel NASA ga ketemu, Bang: %s", path)
+			return nil, fmt.Errorf("kernel ga ketemu: %s", path)
 		}
-		// Langsung load ke CSPICE via bridge
+
+		// Panggil LoadKernel dari spice_bridge.go
 		if err := LoadKernel(path); err != nil {
 			return nil, err
 		}
 	}
-	return &EphemerisManager{Kernels: kernelPaths}, nil
+	return em, nil
 }
 
-// GetPosition sekarang manggil fungsi NASA asli di spice_bridge.go
-func (em *EphemerisManager) GetPosition(target string, et float64) (Vector3, error) {
-	pos, err := GetPosition(target, et)
-	if err != nil {
-		return Vector3{}, err
-	}
-	// NASA balikin KM, kita bungkus jadi Vector3 biar bisa pake Dot/Norm
-	return Vector3{X: pos[0], Y: pos[1], Z: pos[2]}, nil
+func (em *EphemerisManager) GetGeocentric(target string, et float64, frame string) (Vector3, error) {
+	return getPosition(target, frame, CorrLTS, Earth, et)
 }

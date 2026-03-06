@@ -1,0 +1,14 @@
+services:
+  hijri-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nasa-hijri-engine
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - GIN_MODE=release
+      - TZ=Asia/Jakarta
+    restart: always
