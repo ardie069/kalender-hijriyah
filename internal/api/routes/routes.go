@@ -16,6 +16,7 @@ func SetupRoutes(router *gin.Engine, hijriHandler *handlers.HijriHandler) {
 		hijri := v4.Group("/hijri")
 		{
 			hijri.GET("/date", hijriHandler.GetHijriDate)
+			hijri.GET("/search", hijriHandler.SearchDate)
 		}
 
 		// Moon Telemetry endpoints

@@ -3,9 +3,11 @@ package astronomy
 import (
 	"fmt"
 	"os"
+	"sync"
 )
 
 type EphemerisManager struct {
+	mu sync.Mutex
 	Kernels []string
 }
 
@@ -27,5 +29,7 @@ func NewEphemerisManager(kernelPaths ...string) (*EphemerisManager, error) {
 }
 
 func (em *EphemerisManager) GetGeocentric(target string, et float64, frame string) (Vector3, error) {
+	em.mu.Lock()
+	defer em.mu.Unlock()
 	return getPosition(target, frame, CorrLTS, Earth, et)
 }

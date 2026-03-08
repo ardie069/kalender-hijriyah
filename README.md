@@ -16,9 +16,9 @@ Aplikasi ini berfokus murni pada penyediaan REST API untuk perhitungan **tanggal
 
 Proyek ini telah dire-write dari Python/FastAPI ke **Golang** untuk memaksimalkan performa dan konkurensi, menggunakan binding ke pustaka **NASA SPICE (CSPICE)**.
 
-1. **Materialisme**: Data astronomi dikalkulasi dari ephemeris riil NASA JPL `de440.bsp` untuk tingkat ketelitian luar angkasa.
-2. **Dialektika**: Menjembatani perbedaan metode penetapan Hijriyah (UGHC, Umm al-Qura, MABIMS) di dalam satu platform.
-3. **Logika**: Memastikan pergantian hari Hijriyah **tepat saat Matahari terbenam** (Maghrib lokal pengamat).
+1. Data astronomi dikalkulasi dari ephemeris riil NASA JPL `de440.bsp` untuk tingkat ketelitian luar angkasa.
+2. Menjembatani perbedaan metode penetapan Hijriyah (UGHC atau dikenal dengan KHGT, Umm al-Qura, MABIMS) di dalam satu platform.
+3. Memastikan pergantian hari Hijriyah **tepat saat Matahari terbenam** (Maghrib lokal pengamat).
 
 ---
 
@@ -39,8 +39,8 @@ Proyek ini telah dire-write dari Python/FastAPI ke **Golang** untuk memaksimalka
 ### Backend API Server
 
 - **Golang**: Bahasa yang sangat cepat dengan concurrency yang handal.
-- **Gin**: HTTP Web framework yang simpel dan kencang.
-- **CGO & CSPICE**: Toolkit geometri navigasi antariksa standar NASA yang dilinked via CGO.
+- **Gin**: HTTP Web framework yang simpel dan cepat.
+- **CGO & CSPICE**: Toolkit geometri navigasi antariksa standar NASA yang ditautkan via CGO.
 - **Docker**: Siap deploy dimana saja secara konsisten dengan multi-stage build.
 
 ---
@@ -59,7 +59,7 @@ docker-compose up --build -d
 
 API Server akan menyala secara lokal pada `http://localhost:8080`.
 
-## 📁 Struktur Proyek 
+## 📁 Struktur Proyek
 
 ```plaintext
 kalender-hijriyah/
@@ -70,6 +70,7 @@ kalender-hijriyah/
 │   ├── api/              # HTTP Handlers
 │   ├── astronomy/        # SPICE CGO Bindings & Kalkulator Orbit
 │   ├── calendar/         # Logika KHGT, Umm al-Qura, MABIMS
+│   ├── models/           # Skema logika Golang
 │   └── services/         # Orkestrasi Kalender Utama
 ├── docs/                 # Dokumentasi Metode Hijriyah
 └── README.md
@@ -77,9 +78,10 @@ kalender-hijriyah/
 
 🌐 API Endpoints Utama
 
-| Endpoint             | Method | Fungsi                       | Parameter Query        |
-| -------------------- | ------ | ---------------------------- | ---------------------- |
-| `/api/v4/hijri/date` | GET    | Perhitungan prediksi bulan   | date (ISO), lat, lon   |
+| Endpoint                 | Method | Fungsi                                      | Parameter Query                                                                 |
+| ------------------------ | ------ | ------------------------------------------- | ------------------------------------------------------------------------------- |
+| `/api/v4/hijri/date`     | GET    | Perhitungan prediksi bulan                  | date (ISO), lat, lon                                                            |
+| `/api/v4/moon/telemetry` | GET    | Informasi bulan berdasarkan lokasi pengguna | lat, lon, altitude, elongation, azimuth, distance km, illumination, phase, time |
 
 ---
 

@@ -3,17 +3,9 @@ package astronomy
 import (
 	"math"
 	"time"
-)
 
-type MoonTelemetry struct {
-	Altitude     float64   `json:"altitude"`
-	Azimuth      float64   `json:"azimuth"`
-	Elongation   float64   `json:"elongation"`
-	Illumination float64   `json:"illumination"`
-	DistanceKM   float64   `json:"distance_km"`
-	PhaseName    string    `json:"phase_name"`
-	Timestamp    time.Time `json:"timestamp"`
-}
+	"github.com/ardie069/kalender-hijriyah/internal/models"
+)
 
 func GetAdapter(manager *EphemerisManager) *Adapter {
 	return &Adapter{
@@ -48,7 +40,7 @@ func getPhaseName(illum float64, isWaxing bool) string {
 	}
 }
 
-func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (MoonTelemetry, error) {
+func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (models.MoonTelemetry, error) {
 	et, _ := Str2et(dt.UTC().Format(TimeFormat))
 
 	// 1. Get Positions
@@ -69,7 +61,7 @@ func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (M
 	topoPos, _ := a.Manager.GetTopocentricPosition(Moon, et, latitude, longitude)
 	alt, az := a.Manager.GetLocalAltAz(topoPos, latitude, longitude)
 
-	return MoonTelemetry{
+	return models.MoonTelemetry{
 		Altitude:     alt,
 		Azimuth:      az,
 		Elongation:   elongation,

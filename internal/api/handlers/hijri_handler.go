@@ -27,7 +27,7 @@ func (h *HijriHandler) Ping(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"status":  "Ready",
 		"message": "Engine NASA lu udah panas, Bang! 🔥",
-		"uptime":  time.Since(time.Now()).String(), // Uptime logic statis, tapi cukup untuk demo
+		"uptime":  time.Since(time.Now()).String(),
 	})
 }
 
@@ -62,6 +62,29 @@ func (h *HijriHandler) GetHijriDate(ctx *gin.Context) {
 
 	result := h.Service.GetFullCalendarInfo(targetDate, lat, lon)
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": result})
+}
+
+func (h *HijriHandler) SearchDate(ctx *gin.Context) {
+	dateStr := ctx.Query("date")
+	if dateStr == "" {
+		ctx.JSON(400, gin.H{"error": "Masukkan tanggal terlebih dahulu dengan format YYYY-MM-DD!"})
+		return
+	}
+
+	targetDate, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Format tanggal salah. Kudu YYYY-MM-DD ya!"})
+		return
+	}
+
+	// Langsung panggil logic Tabular (Tanpa butuh data NASA karena ini murni itungan kitab)
+	result := h.Service.GetTabularOnly(targetDate)
+
+	ctx.JSON(200, gin.H{
+		"status": "success",
+		"query":  dateStr,
+		"data":   result,
+	})
 }
 
 // GetTelemetry - Telemetry Hilal
