@@ -1,7 +1,9 @@
 package services
 
 import (
+	"fmt"
 	"time"
+	"github.com/ringsaturn/tzf"
 
 	"github.com/ardie069/kalender-hijriyah/internal/astronomy"
 	"github.com/ardie069/kalender-hijriyah/internal/calendar"
@@ -9,8 +11,21 @@ import (
 )
 
 type HijriService struct {
-	Astro *astronomy.Adapter
-	Cal   *calendar.Logic
+	finder tzf.F
+	Astro  *astronomy.Adapter
+	Cal    *calendar.Logic
+}
+
+func NewHijriService(astro *astronomy.Adapter, cal *calendar.Logic) (*HijriService, error) {
+	f, err := tzf.NewDefaultFinder()
+	if err != nil {
+		return nil, err
+	}
+	return &HijriService{
+		finder: f,
+		Astro:  astro,
+		Cal:    cal,
+	}, nil
 }
 
 func (s *HijriService) GetFullCalendarInfo(t time.Time, lat, lon float64) models.HijriResponse {
@@ -43,139 +58,115 @@ func (s *HijriService) GetFullCalendarInfo(t time.Time, lat, lon float64) models
 	for _, m := range methodList {
 		var result models.MethodResult
 
-		// 1. Tentukan Offset & IsTabular
-		offset := 0
-		isTabular := false
-
-		switch m {
-		case "TABULAR":
-			offset = 0
-			isTabular = true
-		case "UGHC_KHGT", "UMM_AL_QURA", "TURKEY_2016":
-			offset = 0
-			isTabular = false
-		case "MABIMS", "WUJUDUL_HILAL":
-			offset = -1
-			isTabular = false
-		default:
-			offset = -1
-			isTabular = false
-		}
-
-		// 2. Setup Data Hijri Awal (Berdasarkan Offset)
-		day := currentH.Day + offset
-		month := currentH.Month
-		year := currentH.Year
-
-		if day > 30 {
-			day -= 30
-			month++
-			if month > 12 {
-				month = 1
-				year++
+		if m == "TABULAR" {
+			result.HijriDate = models.HijriDate{
+				Day:       currentH.Day,
+				Month:     currentH.Month,
+				MonthName: currentH.MonthName,
+				Year:      currentH.Year,
+				IsTabular: true,
 			}
-		} else if day < 1 {
-			month--
-			if month < 1 {
-				month = 12
-				year--
-			}
-			day += 30
-		}
-
-		result.HijriDate = models.HijriDate{
-			Day:       day,
-			Month:     month,
-			MonthName: calendar.MonthNames[month-1],
-			Year:      year,
-			IsTabular: isTabular,
+		} else {
+			result.HijriDate = s.ResolveDynamicHijriDate(m, targetDay, lat, lon)
 		}
 
 		// 3. Telemetri Real-time (Detik ini)
-		if !isTabular {
+		if !result.HijriDate.IsTabular {
 			alt := realtimeTel.Altitude
 			elong := realtimeTel.Elongation
 			result.CurrentAltitude = &alt
 			result.CurrentElongation = &elong
 
-			daysTo29 := 29 - result.HijriDate.Day
-			searchDateMethod := targetDay.AddDate(0, 0, daysTo29)
-			searchDateMethod = time.Date(searchDateMethod.Year(), searchDateMethod.Month(), searchDateMethod.Day(), 12, 0, 0, 0, time.UTC)
+			// Jika sudah direview dan ternyata kita lagi di hari ke 30, abaikan prediksi karena Hilal fix nggak dicek lagi di hari ke-30
+			// (Bulan otomatis jadi 1 besoknya). 
+			// Kita hanya memunculkan hasil prediksi pada hari ke-29.
+			if result.HijriDate.Day <= 29 {
+				daysTo29 := 29 - result.HijriDate.Day
+				searchDateMethod := targetDay.AddDate(0, 0, daysTo29)
+				searchDateMethod = time.Date(searchDateMethod.Year(), searchDateMethod.Month(), searchDateMethod.Day(), 12, 0, 0, 0, time.UTC)
 
-			sunset29, _ := s.Astro.GetSunset(searchDateMethod, lat, lon)
-			moonset29, _ := s.Astro.GetMoonset(sunset29, lat, lon)
-			tel29, _ := s.Astro.GetMoonTelemetry(sunset29, lat, lon)
+				sunset29, _ := s.Astro.GetSunset(searchDateMethod, lat, lon)
+				moonset29, _ := s.Astro.GetMoonset(sunset29, lat, lon)
+				tel29, _ := s.Astro.GetMoonTelemetry(sunset29, lat, lon)
 
-			// Cari Ijtima yang berhubungan dengan akhir bulan ini
-			// Kita mulai pencarian dari 5 hari sebelum sunset29 (sekitar hari ke-24)
-			// Ini menjamin kita menemukan Ijtima penentu bulan tersebut.
-			targetIjtima, _ := s.Cal.FindIjtima(searchDateMethod.AddDate(0, 0, -5))
+				// Cari Ijtima yang berhubungan dengan akhir bulan ini
+				targetIjtima, _ := s.Cal.FindIjtima(searchDateMethod.AddDate(0, 0, -5))
 
-			ageHours := sunset29.Sub(targetIjtima).Hours()
+				ageHours := sunset29.Sub(targetIjtima).Hours()
 
-			// 4. Data Prediksi Akhir Bulan (Hilal Insight)
-			pred := models.HilalPrediction{
-				CheckDateUTC: sunset29,
-				IjtimaTime:   targetIjtima,
-				Altitude:     tel29.Altitude,
-				Elongation:   tel29.Elongation,
-				AgeHours:     ageHours,
-			}
+				localTime, tzName := s.GetLocalTimeInfo(sunset29, lat, lon)
 
-			// 5. Evaluasi Kriteria (Hanya jika bukan Tabular)
-			switch m {
-			case "UGHC_KHGT":
-				pred.IsNewMonth = s.Cal.ScanGlobalUGHC(sunset29, targetIjtima)
-			case "UMM_AL_QURA":
-				pred.IsNewMonth = calendar.IsUmmAlQura(targetIjtima, sunset29, moonset29)
-			default:
-				resLocal := s.Cal.EvaluateLocalHisab(m, sunset29, tel29.Altitude, tel29.Elongation, sunset29, moonset29, targetIjtima)
-				pred.IsNewMonth = resLocal.IsNewMonth
-			}
+				// 4. Data Prediksi Akhir Bulan (Hilal Insight)
+				pred := models.HilalPrediction{
+					CheckDateUTC:   sunset29,
+					CheckDateLocal: localTime,
+					TimezoneName:   tzName,
+					IjtimaTime:     targetIjtima,
+					Altitude:       tel29.Altitude,
+					Elongation:     tel29.Elongation,
+					AgeHours:       ageHours,
+				}
 
-			evaluatingMonth := result.HijriDate.Month
-			evaluatingYear := result.HijriDate.Year
-
-			// Override HANYA pada jendela selang 24 jam SETELAH sunset29
-			hoursSinceSunset29 := tUTC.Sub(sunset29).Hours()
-			if hoursSinceSunset29 >= 0 && hoursSinceSunset29 < 24 {
-				if pred.IsNewMonth {
-					nextM := (evaluatingMonth % 12) + 1
-					nextY := evaluatingYear
-					if nextM == 1 {
-						nextY++
+				// 5. Evaluasi Kriteria (Hanya jika bukan Tabular)
+				switch m {
+				case "UGHC_KHGT":
+					isNew, globalPred := s.Cal.ScanGlobalUGHC(sunset29, targetIjtima)
+					if globalPred != nil {
+						loc := globalPred.Location
+						localTimeUGHC, tzNameUGHC := s.GetLocalTimeInfo(globalPred.CheckDateUTC, loc.Lat, loc.Lon)
+						
+						pred = *globalPred
+						pred.CheckDateLocal = localTimeUGHC
+						pred.TimezoneName = tzNameUGHC
 					}
-					result.HijriDate.Day = 1
-					result.HijriDate.Month = nextM
-					result.HijriDate.MonthName = calendar.MonthNames[nextM-1]
-					result.HijriDate.Year = nextY
-				} else {
-					result.HijriDate.Day = 30
-					result.HijriDate.Month = evaluatingMonth
-					result.HijriDate.MonthName = calendar.MonthNames[evaluatingMonth-1]
-					result.HijriDate.Year = evaluatingYear
-				}
-				result.HijriDate.IsTabular = false
-			}
+					pred.IsNewMonth = isNew
+				case "UMM_AL_QURA":
+					meccaLat, meccaLon := 21.4225, 39.8262
+					sunsetMecca, _ := s.Astro.GetSunset(searchDateMethod, meccaLat, meccaLon)
+					moonsetMecca, _ := s.Astro.GetMoonset(sunsetMecca, meccaLat, meccaLon)
+					telMecca, _ := s.Astro.GetMoonTelemetry(sunsetMecca, meccaLat, meccaLon)
 
-			// Safe fallback jika masih lolos 31 pada hari-hari selain crossover
-			if result.HijriDate.Day > 30 {
-				result.HijriDate.Day -= 30
-				result.HijriDate.Month++
-				if result.HijriDate.Month > 12 {
-					result.HijriDate.Month = 1
-					result.HijriDate.Year++
+					localMecca, tzMecca := s.GetLocalTimeInfo(sunsetMecca, meccaLat, meccaLon)
+					pred.CheckDateUTC = sunsetMecca
+					pred.CheckDateLocal = localMecca
+					pred.TimezoneName = tzMecca
+					pred.Altitude = telMecca.Altitude
+					pred.Elongation = telMecca.Elongation
+					pred.AgeHours = sunsetMecca.Sub(targetIjtima).Hours()
+					pred.Location = &models.LocationInfo{Lat: meccaLat, Lon: meccaLon}
+					pred.IsNewMonth = calendar.IsUmmAlQura(targetIjtima, sunsetMecca, moonsetMecca)
+				default:
+					resLocal := s.Cal.EvaluateLocalHisab(m, sunset29, tel29.Altitude, tel29.Elongation, sunset29, moonset29, targetIjtima)
+					pred.Location = &models.LocationInfo{Lat: lat, Lon: lon}
+					pred.IsNewMonth = resLocal.IsNewMonth
 				}
-				result.HijriDate.MonthName = calendar.MonthNames[result.HijriDate.Month-1]
-			}
 
-			result.Prediction = &pred
+				result.Prediction = &pred
+			}
 		}
 
 		resp.Methods[m] = result
 	}
 
 	return resp
+}
+
+func (s *HijriService) GetLocalTimeInfo(utc time.Time, lat, lon float64) (string, string) {
+	// 1. Cari nama timezone (misal: "America/Anchorage")
+	tzName := s.finder.GetTimezoneName(lon, lat)
+	
+	// 2. Load lokasi berdasarkan database IANA (Go udah punya ini di time package)
+	loc, err := time.LoadLocation(tzName)
+	if err != nil {
+		return utc.Format("2006-01-02 15:04:05"), "UTC"
+	}
+
+	// 3. Konversi UTC ke Waktu Lokal (Otomatis handle DST!)
+	local := utc.In(loc)
+	
+	// Contoh return: "2026-03-18 21:06:57", "AKDT (UTC-8)"
+	_, offset := local.Zone()
+	return local.Format("2006-01-02 15:04:05"), fmt.Sprintf("%s (UTC %d)", local.Format("MST"), offset/3600)
 }
 
 // GetTabularOnly khusus buat pencarian tanggal tanpa telemetri astronomi

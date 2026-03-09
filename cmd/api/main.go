@@ -27,9 +27,9 @@ func main() {
 	// 2. Setup Layers (Gunakan Factory Function biar konsisten)
 	adapter := astronomy.GetAdapter(manager)
 	logic := calendar.NewLogic(adapter, manager)
-	service := &services.HijriService{
-		Astro: adapter, // Pastiin 'Astro' di struct HijriService pake huruf Gede
-		Cal:   logic,   // Pastiin 'Cal' di struct HijriService pake huruf Gede
+	service, err := services.NewHijriService(adapter, logic)
+	if err != nil {
+		log.Fatalf("❌ Hijri Service Failure: %v", err)
 	}
 
 	fmt.Println("🚀 Kalender Hijriyah Engine: STANDBY ON PORT 8080")

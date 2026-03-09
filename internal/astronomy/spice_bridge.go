@@ -11,7 +11,7 @@ void silence_spice_c() {
 }
 
 void get_position_c(const char *t, double et, const char *f, const char *c, const char *o, double *pos, double *lt) {
-    spkezr_c(t, et, f, c, o, pos, lt);
+    spkpos_c(t, et, f, c, o, pos, lt);
 }
 
 void get_msg_c(const char *type, int len, char *buffer) {
@@ -109,6 +109,8 @@ func getPositionInternal(target, frame, corr, observer string, et float64) (Vect
 }
 
 func getPosition(target, frame, corr, observer string, et float64) (Vector3, error) {
+	spiceMu.Lock()
+	defer spiceMu.Unlock()
 	return getPositionInternal(target, frame, corr, observer, et)
 }
 

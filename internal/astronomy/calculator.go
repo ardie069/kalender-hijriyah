@@ -28,21 +28,29 @@ func (a *Adapter) findRoot(startET float64, duration float64, targetAlt float64,
 	return low
 }
 
-func (a *Adapter) CalculateGeocentricParams(sunPos, moonPos Vector3, lat, lon float64) (altitude, elongation float64) {
+func (a *Adapter) CalculateGeocentricParams(et float64, lat, lon float64) (altitude, elongation float64) {
+	// Ambil posisi J2000 Inertial untuk mengukur sudut Elongasi absolut antar benda langit
+	sunPos, _ := a.Manager.GetGeocentric(Sun, et, "J2000")
+	moonPos, _ := a.Manager.GetGeocentric(Moon, et, "J2000")
+
 	// 1. Elongation: Sudut pisah matahari dan bulan di pusat bumi
 	elongation = math.Acos(sunPos.Unit().Dot(moonPos.Unit())) * (180.0 / math.Pi)
 
-	// 2. Geocentric Altitude at specific location.
-	// Kita ambil Vektor posisional GEO (tapi dengan referensi horizon lokal si observer)
-	// Memakai GetLocalAltAz yang proyeksikan relatif ke Zenith lintang bujur observasi.
-	altitude, _ = a.Manager.GetLocalAltAz(moonPos, lat, lon)
+	// 2. Topocentric Altitude at specific location.
+	// Wajib mengambil vektor berdasar perputaran bumi rotasional (IAU_EARTH) ke titik topocenter,
+	// TIDAK BOLEH memasukkan J2000 yang bersifat inersial ke fungsi proyeksi AltAz lokal!
+	topoPos, _ := a.Manager.GetTopocentricPosition(Moon, et, lat, lon)
+	altitude, _ = a.Manager.GetLocalAltAz(topoPos, lat, lon)
 
 	return altitude, elongation
 }
 
 // GetFajr: Mencari waktu subuh (Solar Altitude = -18 derajat)
 func (a *Adapter) GetFajr(date time.Time, lat, lon float64) (time.Time, error) {
-	startET, _ := Str2et(date.Format("2006-01-02") + " 00:00:00 UTC")
+	// Ambil 00:00 LOKAL hari itu (dengan menggeser UTC start berdasar bujur)
+	targetDate := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+	localStart := targetDate.Add(time.Duration(-lon/15.0 * float64(time.Hour)))
+	startET := TimeToEt(localStart)
 	targetAlt := -18.0 * (math.Pi / 180.0)
 
 	et := a.findRootUp(startET, 86400, targetAlt, Sun, lat, lon)
@@ -92,14 +100,19 @@ func (a *Adapter) findRootUp(startET float64, duration float64, targetAlt float6
 }
 
 func (a *Adapter) GetMoonset(date time.Time, lat, lon float64) (time.Time, error) {
-	startET, _ := Str2et(date.Format("2006-01-02") + " 12:00:00 UTC")
+	targetDate := time.Date(date.Year(), date.Month(), date.Day(), 12, 0, 0, 0, time.UTC)
+	// Kita mulai pencarian dari noon lokal untuk menghindari moonset hari sebelumnya
+	localStart := targetDate.Add(time.Duration(-lon/15.0 * float64(time.Hour)))
+	startET := TimeToEt(localStart)
 	et := a.findRoot(startET, 86400, -0.583*(math.Pi/180.0), Moon, lat, lon)
 	return Et2Utc(et), nil
 }
 
 func (a *Adapter) GetSunset(date time.Time, lat, lon float64) (time.Time, error) {
-	// Start at 00:00 UTC of that day
-	startET, _ := Str2et(date.Format("2006-01-02") + " 00:00:00 UTC")
+	// Start at 00:00 LOCAL TIME of that day
+	targetDate := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+	localStart := targetDate.Add(time.Duration(-lon/15.0 * float64(time.Hour)))
+	startET := TimeToEt(localStart)
 	// Search over the whole 24 hours
 	et := a.findRootDown(startET, 86400, -0.833*(math.Pi/180.0), Sun, lat, lon)
 	return Et2Utc(et), nil
