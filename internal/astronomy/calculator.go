@@ -59,6 +59,9 @@ func (a *Adapter) GetFajr(date time.Time, lat, lon float64) (time.Time, error) {
 
 // findRootUp: Bisection naik khusus untuk Sunrise/Fajr
 func (a *Adapter) findRootUp(startET float64, duration float64, targetAlt float64, target string, lat, lon float64) float64 {
+	// targetAlt is in radians, convert to degrees for consistent comparison with GetLocalAltAz output
+	targetAltDeg := targetAlt * (180.0 / math.Pi)
+
 	// 1. Cari jam kasar kapan Altitude naik melewati target
 	var low, high float64
 	foundInterval := false
@@ -69,9 +72,7 @@ func (a *Adapter) findRootUp(startET float64, duration float64, targetAlt float6
 		pos2, _ := a.Manager.GetTopocentricPosition(target, startET+offset+3600.0, lat, lon)
 		alt2, _ := a.Manager.GetLocalAltAz(pos2, lat, lon)
 
-		radTarget := targetAlt * (180.0 / math.Pi)
-		// Fajr is when alt1 < target && alt2 > target
-		if alt1 < radTarget && alt2 >= radTarget {
+		if alt1 < targetAltDeg && alt2 >= targetAltDeg {
 			low = startET + offset
 			high = startET + offset + 3600.0
 			foundInterval = true
@@ -83,14 +84,13 @@ func (a *Adapter) findRootUp(startET float64, duration float64, targetAlt float6
 		return startET + duration/2 // Fallback
 	}
 
-	// 2. Bisection Halus
+	// 2. Bisection Halus (degrees throughout)
 	for i := 0; i < 40; i++ {
 		mid := (low + high) / 2
 		pos, _ := a.Manager.GetTopocentricPosition(target, mid, lat, lon)
 		currentAltDeg, _ := a.Manager.GetLocalAltAz(pos, lat, lon)
-		currentAlt := currentAltDeg * (math.Pi / 180.0)
 
-		if currentAlt < targetAlt {
+		if currentAltDeg < targetAltDeg {
 			low = mid // Masih di bawah target, root di kanan
 		} else {
 			high = mid // Udah lewat target, root di kiri

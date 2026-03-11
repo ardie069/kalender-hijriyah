@@ -26,11 +26,6 @@ func (l *Logic) EvaluateLocalHisab(method string, t time.Time, alt, elong float6
 		}
 	case "WUJUDUL_HILAL":
 		res.IsNewMonth = IsWujudulHilal(alt, sunset.After(ijtimaTime))
-	case "UMM_AL_QURA":
-		mLat, mLon := 21.4225, 39.8262
-		sMakkah, _ := l.Astro.GetSunset(t, mLat, mLon)
-		mMakkah, _ := l.Astro.GetMoonset(t, mLat, mLon)
-		res.IsNewMonth = IsUmmAlQura(ijtimaTime, sMakkah, mMakkah)
 	}
 	return res
 }

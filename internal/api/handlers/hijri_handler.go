@@ -11,14 +11,16 @@ import (
 )
 
 type HijriHandler struct {
-	Service *services.HijriService
-	Adapter *astronomy.Adapter
+	Service   *services.HijriService
+	Adapter   *astronomy.Adapter
+	startTime time.Time
 }
 
 func NewHijriHandler(service *services.HijriService, adapter *astronomy.Adapter) *HijriHandler {
 	return &HijriHandler{
-		Service: service,
-		Adapter: adapter,
+		Service:   service,
+		Adapter:   adapter,
+		startTime: time.Now(),
 	}
 }
 
@@ -27,7 +29,7 @@ func (h *HijriHandler) Ping(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"status":  "Ready",
 		"message": "Engine NASA lu udah panas, Bang! 🔥",
-		"uptime":  time.Since(time.Now()).String(),
+		"uptime":  time.Since(h.startTime).String(),
 	})
 }
 
@@ -57,8 +59,16 @@ func (h *HijriHandler) GetHijriDate(ctx *gin.Context) {
 		}
 	}
 
-	lat, _ := strconv.ParseFloat(ctx.DefaultQuery("lat", "-7.98"), 64)
-	lon, _ := strconv.ParseFloat(ctx.DefaultQuery("lon", "112.62"), 64)
+	lat, err := strconv.ParseFloat(ctx.DefaultQuery("lat", "-7.98"), 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Parameter 'lat' harus berupa angka desimal."})
+		return
+	}
+	lon, err := strconv.ParseFloat(ctx.DefaultQuery("lon", "112.62"), 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Parameter 'lon' harus berupa angka desimal."})
+		return
+	}
 
 	result := h.Service.GetFullCalendarInfo(targetDate, lat, lon)
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": result})
@@ -89,8 +99,16 @@ func (h *HijriHandler) SearchDate(ctx *gin.Context) {
 
 // GetTelemetry - Telemetry Hilal
 func (h *HijriHandler) GetTelemetry(ctx *gin.Context) {
-	lat, _ := strconv.ParseFloat(ctx.DefaultQuery("lat", "-7.98"), 64)
-	lon, _ := strconv.ParseFloat(ctx.DefaultQuery("lon", "112.62"), 64)
+	lat, err := strconv.ParseFloat(ctx.DefaultQuery("lat", "-7.98"), 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Parameter 'lat' harus berupa angka desimal."})
+		return
+	}
+	lon, err := strconv.ParseFloat(ctx.DefaultQuery("lon", "112.62"), 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Parameter 'lon' harus berupa angka desimal."})
+		return
+	}
 
 	tel, err := h.Adapter.GetMoonTelemetry(time.Now(), lat, lon)
 	if err != nil {

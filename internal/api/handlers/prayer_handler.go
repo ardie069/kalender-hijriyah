@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -28,35 +29,69 @@ func (h *PrayerHandler) GetPrayerTimes(c *gin.Context) {
 	// 1. Ambil Query Params
 	latStr := c.DefaultQuery("lat", "-7.98")
 	lonStr := c.DefaultQuery("lon", "112.62")
-	dateStr := c.Query("date") // Format: 2006-01-02
+	dateStr := c.Query("date")              // Format: 2006-01-02
+	methodStr := c.DefaultQuery("method", "KEMENAG")
+	madhabStr := c.DefaultQuery("madhab", "shafii")
+	highLatStr := c.DefaultQuery("high_lat", "ANGLE_BASED")
 
-	lat, _ := strconv.ParseFloat(latStr, 64)
-	lon, _ := strconv.ParseFloat(lonStr, 64)
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Parameter 'lat' harus berupa angka desimal."})
+		return
+	}
+	lon, err := strconv.ParseFloat(lonStr, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Parameter 'lon' harus berupa angka desimal."})
+		return
+	}
 
 	var targetDate time.Time
 	if dateStr != "" {
-		targetDate, _ = time.Parse("2006-01-02", dateStr)
+		targetDate, err = time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "Format tanggal salah. Gunakan YYYY-MM-DD."})
+			return
+		}
 	} else {
 		targetDate = time.Now()
 	}
 
-	// 2. Tentukan Timezone Berdasarkan Lokasi
+	// 2. Validasi dan parsing metode
+	if !prayer.IsValidMethod(methodStr) {
+		c.JSON(400, gin.H{
+			"error":           "Metode tidak dikenali.",
+			"valid_methods":   []string{"KEMENAG", "MWL", "ISNA", "EGYPTIAN", "UMM_AL_QURA", "KARACHI", "TEHRAN", "JAKIM", "MUIS"},
+		})
+		return
+	}
+
+	cfg := prayer.GetPreset(methodStr)
+	cfg.Madhab = prayer.ParseMadhab(madhabStr)
+	cfg.HighLatMethod = prayer.ParseHighLat(highLatStr)
+
+	// 3. Tentukan Timezone Berdasarkan Lokasi
 	loc := h.HijriService.GetLocation(lat, lon)
 
-	// 3. Panggil Service (Pake logic SPICE yang udah kita bikin)
-	times := h.PrayerService.GetPrayerTimes(targetDate, lat, lon)
+	// 4. Panggil Service
+	times := h.PrayerService.GetPrayerTimes(targetDate, lat, lon, cfg)
 
-	// 4. Ambil Info Timezone & Hijriah buat melengkapi response
+	// 5. Ambil Info Timezone & Hijriah buat melengkapi response
 	localDate, tzName := h.HijriService.GetLocalTimeInfo(targetDate, lat, lon)
 	hijri := h.HijriService.ResolveDynamicHijriDate("MABIMS", targetDate, lat, lon)
 
-	// 5. Susun JSON
+	// 6. Susun JSON
 	resp := models.PrayerResponse{}
 	resp.Location.Latitude = lat
 	resp.Location.Longitude = lon
 	resp.Location.Timezone = tzName
 	resp.Date.Gregorian = localDate
 	resp.Date.Hijri = fmt.Sprintf("%d %s %d", hijri.Day, hijri.MonthName, hijri.Year)
+
+	resp.Method.Name = cfg.Name
+	resp.Method.Madhab = prayer.MadhabName(cfg.Madhab)
+	if math.Abs(lat) >= cfg.HighLatThreshold && cfg.HighLatMethod != prayer.HIGH_LAT_NONE {
+		resp.Method.HighLat = prayer.HighLatName(cfg.HighLatMethod)
+	}
 
 	// Format waktu ke string HH:mm dalam waktu LOKAL
 	resp.Times.Fajr = times.Fajr.In(loc).Format("15:04")
