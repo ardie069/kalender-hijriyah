@@ -169,6 +169,15 @@ func (s *HijriService) GetLocalTimeInfo(utc time.Time, lat, lon float64) (string
 	return local.Format("2006-01-02 15:04:05"), fmt.Sprintf("%s (UTC %d)", local.Format("MST"), offset/3600)
 }
 
+func (s *HijriService) GetLocation(lat, lon float64) *time.Location {
+	tzName := s.finder.GetTimezoneName(lon, lat)
+	loc, err := time.LoadLocation(tzName)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}
+
 // GetTabularOnly khusus buat pencarian tanggal tanpa telemetri astronomi
 func (s *HijriService) GetTabularOnly(t time.Time) models.MethodResult {
 	hDate := calendar.GetTabularHijri(t)

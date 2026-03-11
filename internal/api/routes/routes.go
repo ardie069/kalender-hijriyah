@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(router *gin.Engine, hijriHandler *handlers.HijriHandler) {
+func SetupRoutes(router *gin.Engine, hijriHandler *handlers.HijriHandler, prayerHandler *handlers.PrayerHandler) {
 	// Root ping
 	router.GET("/ping", hijriHandler.Ping)
 
@@ -20,6 +20,11 @@ func SetupRoutes(router *gin.Engine, hijriHandler *handlers.HijriHandler) {
 		moon := g.Group("/moon")
 		{
 			moon.GET("/telemetry", hijriHandler.GetTelemetry)
+		}
+
+		prayer := g.Group("/prayer")
+		{
+			prayer.GET("/times", prayerHandler.GetPrayerTimes)
 		}
 	}
 

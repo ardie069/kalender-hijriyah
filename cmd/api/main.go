@@ -8,6 +8,7 @@ import (
 	"github.com/ardie069/kalender-hijriyah/internal/api/routes"
 	"github.com/ardie069/kalender-hijriyah/internal/astronomy"
 	"github.com/ardie069/kalender-hijriyah/internal/calendar"
+	"github.com/ardie069/kalender-hijriyah/internal/prayer"
 	"github.com/ardie069/kalender-hijriyah/internal/services"
 	"github.com/gin-gonic/gin"
 )
@@ -38,8 +39,11 @@ func main() {
 	r := gin.Default()
 
 	// 3. Setup Handlers dan Routes
+	prayerService := prayer.NewPrayerService(adapter)
+	prayerHandler := handlers.NewPrayerHandler(prayerService, service)
 	hijriHandler := handlers.NewHijriHandler(service, adapter)
-	routes.SetupRoutes(r, hijriHandler)
+
+	routes.SetupRoutes(r, hijriHandler, prayerHandler)
 
 	r.Run(":8080")
 }
