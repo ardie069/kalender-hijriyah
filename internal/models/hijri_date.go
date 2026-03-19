@@ -23,15 +23,16 @@ type MethodResult struct {
 }
 
 type HilalPrediction struct {
-	CheckDateUTC   time.Time     `json:"check_date_utc"`
-	CheckDateLocal string        `json:"check_date_local"`
-	TimezoneName   string        `json:"timezone_name"`
-	IsNewMonth     bool          `json:"is_new_month"`
-	IjtimaTime     time.Time     `json:"ijtima_time"`
-	Altitude       float64       `json:"altitude"`
-	Elongation     float64       `json:"elongation"`
-	AgeHours       float64       `json:"age_hours"`
-	Location       *LocationInfo `json:"location,omitempty"`
+	CheckDateUTC      time.Time     `json:"check_date_utc"`
+	CheckDateLocal    string        `json:"check_date_local"`
+	TimezoneName      string        `json:"timezone_name"`
+	IsNewMonth        bool          `json:"is_new_month"`
+	IjtimaTime        time.Time     `json:"ijtima_time"`
+	AltitudeGeometric float64       `json:"altitude_geometric"`
+	AltitudeApparent  float64       `json:"altitude_apparent"`
+	Elongation        float64       `json:"elongation"`
+	AgeHours          float64       `json:"age_hours"`
+	Location          *LocationInfo `json:"location,omitempty"`
 }
 
 type HijriResponse struct {

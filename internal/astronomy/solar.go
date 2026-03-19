@@ -124,3 +124,12 @@ func (em *EphemerisManager) GetSunset(date time.Time, lat, lon float64) (time.Ti
 func (em *EphemerisManager) GetIsha(date time.Time, lat, lon float64) (time.Time, error) {
 	return em.GetTimeByAltitude(date, lat, lon, -18.0, false)
 }
+// GetMoonset: Waktu terbenam bulan (altitude = -0.583° untuk standar toposentrik)
+func (em *EphemerisManager) GetMoonset(date time.Time, lat, lon float64) (time.Time, error) {
+	return em.GetTimeByAltitude(date, lat, lon, -0.583, false)
+}
+
+// GetFajr: Waktu Subuh (altitude = -18.0°)
+func (em *EphemerisManager) GetFajr(date time.Time, lat, lon float64) (time.Time, error) {
+	return em.GetTimeByAltitude(date, lat, lon, -18.0, true)
+}

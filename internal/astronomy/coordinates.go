@@ -45,10 +45,25 @@ func (em *EphemerisManager) GetLocalAltAz(pos Vector3, lat, lon float64) (float6
 	y := -sinLon*pos.X + cosLon*pos.Y
 	z := cosLat*cosLon*pos.X + cosLat*sinLon*pos.Y + sinLat*pos.Z
 
-	alt := math.Asin(z/math.Sqrt(x*x+y*y+z*z)) * 180.0 / math.Pi
+	hyp := math.Sqrt(x*x + y*y + z*z)
+	if hyp < 1e-9 {
+		return -90, 0 // Fallback untuk posisi nol (pusat bumi)
+	}
+
+	ratio := z / hyp
+	if ratio > 1.0 {
+		ratio = 1.0
+	} else if ratio < -1.0 {
+		ratio = -1.0
+	}
+
+	geoAlt := math.Asin(ratio) * 180.0 / math.Pi
 	az := math.Atan2(y, x) * 180.0 / math.Pi
 	if az < 0 {
 		az += 360.0
 	}
-	return alt, az
+
+	apparentAlt := geoAlt + ApplyRefraction(geoAlt)
+
+	return apparentAlt, az
 }

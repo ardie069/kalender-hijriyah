@@ -94,7 +94,8 @@ func (h *PrayerHandler) GetPrayerTimes(c *gin.Context) {
 	case "KEMENAG", "JAKIM", "MUIS":
 		hijriMethod = "MABIMS"
 	}
-	hijri := h.HijriService.ResolveDynamicHijriDate(hijriMethod, targetDate, lat, lon)
+	hijriTargetDate := h.HijriService.GetHijriTargetDate(targetDate, lat, lon)
+	hijri := h.HijriService.ResolveDynamicHijriDate(hijriMethod, hijriTargetDate, lat, lon)
 
 	// 6. Susun JSON
 	resp := models.PrayerResponse{}

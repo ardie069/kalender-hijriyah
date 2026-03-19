@@ -7,6 +7,10 @@ import (
 	"github.com/ardie069/kalender-hijriyah/internal/models"
 )
 
+type Adapter struct {
+	Manager *EphemerisManager
+}
+
 func GetAdapter(manager *EphemerisManager) *Adapter {
 	return &Adapter{
 		Manager: manager,
@@ -70,4 +74,42 @@ func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (m
 		PhaseName:    getPhaseName(illumination, sunToMoon.Dot(earthToMoon) < 0),
 		Timestamp:    dt.UTC(),
 	}, nil
+}
+
+// CalculateGeocentricParams returns geocentric elongation and topocentric altitude
+func (a *Adapter) CalculateGeocentricParams(et float64, lat, lon float64) (altitude, elongation float64) {
+	sunPos, err := a.Manager.GetGeocentric(Sun, et, FrameJ2000)
+	if err != nil {
+		return 0, 0
+	}
+	moonPos, err := a.Manager.GetGeocentric(Moon, et, FrameJ2000)
+	if err != nil {
+		return 0, 0
+	}
+
+	elongation = math.Acos(sunPos.Unit().Dot(moonPos.Unit())) * (180.0 / math.Pi)
+
+	topoPos, err := a.Manager.GetTopocentricPosition(Moon, et, lat, lon)
+	if err != nil {
+		return 0, elongation
+	}
+	altitude, _ = a.Manager.GetLocalAltAz(topoPos, lat, lon)
+
+	return altitude, elongation
+}
+
+func (a *Adapter) GetFajr(date time.Time, lat, lon float64) (time.Time, error) {
+	return a.Manager.GetFajr(date, lat, lon)
+}
+
+func (a *Adapter) GetMoonset(date time.Time, lat, lon float64) (time.Time, error) {
+	return a.Manager.GetMoonset(date, lat, lon)
+}
+
+func (a *Adapter) GetSunset(date time.Time, lat, lon float64) (time.Time, error) {
+	return a.Manager.GetSunset(date, lat, lon)
+}
+
+func (a *Adapter) GetIsha(date time.Time, lat, lon float64) (time.Time, error) {
+	return a.Manager.GetIsha(date, lat, lon)
 }

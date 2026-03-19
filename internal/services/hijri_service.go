@@ -2,8 +2,9 @@ package services
 
 import (
 	"fmt"
-	"github.com/ringsaturn/tzf"
 	"time"
+
+	"github.com/ringsaturn/tzf"
 
 	"github.com/ardie069/kalender-hijriyah/internal/astronomy"
 	"github.com/ardie069/kalender-hijriyah/internal/calendar"
@@ -32,31 +33,7 @@ func (s *HijriService) GetFullCalendarInfo(t time.Time, lat, lon float64) models
 	tUTC := t.UTC()
 
 	// 1. Get Base Telemetry and Data
-	sunsetToday, err := s.Astro.GetSunset(tUTC, lat, lon)
-	if err != nil {
-		sunsetToday = tUTC // Fallback
-	}
-	realtimeTel, _ := s.Astro.GetMoonTelemetry(tUTC, lat, lon)
-
-	// 2. Determine Base Tabular Date and Rollover Boundary
-	// Pre-check rough Hijri date to detect end of critical months
-	hToday := calendar.GetTabularHijri(tUTC)
-
-	rolloverTime := sunsetToday
-	// Critical Months: 8 (Sha'ban), 9 (Ramadan), 11 (Dhu al-Qi'dah)
-	// Role over at Isha only on the 29th of these months.
-	if (hToday.Month == 8 || hToday.Month == 9 || hToday.Month == 11) && hToday.Day == 29 {
-		ishaToday, err := s.Astro.GetIsha(tUTC, lat, lon)
-		if err == nil {
-			rolloverTime = ishaToday
-		}
-	}
-
-	isAfterRollover := tUTC.After(rolloverTime)
-	targetDay := tUTC
-	if isAfterRollover {
-		targetDay = tUTC.Add(24 * time.Hour)
-	}
+	targetDay := s.GetHijriTargetDate(tUTC, lat, lon)
 	stableNoon := time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), 12, 0, 0, 0, time.UTC)
 	currentH := calendar.GetTabularHijri(stableNoon)
 
@@ -65,6 +42,8 @@ func (s *HijriService) GetFullCalendarInfo(t time.Time, lat, lon float64) models
 		Location:      models.LocationInfo{Lat: lat, Lon: lon},
 		Methods:       make(map[string]models.MethodResult),
 	}
+
+	realtimeTel, _ := s.Astro.GetMoonTelemetry(tUTC, lat, lon)
 
 	// Methods to evaluate
 	methodList := []string{"TABULAR", "MABIMS", "WUJUDUL_HILAL", "UGHC_KHGT", "UMM_AL_QURA"}
@@ -112,10 +91,11 @@ func (s *HijriService) GetFullCalendarInfo(t time.Time, lat, lon float64) models
 func (s *HijriService) calculateMethodPrediction(m string, searchDate time.Time, lat, lon float64) (*models.HilalPrediction, error) {
 	// Standard search coordinates
 	checkLat, checkLon := lat, lon
-	if m == "UMM_AL_QURA" {
+	switch m {
+	case "UMM_AL_QURA":
 		checkLat, checkLon = 21.4225, 39.8262 // Mecca
-	} else if m == "MABIMS" {
-		checkLat, checkLon = 5.9, 95.32 // Sabang (Westernmost Indonesia)
+	case "MABIMS":
+		checkLat, checkLon = 5.89, 95.32 // Sabang (Westernmost Indonesia)
 	}
 
 	sunset, err := s.Astro.GetSunset(searchDate, checkLat, checkLon)
@@ -141,14 +121,15 @@ func (s *HijriService) calculateMethodPrediction(m string, searchDate time.Time,
 	localTime, tzName := s.GetLocalTimeInfo(sunset, checkLat, checkLon)
 
 	pred := &models.HilalPrediction{
-		CheckDateUTC:   sunset,
-		CheckDateLocal: localTime,
-		TimezoneName:   tzName,
-		IjtimaTime:     ijtima,
-		Altitude:       tel.Altitude,
-		Elongation:     tel.Elongation,
-		AgeHours:       sunset.Sub(ijtima).Hours(),
-		Location:       &models.LocationInfo{Lat: checkLat, Lon: checkLon},
+		CheckDateUTC:      sunset,
+		CheckDateLocal:    localTime,
+		TimezoneName:      tzName,
+		IjtimaTime:        ijtima,
+		AltitudeGeometric: tel.Altitude,
+		AltitudeApparent:  tel.Altitude + astronomy.ApplyRefraction(tel.Altitude),
+		Elongation:        tel.Elongation,
+		AgeHours:          sunset.Sub(ijtima).Hours(),
+		Location:          &models.LocationInfo{Lat: checkLat, Lon: checkLon},
 	}
 
 	// Method-specific evaluation
@@ -209,4 +190,32 @@ func (s *HijriService) GetTabularOnly(t time.Time) models.MethodResult {
 		HijriDate:  hDate,
 		Prediction: nil,
 	}
+}
+
+// GetHijriTargetDate: Returns the Gregorian date that corresponds to the current Hijri day.
+// It handles rollover at sunset (or Isha for critical months on the 29th).
+func (s *HijriService) GetHijriTargetDate(t time.Time, lat, lon float64) time.Time {
+	tUTC := t.UTC()
+
+	sunsetToday, err := s.Astro.GetSunset(tUTC, lat, lon)
+	if err != nil {
+		sunsetToday = tUTC
+	}
+
+	hToday := calendar.GetTabularHijri(tUTC)
+
+	rolloverTime := sunsetToday
+	// Critical Months: 8 (Sha'ban), 9 (Ramadan), 11 (Dhu al-Qi'dah)
+	// Role over at Isha only on the 29th of these months.
+	if (hToday.Month == 8 || hToday.Month == 9 || hToday.Month == 11) && hToday.Day == 29 {
+		ishaToday, err := s.Astro.GetIsha(tUTC, lat, lon)
+		if err == nil {
+			rolloverTime = ishaToday
+		}
+	}
+
+	if tUTC.After(rolloverTime) {
+		return tUTC.Add(24 * time.Hour)
+	}
+	return tUTC
 }

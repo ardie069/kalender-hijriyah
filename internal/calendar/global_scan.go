@@ -27,8 +27,8 @@ func (l *Logic) ScanGlobalUGHC(targetDateUTC time.Time, ijtimaTime time.Time) (b
 	for lon := AmericasLonStart; lon >= AmericasLonEnd; lon -= 2.0 {
 		for lat := 60.0; lat >= -60.0; lat -= 5.0 {
 			found, pred := l.checkCoordinate(targetDateUTC, ijtimaTime, deadline, lat, lon)
-			if pred != nil && pred.Altitude > maxAlt {
-				maxAlt = pred.Altitude
+			if pred != nil && pred.AltitudeGeometric > maxAlt {
+				maxAlt = pred.AltitudeGeometric
 				bestPred = pred
 			}
 			if found {
@@ -56,16 +56,17 @@ func (l *Logic) checkCoordinate(targetDateUTC, ijtimaTime, deadline time.Time, l
 
 	ageHours := sunsetTime.Sub(ijtimaTime).Hours()
 	pred := &models.HilalPrediction{
-		CheckDateUTC: sunsetTime,
-		IsNewMonth:   false,
-		IjtimaTime:   ijtimaTime,
-		Altitude:     alt,
-		Elongation:   elong,
-		AgeHours:     ageHours,
-		Location:     &models.LocationInfo{Lat: lat, Lon: lon},
+		CheckDateUTC:      sunsetTime,
+		IsNewMonth:        false,
+		IjtimaTime:        ijtimaTime,
+		AltitudeGeometric: alt,
+		AltitudeApparent:  alt + astronomy.ApplyRefraction(alt),
+		Elongation:        elong,
+		AgeHours:          ageHours,
+		Location:          &models.LocationInfo{Lat: lat, Lon: lon},
 	}
 
-// Kriteria Turki 2016 (KHGT)
+	// Kriteria Turki 2016 (KHGT)
 	if alt >= 5.0 && elong >= 8.0 {
 		// Cek Pengecualian Amerika (Syarat B lu)
 		// Jika sunset > deadline tapi di Amerika, tetap SAH selama Ijtima NZ sebelum Fajar

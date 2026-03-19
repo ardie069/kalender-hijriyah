@@ -22,6 +22,7 @@ import "C"
 
 import (
 	"fmt"
+	"math"
 	"sync"
 	"unsafe"
 )
@@ -99,4 +100,27 @@ func getPosition(target, frame, corr, observer string, et float64) (Vector3, err
 	spiceMu.Lock()
 	defer spiceMu.Unlock()
 	return getPositionInternal(target, frame, corr, observer, et)
+}
+
+func ApplyRefraction(geoAlt float64) float64 {
+	// Jika terlalu rendah, jangan hitung (karena rumus Tan bisa meledak)
+	if geoAlt < -1.0 {
+		return 0
+	}
+
+	denominator := math.Tan((geoAlt + 10.3/(geoAlt+5.11)) * math.Pi / 180.0)
+	if math.Abs(denominator) < 1e-5 {
+		return 0 // Safety: hindari div-by-zero
+	}
+
+	R_arcmin := 1.02 / denominator
+
+	// Limitasi: Refraksi tidak boleh terlalu besar secara fisik di aplikasi ini
+	if R_arcmin > 60.0 {
+		R_arcmin = 34.0 // Nilai standar horizon
+	} else if R_arcmin < 0 {
+		R_arcmin = 0
+	}
+
+	return R_arcmin / 60.0
 }

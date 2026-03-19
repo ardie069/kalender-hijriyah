@@ -1,6 +1,7 @@
 package services
 
 import (
+	"math"
 	"time"
 
 	"github.com/ardie069/kalender-hijriyah/internal/calendar"
@@ -15,7 +16,14 @@ func (s *HijriService) ResolveDynamicHijriDate(m string, targetDay time.Time, la
 	stableNoon := time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), 12, 0, 0, 0, time.UTC)
 	baseH := calendar.GetTabularHijri(stableNoon)
 
-	prevIjtima, _ := s.Cal.FindPreviousIjtima(targetDay)
+	// 1. Tentukan Ijtima yang mendasari bulan tabular ini.
+	// Jika tabular sudah di tengah/akhir bulan, kita mundur sesuai jumlah harinya.
+	// Jika di awal bulan, kita mundur sedikit saja.
+	daysBack := baseH.Day + 1
+	if baseH.Day < 5 {
+		daysBack = 5
+	}
+	prevIjtima, _ := s.Cal.FindIjtima(targetDay.AddDate(0, 0, -daysBack))
 
 	// 1. Kita ambil tanggal dasar Ijtima (H-0)
 	sunsetCheckDate := time.Date(prevIjtima.Year(), prevIjtima.Month(), prevIjtima.Day(), 12, 0, 0, 0, time.UTC)
@@ -38,7 +46,7 @@ func (s *HijriService) ResolveDynamicHijriDate(m string, targetDay time.Time, la
 		isNewMonth = calendar.IsUmmAlQura(prevIjtima, sunsetCheck, moonsetMecca)
 
 	case "MABIMS":
-		sabangLat, sabangLon := 5.9, 95.32
+		sabangLat, sabangLon := 5.89, 95.32
 		sunsetCheck, _ = s.Astro.GetSunset(sunsetCheckDate, sabangLat, sabangLon)
 		if sunsetCheck.Before(prevIjtima) {
 			sunsetCheckDate = sunsetCheckDate.AddDate(0, 0, 1)
@@ -89,35 +97,49 @@ func (s *HijriService) ResolveDynamicHijriDate(m string, targetDay time.Time, la
 	targetDayNoon := time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), 12, 0, 0, 0, time.UTC)
 	monthStartNoon := time.Date(monthStartDate.Year(), monthStartDate.Month(), monthStartDate.Day(), 12, 0, 0, 0, time.UTC)
 
-	daysElapsed := int(targetDayNoon.Sub(monthStartNoon).Hours()/24.0) + 1
+	daysElapsed := int(math.Round(targetDayNoon.Sub(monthStartNoon).Hours() / 24.0))
 
-	// Kita bisa gunakan baseH (Tabular) untuk menyesuaikan Month/Year yang benar,
-	// Jika elapsed < 1, berarti kita masih di bulan SEBELUMNYA.
+	// Jika targetDay sama dengan monthStartDate, itu adalah tanggal 1.
+	// Jika targetDay adalah besoknya monthStartDate, itu adalah tanggal 2.
+	// Jadi H = (Target - Start) + 1
+	hDay := daysElapsed + 1
+
 	evalMonth := baseH.Month
 	evalYear := baseH.Year
 
-	// Perbaikan overflow/underflow untuk Day (Kritis!)
-	if daysElapsed < 1 {
+	// Jika hDay < 1, berarti kita masih di bulan sebelumnya
+	if hDay < 1 {
 		evalMonth--
 		if evalMonth < 1 {
 			evalMonth = 12
 			evalYear--
 		}
-		// Idealnya umur bulan Hijri sebelumnya adalah 29/30 bergantung ijtima yg lebih lama lagi,
-		// tapi pendekatan kompromi sementara (fallback) agar logika nggak rekursif tanpa batas berhentinya:
-		// Diasumsikan sisa hari mundur dari 30.
-		daysElapsed += 30
-	} else if daysElapsed > 30 {
-		daysElapsed -= 30
+		// SANGAT PENTING: Jika bulan sebelumnya adalah 29 atau 30 hari,
+		// kita asumsikan 30 saja sebagai fallback jika tidak menghitung ijtima sebelumnya lagi.
+		hDay += 30
+	} else if hDay > 30 {
+		// Jika lebih dari 30 hari, berarti sudah masuk bulan berikutnya
+		hDay -= 30
 		evalMonth++
 		if evalMonth > 12 {
 			evalMonth = 1
 			evalYear++
 		}
+	} else if hDay > 29 && !isNewMonth {
+		// Kasus khusus: Jika ijtima belum tercapai tapi tabular sudah ganti bulan,
+		// hDay bisa jadi 29 atau 30 di bulan sebelumnya.
+		// Tabular Syawal (10) 1, tapi Rukyat masih Ramadan (9) 30.
+		if baseH.Day == 1 {
+			evalMonth--
+			if evalMonth < 1 {
+				evalMonth = 12
+				evalYear--
+			}
+		}
 	}
 
 	return models.HijriDate{
-		Day:       daysElapsed,
+		Day:       hDay,
 		Month:     evalMonth,
 		MonthName: calendar.MonthNames[evalMonth-1],
 		Year:      evalYear,
