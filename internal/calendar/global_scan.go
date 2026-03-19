@@ -65,13 +65,13 @@ func (l *Logic) checkCoordinate(targetDateUTC, ijtimaTime, deadline time.Time, l
 		Location:     &models.LocationInfo{Lat: lat, Lon: lon},
 	}
 
-	// Kriteria Turki 2016 (KHGT)
+// Kriteria Turki 2016 (KHGT)
 	if alt >= 5.0 && elong >= 8.0 {
 		// Cek Pengecualian Amerika (Syarat B lu)
 		// Jika sunset > deadline tapi di Amerika, tetap SAH selama Ijtima NZ sebelum Fajar
 		if sunsetTime.After(deadline) {
-			fajrNZ, _ := l.Astro.GetFajr(targetDateUTC.AddDate(0, 0, 1), NZLat, NZLon)
-			if ijtimaTime.Before(fajrNZ) {
+			fajrNZ, err := l.Astro.GetFajr(targetDateUTC.AddDate(0, 0, 1), NZLat, NZLon)
+			if err == nil && ijtimaTime.Before(fajrNZ) {
 				pred.IsNewMonth = true
 				return true, pred
 			}

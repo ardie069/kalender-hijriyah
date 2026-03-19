@@ -25,6 +25,7 @@ func (s *HijriService) ResolveDynamicHijriDate(m string, targetDay time.Time, la
 	// 2. Tentukan Tanggal Evaluasi (sunsetCheckDate) berdasarkan Kriteria
 	// Jika kriteria lokal, kita cek pakai sunset lokal.
 	// Jika UMM_AL_QURA, kita cek pakai sunset Mekkah.
+	// Jika MABIMS, kita cek pakai sunset Sabang (untuk konsistensi regional).
 	switch m {
 	case "UMM_AL_QURA":
 		meccaLat, meccaLon := 21.4225, 39.8262
@@ -35,6 +36,18 @@ func (s *HijriService) ResolveDynamicHijriDate(m string, targetDay time.Time, la
 		}
 		moonsetMecca, _ := s.Astro.GetMoonset(sunsetCheck, meccaLat, meccaLon)
 		isNewMonth = calendar.IsUmmAlQura(prevIjtima, sunsetCheck, moonsetMecca)
+
+	case "MABIMS":
+		sabangLat, sabangLon := 5.9, 95.32
+		sunsetCheck, _ = s.Astro.GetSunset(sunsetCheckDate, sabangLat, sabangLon)
+		if sunsetCheck.Before(prevIjtima) {
+			sunsetCheckDate = sunsetCheckDate.AddDate(0, 0, 1)
+			sunsetCheck, _ = s.Astro.GetSunset(sunsetCheckDate, sabangLat, sabangLon)
+		}
+		moonsetCheck, _ := s.Astro.GetMoonset(sunsetCheck, sabangLat, sabangLon)
+		telCheck, _ := s.Astro.GetMoonTelemetry(sunsetCheck, sabangLat, sabangLon)
+		resLocal := s.Cal.EvaluateLocalHisab(m, sunsetCheck, telCheck.Altitude, telCheck.Elongation, sunsetCheck, moonsetCheck, prevIjtima)
+		isNewMonth = resLocal.IsNewMonth
 
 	case "UGHC_KHGT":
 		// UGHC tidak bergantung pada satu sunset spesifik, melainkan global.

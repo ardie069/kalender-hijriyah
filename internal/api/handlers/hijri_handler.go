@@ -59,12 +59,19 @@ func (h *HijriHandler) GetHijriDate(ctx *gin.Context) {
 		}
 	}
 
-	lat, err := strconv.ParseFloat(ctx.DefaultQuery("lat", "-7.98"), 64)
+	latStr := ctx.Query("lat")
+	lonStr := ctx.Query("lon")
+	if latStr == "" || lonStr == "" {
+		ctx.JSON(400, gin.H{"error": "Parameter 'lat' dan 'lon' wajib disertakan."})
+		return
+	}
+
+	lat, err := strconv.ParseFloat(latStr, 64)
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": "Parameter 'lat' harus berupa angka desimal."})
 		return
 	}
-	lon, err := strconv.ParseFloat(ctx.DefaultQuery("lon", "112.62"), 64)
+	lon, err := strconv.ParseFloat(lonStr, 64)
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": "Parameter 'lon' harus berupa angka desimal."})
 		return
@@ -99,12 +106,19 @@ func (h *HijriHandler) SearchDate(ctx *gin.Context) {
 
 // GetTelemetry - Telemetry Hilal
 func (h *HijriHandler) GetTelemetry(ctx *gin.Context) {
-	lat, err := strconv.ParseFloat(ctx.DefaultQuery("lat", "-7.98"), 64)
+	latStr := ctx.Query("lat")
+	lonStr := ctx.Query("lon")
+	if latStr == "" || lonStr == "" {
+		ctx.JSON(400, gin.H{"error": "Parameter 'lat' dan 'lon' wajib disertakan."})
+		return
+	}
+
+	lat, err := strconv.ParseFloat(latStr, 64)
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": "Parameter 'lat' harus berupa angka desimal."})
 		return
 	}
-	lon, err := strconv.ParseFloat(ctx.DefaultQuery("lon", "112.62"), 64)
+	lon, err := strconv.ParseFloat(lonStr, 64)
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": "Parameter 'lon' harus berupa angka desimal."})
 		return

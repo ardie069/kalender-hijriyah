@@ -14,11 +14,11 @@ import (
 )
 
 type PrayerHandler struct {
-	PrayerService *prayer.PrayerService
+	PrayerService *services.PrayerService
 	HijriService  *services.HijriService
 }
 
-func NewPrayerHandler(prayerService *prayer.PrayerService, hijriService *services.HijriService) *PrayerHandler {
+func NewPrayerHandler(prayerService *services.PrayerService, hijriService *services.HijriService) *PrayerHandler {
 	return &PrayerHandler{
 		PrayerService: prayerService,
 		HijriService:  hijriService,
@@ -27,8 +27,12 @@ func NewPrayerHandler(prayerService *prayer.PrayerService, hijriService *service
 
 func (h *PrayerHandler) GetPrayerTimes(c *gin.Context) {
 	// 1. Ambil Query Params
-	latStr := c.DefaultQuery("lat", "-7.98")
-	lonStr := c.DefaultQuery("lon", "112.62")
+	latStr := c.Query("lat")
+	lonStr := c.Query("lon")
+	if latStr == "" || lonStr == "" {
+		c.JSON(400, gin.H{"error": "Parameter 'lat' dan 'lon' wajib disertakan."})
+		return
+	}
 	dateStr := c.Query("date")              // Format: 2006-01-02
 	methodStr := c.DefaultQuery("method", "KEMENAG")
 	madhabStr := c.DefaultQuery("madhab", "shafii")
@@ -73,11 +77,24 @@ func (h *PrayerHandler) GetPrayerTimes(c *gin.Context) {
 	loc := h.HijriService.GetLocation(lat, lon)
 
 	// 4. Panggil Service
-	times := h.PrayerService.GetPrayerTimes(targetDate, lat, lon, cfg)
+	times, err := h.PrayerService.GetPrayerTimes(targetDate, lat, lon, cfg)
+	if err != nil {
+		c.JSON(500, gin.H{"error": fmt.Sprintf("Gagal menghitung waktu sholat: %v", err)})
+		return
+	}
 
 	// 5. Ambil Info Timezone & Hijriah buat melengkapi response
 	localDate, tzName := h.HijriService.GetLocalTimeInfo(targetDate, lat, lon)
-	hijri := h.HijriService.ResolveDynamicHijriDate("MABIMS", targetDate, lat, lon)
+
+	// Petakan metode waktu sholat ke kriteria Kalender Hijriyah yang sesuai
+	hijriMethod := "MABIMS" // Default regional
+	switch methodStr {
+	case "UMM_AL_QURA":
+		hijriMethod = "UMM_AL_QURA"
+	case "KEMENAG", "JAKIM", "MUIS":
+		hijriMethod = "MABIMS"
+	}
+	hijri := h.HijriService.ResolveDynamicHijriDate(hijriMethod, targetDate, lat, lon)
 
 	// 6. Susun JSON
 	resp := models.PrayerResponse{}
