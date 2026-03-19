@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// GetTimeByAltitude: Cari waktu ketika matahari mencapai altitude tertentu (bisection search)
-func (em *EphemerisManager) GetTimeByAltitude(date time.Time, lat, lon, targetAlt float64, rising bool) (time.Time, error) {
+// GetTimeByAltitude: Cari waktu ketika benda (body) mencapai altitude tertentu (bisection search)
+func (em *EphemerisManager) GetTimeByAltitude(date time.Time, lat, lon, targetAlt float64, rising bool, body string) (time.Time, error) {
 	approxNoonUTC := 12.0 - (lon / 15.0)
 	base := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 	noon := base.Add(time.Duration(approxNoonUTC*3600) * time.Second)
@@ -25,7 +25,7 @@ func (em *EphemerisManager) GetTimeByAltitude(date time.Time, lat, lon, targetAl
 
 	for range 30 {
 		mid := (low + high) / 2
-		pos, err := em.GetTopocentricPosition("SUN", mid, lat, lon)
+		pos, err := em.GetTopocentricPosition(body, mid, lat, lon)
 		if err != nil {
 			return time.Time{}, err
 		}
@@ -107,29 +107,29 @@ func (em *EphemerisManager) GetAsrTimeWithFactor(dhuhr time.Time, lat, lon float
 	targetAsrAlt := math.Atan(1.0/asrShadow) * 180.0 / math.Pi
 
 	// 2. Cari kapan matahari nyentuh altitude tersebut di sore hari
-	return em.GetTimeByAltitude(dhuhr, lat, lon, targetAsrAlt, false)
+	return em.GetTimeByAltitude(dhuhr, lat, lon, targetAsrAlt, false, "SUN")
 }
 
 // GetSunrise: Waktu terbit matahari (altitude = -0.833°)
 func (em *EphemerisManager) GetSunrise(date time.Time, lat, lon float64) (time.Time, error) {
-	return em.GetTimeByAltitude(date, lat, lon, -0.833, true)
+	return em.GetTimeByAltitude(date, lat, lon, -0.833, true, "SUN")
 }
 
 // GetSunset: Waktu terbenam matahari (altitude = -0.833°)
 func (em *EphemerisManager) GetSunset(date time.Time, lat, lon float64) (time.Time, error) {
-	return em.GetTimeByAltitude(date, lat, lon, -0.833, false)
+	return em.GetTimeByAltitude(date, lat, lon, -0.833, false, "SUN")
 }
 
 // GetIsha: Waktu Isya (altitude = -18.0°)
 func (em *EphemerisManager) GetIsha(date time.Time, lat, lon float64) (time.Time, error) {
-	return em.GetTimeByAltitude(date, lat, lon, -18.0, false)
+	return em.GetTimeByAltitude(date, lat, lon, -18.0, false, "SUN")
 }
 // GetMoonset: Waktu terbenam bulan (altitude = -0.583° untuk standar toposentrik)
 func (em *EphemerisManager) GetMoonset(date time.Time, lat, lon float64) (time.Time, error) {
-	return em.GetTimeByAltitude(date, lat, lon, -0.583, false)
+	return em.GetTimeByAltitude(date, lat, lon, -0.583, false, "MOON")
 }
 
 // GetFajr: Waktu Subuh (altitude = -18.0°)
 func (em *EphemerisManager) GetFajr(date time.Time, lat, lon float64) (time.Time, error) {
-	return em.GetTimeByAltitude(date, lat, lon, -18.0, true)
+	return em.GetTimeByAltitude(date, lat, lon, -18.0, true, "SUN")
 }

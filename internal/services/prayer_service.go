@@ -35,7 +35,7 @@ func (s *PrayerService) GetPrayerTimes(date time.Time, lat, lon float64, cfg pra
 		return models.PrayerTimes{}, err
 	}
 	
-	fajr, err := s.Astro.Manager.GetTimeByAltitude(date, lat, lon, cfg.FajrAngle, true)
+	fajr, err := s.Astro.Manager.GetTimeByAltitude(date, lat, lon, cfg.FajrAngle, true, "SUN")
 	if err != nil {
 		return models.PrayerTimes{}, err
 	}
@@ -60,13 +60,13 @@ func (s *PrayerService) GetPrayerTimes(date time.Time, lat, lon float64, cfg pra
 		}
 		isha = maghrib.Add(time.Duration(offset) * time.Minute)
 	} else {
-		isha, err = s.Astro.Manager.GetTimeByAltitude(date, lat, lon, cfg.IshaAngle, false)
+		isha, err = s.Astro.Manager.GetTimeByAltitude(date, lat, lon, cfg.IshaAngle, false, "SUN")
 		if err != nil {
 			return models.PrayerTimes{}, err
 		}
 	}
 
-	nextFajr, err := s.Astro.Manager.GetTimeByAltitude(date.AddDate(0, 0, 1), lat, lon, cfg.FajrAngle, true)
+	nextFajr, err := s.Astro.Manager.GetTimeByAltitude(date.AddDate(0, 0, 1), lat, lon, cfg.FajrAngle, true, "SUN")
 	if err != nil {
 		// Jika gagal cari besok subuh, fallback ke 24 jam setelah subuh hari ini (estimasi kasar)
 		nextFajr = fajr.Add(24 * time.Hour)
