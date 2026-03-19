@@ -16,8 +16,8 @@ func main() {
 	// 1. Inisialisasi Engine NASA (Pake NewEphemerisManager biar aman)
 	// Fungsi ini bakal nge-loop dan mastiin semua kernel ke-load tanpa skip error
 	manager, err := astronomy.NewEphemerisManager(
+		"data/de440s.bsp",
 		"data/naif0012.tls",
-		"data/de440.bsp",
 		"data/pck00011.tpc",
 	)
 	if err != nil {
