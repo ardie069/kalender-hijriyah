@@ -17,3 +17,4 @@ main
 .vscode/
 .DS_Store
 Thumbs.db
+.vercel

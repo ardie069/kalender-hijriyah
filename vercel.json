@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "functions": {
+    "api/index.go": {
+      "maxDuration": 25
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.go"
+    }
+  ]
+}

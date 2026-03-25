@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/ardie069/kalender-hijriyah/internal/api/handlers"
-	"github.com/ardie069/kalender-hijriyah/internal/api/routes"
-	"github.com/ardie069/kalender-hijriyah/internal/astronomy"
-	"github.com/ardie069/kalender-hijriyah/internal/calendar"
-	"github.com/ardie069/kalender-hijriyah/internal/services"
+	"github.com/ardie069/kalender-hijriyah/core/api/handlers"
+	"github.com/ardie069/kalender-hijriyah/core/api/routes"
+	"github.com/ardie069/kalender-hijriyah/core/astronomy"
+	"github.com/ardie069/kalender-hijriyah/core/calendar"
+	"github.com/ardie069/kalender-hijriyah/core/services"
 	"github.com/gin-gonic/gin"
 )
 
