@@ -76,10 +76,10 @@ kalender-hijriyah/
 
 🌐 API Endpoints Utama
 
-| Endpoint                 | Method | Fungsi                                      | Parameter Query                                                                 |
-| ------------------------ | ------ | ------------------------------------------- | ------------------------------------------------------------------------------- |
-| `/api/v4/hijri/date`     | GET    | Perhitungan prediksi bulan                  | date (ISO), lat, lon                                                            |
-| `/api/v4/moon/telemetry` | GET    | Informasi bulan berdasarkan lokasi pengguna | lat, lon, altitude, elongation, azimuth, distance km, illumination, phase, time |
+| Endpoint                                     | Method | Fungsi                                      | Parameter Query                                                                 |
+| -------------------------------------------- | ------ | ------------------------------------------- | ------------------------------------------------------------------------------- |
+| `/api/v4/hijri/date?lat={lat}&lon={lon}`     | GET    | Perhitungan prediksi bulan                  | lat, lon                                                                        |
+| `/api/v4/moon/telemetry?lat={lat}&lon={lon}` | GET    | Informasi bulan berdasarkan lokasi pengguna | lat, lon, altitude, elongation, azimuth, distance km, illumination, phase, time |
 
 ---
 
