@@ -1,35 +1,33 @@
-# 🕌 Kalender Hijriyah Digital API — Lunar Analytics v4 🌙
+# 🕌 Kalender Hijriyah Digital API Berbasis Golang & NASA SPICE 🌙
 
-[![Go Release](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat-square&logo=go)](https://go.dev/)
+[![Go Release](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat-square&logo=go)](https://go.dev/)
 [![Framework: Gin](https://img.shields.io/badge/Framework-Gin-009688?style=flat-square&logo=gin)](https://gin-gonic.com/)
 [![Engine: SPICE Toolkit](https://img.shields.io/badge/Engine-SPICE%20C--Kernel-10b981?style=flat-square)](https://naif.jpl.nasa.gov/naif/toolkit.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-
-> **"Sains adalah obor yang membakar kegelapan ghaib dengan cahaya logika materialistik."**
-> API Server Kalender Hijriyah v4 ini adalah sintesis antara presisi astronomi modern dan kearifan lokal dalam satu ekosistem digital berbasis Golang.
 
 Aplikasi ini berfokus murni pada penyediaan REST API untuk perhitungan **tanggal Hijriyah secara akurat dan konsisten** berdasarkan lokasi geografis, posisi matahari terbenam (Maghrib), dan berbagai metode penetapan global maupun lokal menggunakan standar data ephemeris **NASA JPL SPICE**.
 
 ---
 
-## 🧠 Filosofi Pembangunan v4
+## 🧠 Perencanaan
 
 Proyek ini telah dire-write dari Python/FastAPI ke **Golang** untuk memaksimalkan performa dan konkurensi, menggunakan binding ke pustaka **NASA SPICE (CSPICE)**.
 
-1. Data astronomi dikalkulasi dari ephemeris riil NASA JPL `de440.bsp` untuk tingkat ketelitian luar angkasa.
-2. Menjembatani perbedaan metode penetapan Hijriyah (UGHC atau dikenal dengan KHGT, Umm al-Qura, MABIMS) di dalam satu platform.
+1. Data astronomi dikalkulasi dari ephemeris riil NASA JPL `de440s.bsp` untuk tingkat ketelitian luar angkasa.
+2. Menjembatani perbedaan metode penetapan Hijriyah (KHGT, Umm al-Qura, MABIMS, Wujudul Hilal) di dalam satu platform.
 3. Memastikan pergantian hari Hijriyah **tepat saat Matahari terbenam** (Maghrib lokal pengamat).
 
 ---
 
-## ✨ Fitur Utama (v4 API Release)
+## ✨ Fitur Utama
 
 - 📡 **Real-time Lunar Telemetry**: Sinkronisasi dan perhitungan lintasan matahari dan bulan dengan CSPICE.
 - 🌅 **Precise Sunset/Fajr Bisection**: Bisection search presisi tinggi 24 jam untuk mendeteksi maghrib dan subuh lintas batasan zona waktu.
 - 🧪 **Multi-Method Engine**:
-  - 🌍 **UGHC/KHGT**: Kalender Hijriyah Global Tunggal (Turki 2016).
+  - 🌍 **KHGT**: Kalender Hijriyah Global Tunggal (Turki 2016).
   - 🕋 **Umm al-Qura**: Standar otoritas Makkah.
-  - 🔢 **Hisab Lokal**: Berdasarkan kriteria MABIMS dan Wujudul Hilal.
+  - 🔢 **Hisab**: Berdasarkan Wujudul Hilal.
+  - 🔭 **Rukyatul Hilal**: Berdasarkan kriteria MABIMS (2022).
 - 🔮 **Global Scan Optimizations**: Scan visibilitas komprehensif dari barat (Benua Amerika) untuk hisab global dengan koreksi ekuinoks/midnight UTC.
 
 ---
@@ -65,7 +63,7 @@ API Server akan menyala secara lokal pada `http://localhost:8080`.
 kalender-hijriyah/
 ├── cmd/
 │   └── api/              # Entry point Gin API Server
-├── data/                 # SPICE Kernels (de440.bsp, naif0012.tls, dll)
+├── data/                 # SPICE Kernels (de440s.bsp, naif0012.tls, dll)
 ├── internal/
 │   ├── api/              # HTTP Handlers
 │   ├── astronomy/        # SPICE CGO Bindings & Kalkulator Orbit
@@ -87,6 +85,6 @@ kalender-hijriyah/
 
 ## 📜 Lisensi
 
-Lisensi MIT. Bebas dikembangkan untuk kemaslahatan umat dan ilmu pengetahuan.
+Lisensi MIT. Bebas dikembangkan untuk ilmu pengetahuan dan kemaslahatan umat.
 
-Build with Logic & Passion by [Ardiansyah](https://github.com/ardie069). Fokus: Falakiyah, Konsistensi Kalender, dan Dialektika Logika.
+Dikembangkan oleh [Ardiansyah](https://github.com/ardie069).

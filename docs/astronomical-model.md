@@ -6,16 +6,16 @@ untuk menghitung posisi Matahari dan Bulan menggunakan binding ke pustaka NASA S
 ## Komponen Engine Utama
 
 - Algoritma Dasar J2000 (Julian Date Reference)
-- Ephemeris JPL **DE440** (de440.bsp)
+- Ephemeris JPL **DE440s** (de440s.bsp)
 - Planetary Constants (pck00011.tpc) dan Leapseconds (naif0012.tls)
 - **Golang CSPICE Bindings** (via CGO)
 
 ## Perhitungan Kunci (Falak Engine)
 
-- **Global Scan UGHC Check**: Bisection Search untuk mendeteksi terbenamnya matahari (Sunset) & fajar (Fajr) dalam lingkup *sliding window* 24-jam di lintang dan bujur belahan dunia manapun.
-- **Topocentric AltAz**: Proyeksi vektor Ecliptic (ECLIPJ2000) ke geometri Zenith observer lokal.
-- **Geocentric Altitude**: Koreksi elevasi pengamat untuk kebutuhan hisab murni (seperti UGHC).
-- Analisis Elongasi Geosentrik (Sudut pisah pusat Bumi-Bulan-Matahari).
+- **Global Scan KHGT Check**: Bisection Search untuk mendeteksi terbenamnya matahari (Sunset) & fajar (Fajr) dalam lingkup *sliding window* 24-jam di lintang dan bujur belahan dunia manapun (65° lintang utara/selatan).
+- **Topocentric AltAz**: Proyeksi vektor Ecliptic (ECLIPJ2000) ke geometri Zenith observer lokal, digunakan untuk kriteria MABIMS dan Umm al-Qura.
+- **Geocentric Altitude**: Menggunakan frame Body-Fixed (IAU_EARTH) untuk kebutuhan hisab murni (seperti KHGT dan Wujudul Hilal).
+- Analisis Elongasi Geosentrik (Sudut pisah pusat Bumi-Bulan-Matahari) dan Toposentrik.
 - Prediksi Konjungsi Presisi (Ijtima).
 
 ## Catatan

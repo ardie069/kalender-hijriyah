@@ -23,16 +23,27 @@ Response Format:
 {
   "target_date_utc": "2026-03-18T12:00:00Z",
   "methods": {
-    "UGHC_KHGT": {
+    "KHGT": {
       "hijri_date": {
-        "day": 30,
-        "month": 9,
-        "month_name": "Ramadan",
+        "day": 1,
+        "month": 10,
+        "month_name": "Syawal",
         "year": 1447
       },
-      ...
+      "prediction": {
+        "altitude": 5.23,
+        "elongation": 8.45,
+        "is_new_month": true
+      }
     },
-    ...
+    "MABIMS": {
+      "prediction": {
+        "altitude": 3.12,
+        "altitude_apparent": 3.45,
+        "elongation": 6.78,
+        "is_new_month": true
+      }
+    }
   }
 }
 ```

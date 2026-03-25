@@ -8,20 +8,23 @@ Kalender Hijriyah API v4 tidak menyatukan Hisab dan Rukyat, melainkan menampilka
 - Altitude > 0° saat Maghrib.
 - Deterministik murni geometris bumi-bulan-matahari.
 
-## Rukyat (Imkanur Rukyat / MABIMS Baru 2021)
+## Rukyat (Imkanur Rukyat / MABIMS Baru 2022)
 
 - Berbasis kriteria ekspektasi visibilitas optik.
+- Menggunakan proyeksi **Toposentris** (koreksi lokasi permukaan bumi dan refraksi atmosfer).
 - Kriteria ketat yang dianut negara-negara MABIMS:
-  - **Ketinggian (Altitude) ≥ 3°**
+  - **Ketinggian (Altitude Geometric) ≥ 3°** (Ketinggian nyata/apparent ~3.45° dengan refraksi)
   - **Elongasi ≥ 6.4°**
 
-## Kalender Hijriyah Global Tunggal (KHGT / UGHC)
+## Kalender Hijriyah Global Tunggal (KHGT)
 
 - Diadopsi dari **Kongres Turki 2016**.
 - Bertujuan menyatukan kalender Islam sedunia menggunakan Hisab Imkanur Rukyat *Global*.
-- Kriteria global:
-  - Hilal harus mencapai **Elongasi ≥ 8°** dan **Altitude Geosentrik ≥ 5°** di *mana pun* di bumi (parameter optimal diukur di pantai barat benua Amerika).
-  - Terdapat limitasi 24:00 UTC dan *override* jam fajar di Selandia Baru untuk memastikan tidak terjadi keterlambatan masuk bulan kalender di zona timur awal.
+- Kriteria global (Turki 2016):
+  - Hilal harus mencapai **Elongasi ≥ 8°** dan **Altitude Geosentrik ≥ 5°** di *mana pun* di bumi sebelum pukul **24:00 UTC**.
+  - **Pengecualian Rollover**: Jika kriteria di atas hanya terpenuhi *setelah* 24:00 UTC, bulan baru tetap masuk jika:
+    1. Kriteria terpenuhi di wilayah **daratan Benua Amerika**.
+    2. **Ijtimak** (konjungsi) terjadi sebelum fajar di **Selandia Baru**.
 
 ## Implikasi API v4
 
