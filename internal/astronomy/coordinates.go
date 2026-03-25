@@ -62,8 +62,5 @@ func (em *EphemerisManager) GetLocalAltAz(pos Vector3, lat, lon float64) (float6
 	if az < 0 {
 		az += 360.0
 	}
-
-	apparentAlt := geoAlt + ApplyRefraction(geoAlt)
-
-	return apparentAlt, az
+	return geoAlt, az
 }

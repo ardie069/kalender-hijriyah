@@ -1,8 +1,11 @@
 module github.com/ardie069/kalender-hijriyah
 
-go 1.26.1
+go 1.25.0
 
-require github.com/gin-gonic/gin v1.12.0
+require (
+	github.com/gin-gonic/gin v1.12.0
+	github.com/ringsaturn/tzf v1.0.4
+)
 
 require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
@@ -27,7 +30,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.59.0 // indirect
-	github.com/ringsaturn/tzf v1.0.4 // indirect
 	github.com/ringsaturn/tzf-rel-lite v0.0.2026-a // indirect
 	github.com/tidwall/geoindex v1.7.0 // indirect
 	github.com/tidwall/geojson v1.4.6 // indirect

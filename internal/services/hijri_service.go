@@ -46,7 +46,7 @@ func (s *HijriService) GetFullCalendarInfo(t time.Time, lat, lon float64) models
 	realtimeTel, _ := s.Astro.GetMoonTelemetry(tUTC, lat, lon)
 
 	// Methods to evaluate
-	methodList := []string{"TABULAR", "MABIMS", "WUJUDUL_HILAL", "UGHC_KHGT", "UMM_AL_QURA"}
+	methodList := []string{"TABULAR", "MABIMS", "WUJUDUL_HILAL", "KHGT", "UMM_AL_QURA"}
 
 	// Process methods sequentially.
 	// SPICE is serialized via mutex, so goroutines here only add overhead.
@@ -121,21 +121,27 @@ func (s *HijriService) calculateMethodPrediction(m string, searchDate time.Time,
 	localTime, tzName := s.GetLocalTimeInfo(sunset, checkLat, checkLon)
 
 	pred := &models.HilalPrediction{
-		CheckDateUTC:      sunset,
-		CheckDateLocal:    localTime,
-		TimezoneName:      tzName,
-		IjtimaTime:        ijtima,
-		AltitudeGeometric: tel.Altitude,
-		AltitudeApparent:  tel.Altitude + astronomy.ApplyRefraction(tel.Altitude),
-		Elongation:        tel.Elongation,
-		AgeHours:          sunset.Sub(ijtima).Hours(),
-		Location:          &models.LocationInfo{Lat: checkLat, Lon: checkLon},
+		CheckDateUTC:     sunset,
+		CheckDateLocal:   localTime,
+		TimezoneName:     tzName,
+		IjtimaTime:       ijtima,
+		Altitude:         tel.Altitude, // Default is topocentric
+		AltitudeApparent: tel.AltitudeApparent,
+		Elongation:       tel.Elongation,
+		AgeHours:         sunset.Sub(ijtima).Hours(),
+		Location:         &models.LocationInfo{Lat: checkLat, Lon: checkLon},
 	}
 
 	// Method-specific evaluation
 	switch m {
-	case "UGHC_KHGT":
-		isNew, globalPred := s.Cal.ScanGlobalUGHC(sunset, ijtima)
+	case "WUJUDUL_HILAL":
+		// Wujudul Hilal requires geocentric altitude
+		altGeo, _ := s.Astro.CalculateGeocentricParamsGlobal(sunset, checkLat, checkLon)
+		pred.Altitude = altGeo
+		pred.AltitudeApparent = nil // Exclude for geocentric-based methods
+		pred.IsNewMonth = calendar.IsWujudulHilal(altGeo, sunset.After(ijtima))
+	case "KHGT":
+		isNew, globalPred := s.Cal.ScanGlobalKHGT(sunset, ijtima)
 		if globalPred != nil {
 			loc := globalPred.Location
 			localTimeUGHC, tzNameUGHC := s.GetLocalTimeInfo(globalPred.CheckDateUTC, loc.Lat, loc.Lon)
@@ -143,11 +149,12 @@ func (s *HijriService) calculateMethodPrediction(m string, searchDate time.Time,
 			pred.CheckDateLocal = localTimeUGHC
 			pred.TimezoneName = tzNameUGHC
 		}
+		pred.AltitudeApparent = nil // CRITICAL: Exclude for KHGT
 		pred.IsNewMonth = isNew
 	case "UMM_AL_QURA":
 		pred.IsNewMonth = calendar.IsUmmAlQura(ijtima, sunset, moonset)
 	default:
-		resLocal := s.Cal.EvaluateLocalHisab(m, sunset, tel.Altitude, tel.Elongation, sunset, moonset, ijtima)
+		resLocal := s.Cal.EvaluateLocalHisab(m, sunset, tel, sunset, moonset, ijtima)
 		pred.IsNewMonth = resLocal.IsNewMonth
 	}
 

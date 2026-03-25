@@ -30,6 +30,7 @@ func (em *EphemerisManager) GetTimeByAltitude(date time.Time, lat, lon, targetAl
 			return time.Time{}, err
 		}
 		currentAlt, _ := em.GetLocalAltAz(pos, lat, lon)
+		currentAlt += ApplyRefraction(currentAlt)
 
 		if rising {
 			if currentAlt < targetAlt {
@@ -67,12 +68,14 @@ func (em *EphemerisManager) GetSolarTransit(date time.Time, lat, lon float64) (t
 			return time.Time{}, err
 		}
 		alt1, _ := em.GetLocalAltAz(pos1, lat, lon)
+		alt1 += ApplyRefraction(alt1)
 
 		pos2, err := em.GetTopocentricPosition("SUN", m2, lat, lon)
 		if err != nil {
 			return time.Time{}, err
 		}
 		alt2, _ := em.GetLocalAltAz(pos2, lat, lon)
+		alt2 += ApplyRefraction(alt2)
 
 		if alt1 < alt2 {
 			low = m1

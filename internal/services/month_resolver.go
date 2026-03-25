@@ -16,14 +16,9 @@ func (s *HijriService) ResolveDynamicHijriDate(m string, targetDay time.Time, la
 	stableNoon := time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), 12, 0, 0, 0, time.UTC)
 	baseH := calendar.GetTabularHijri(stableNoon)
 
-	// 1. Tentukan Ijtima yang mendasari bulan tabular ini.
-	// Jika tabular sudah di tengah/akhir bulan, kita mundur sesuai jumlah harinya.
-	// Jika di awal bulan, kita mundur sedikit saja.
-	daysBack := baseH.Day + 1
-	if baseH.Day < 5 {
-		daysBack = 5
-	}
-	prevIjtima, _ := s.Cal.FindIjtima(targetDay.AddDate(0, 0, -daysBack))
+	// 1. Tentukan Ijtima yang mendasari bulan ini.
+	// FindPreviousIjtima akan mencari dalam rentang [targetDay-30, targetDay].
+	prevIjtima, _ := s.Cal.FindPreviousIjtima(targetDay)
 
 	// 1. Kita ambil tanggal dasar Ijtima (H-0)
 	sunsetCheckDate := time.Date(prevIjtima.Year(), prevIjtima.Month(), prevIjtima.Day(), 12, 0, 0, 0, time.UTC)
@@ -54,19 +49,19 @@ func (s *HijriService) ResolveDynamicHijriDate(m string, targetDay time.Time, la
 		}
 		moonsetCheck, _ := s.Astro.GetMoonset(sunsetCheck, sabangLat, sabangLon)
 		telCheck, _ := s.Astro.GetMoonTelemetry(sunsetCheck, sabangLat, sabangLon)
-		resLocal := s.Cal.EvaluateLocalHisab(m, sunsetCheck, telCheck.Altitude, telCheck.Elongation, sunsetCheck, moonsetCheck, prevIjtima)
+		resLocal := s.Cal.EvaluateLocalHisab(m, sunsetCheck, telCheck, sunsetCheck, moonsetCheck, prevIjtima)
 		isNewMonth = resLocal.IsNewMonth
 
-	case "UGHC_KHGT":
-		// UGHC tidak bergantung pada satu sunset spesifik, melainkan global.
+	case "KHGT":
+		// KHGT tidak bergantung pada satu sunset spesifik, melainkan global.
 		// Evaluasi dimulai dari hari Ijtima.
-		isNewMonth, _ = s.Cal.ScanGlobalUGHC(sunsetCheckDate, prevIjtima)
+		isNewMonth, _ = s.Cal.ScanGlobalKHGT(sunsetCheckDate, prevIjtima)
 		// Jika hari Ijtima gagal, konvensi kalender global adalah menggenapkan bulan sebelumnya (30 hari).
-		// Evaluasi UGHC secara spesifik sudah mencakup seluruh bumi untuk hari tersebut.
+		// Evaluasi KHGT secara spesifik sudah mencakup seluruh bumi untuk hari tersebut.
 		if !isNewMonth {
 			// Coba evaluasi hari berikutnya
 			sunsetCheckDate = sunsetCheckDate.AddDate(0, 0, 1)
-			isNewMonth, _ = s.Cal.ScanGlobalUGHC(sunsetCheckDate, prevIjtima)
+			isNewMonth, _ = s.Cal.ScanGlobalKHGT(sunsetCheckDate, prevIjtima)
 		}
 
 	default:
@@ -78,7 +73,7 @@ func (s *HijriService) ResolveDynamicHijriDate(m string, targetDay time.Time, la
 		}
 		moonsetCheck, _ := s.Astro.GetMoonset(sunsetCheck, lat, lon)
 		telCheck, _ := s.Astro.GetMoonTelemetry(sunsetCheck, lat, lon)
-		resLocal := s.Cal.EvaluateLocalHisab(m, sunsetCheck, telCheck.Altitude, telCheck.Elongation, sunsetCheck, moonsetCheck, prevIjtima)
+		resLocal := s.Cal.EvaluateLocalHisab(m, sunsetCheck, telCheck, sunsetCheck, moonsetCheck, prevIjtima)
 		isNewMonth = resLocal.IsNewMonth
 	}
 

@@ -1,85 +1,142 @@
 package calendar
 
 import (
-	"time"
-
-	"github.com/ardie069/kalender-hijriyah/internal/astronomy"
 	"github.com/ardie069/kalender-hijriyah/internal/models"
+	"time"
 )
 
-// KHGT Parameters
+// KHGT Parameters berdasarkan Muhammadiyah
 const (
-	AmericasLonStart = -30.0  // Mulai dari pesisir Timur (Greenland/Brasil)
-	AmericasLonEnd   = -165.0 // Berakhir di Alaska/Hawaii
-	NZLat            = -41.0  // Wellington, Selandia Baru
-	NZLon            = 174.0  // Garis penanggalan internasional
+	// Global scan coverage
+	GlobalLonStart = -180.0
+	GlobalLonEnd   = 180.0
+	GlobalLatStart = 65.0
+	GlobalLatEnd   = -65.0
+
+	// Amerika continent bounds (daratan perkiraan)
+	AmericaLonStart = -168.0
+	AmericaLonEnd   = -30.0
+	AmericaLatStart = 60.0
+	AmericaLatEnd   = -55.0
+
+	// NZ untuk pengecualian
+	NZLat = -41.2866 // Wellington
+	NZLon = 174.7756
+
+	// Kriteria KHGT (Turki 2016)
+	MinElongation = 8.0
+	MinAltitude   = 5.0
 )
 
-func (l *Logic) ScanGlobalUGHC(targetDateUTC time.Time, ijtimaTime time.Time) (bool, *models.HilalPrediction) {
-	deadline := time.Date(targetDateUTC.Year(), targetDateUTC.Month(), targetDateUTC.Day(), 23, 59, 59, 0, time.UTC)
+func (l *Logic) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time) (bool, *models.HilalPrediction) {
+	deadlineUTC := time.Date(
+		targetDateUTC.Year(), targetDateUTC.Month(), targetDateUTC.Day(),
+		23, 59, 59, 999999999, time.UTC,
+	)
+
+	result := &models.KHGTResult{
+		Date:               targetDateUTC,
+		IsGlobalValid:      false,
+		IsAmericaException: false,
+		ValidLocations:     []models.HilalPrediction{},
+	}
 
 	var bestPred *models.HilalPrediction
-	var maxAlt float64 = -999.0
+	maxScore := -999.0
 
-	// CSPICE is strictly NOT thread-safe for error tracing and state!
-	// Running this in goroutines causes SPICE(BADSUBSCRIPT) trace stack corruption.
-	// Since SPICE calls are ~1-2 microseconds each, sequential scanning is completely fine.
-	for lon := AmericasLonStart; lon >= AmericasLonEnd; lon -= 2.0 {
-		for lat := 60.0; lat >= -60.0; lat -= 5.0 {
-			found, pred := l.checkCoordinate(targetDateUTC, ijtimaTime, deadline, lat, lon)
-			if pred != nil && pred.AltitudeGeometric > maxAlt {
-				maxAlt = pred.AltitudeGeometric
-				bestPred = pred
+	// Scan global grid
+Loop:
+	for lon := GlobalLonStart; lon <= GlobalLonEnd; lon += 5.0 {
+		for lat := GlobalLatStart; lat >= GlobalLatEnd; lat -= 5.0 {
+			// Evaluasi titik ini dengan KRITERIA GEOSENTRIS
+			isValid, pred := l.evaluateGeocentricPoint(
+				targetDateUTC, ijtimaTimeUTC, deadlineUTC,
+				lat, lon, &result.IsAmericaException,
+			)
+
+			if pred != nil {
+				score := pred.Altitude + pred.Elongation
+				if score > maxScore {
+					maxScore = score
+					bestPred = pred
+				}
 			}
-			if found {
-				return true, pred
+
+			if isValid {
+				result.ValidLocations = append(result.ValidLocations, *pred)
+				result.IsGlobalValid = true
+
+				// Early exit jika sudah ketemu dan bukan Amerika exception
+				if !result.IsAmericaException {
+					break Loop
+				}
 			}
 		}
 	}
-
-	return false, bestPred
+	return result.IsGlobalValid, bestPred
 }
 
-// Helper function supaya kode lebih bersih dan fokus pada satu titik koordinat
-func (l *Logic) checkCoordinate(targetDateUTC, ijtimaTime, deadline time.Time, lat, lon float64) (bool, *models.HilalPrediction) {
-	sunsetTime, err := l.Astro.GetSunset(targetDateUTC, lat, lon)
+func (l *Logic) evaluateGeocentricPoint(
+	targetDateUTC, ijtimaTimeUTC, deadlineUTC time.Time,
+	lat, lon float64,
+	americaExceptionFlag *bool,
+) (bool, *models.HilalPrediction) {
 
-	// Syarat Dasar: Sunset harus setelah Ijtima
-	// Jika gagal, berarti di lokasi itu hilal mustahil terlihat hari ini. Tidak boleh lompat ke besok.
-	if err != nil || sunsetTime.Before(ijtimaTime) {
+	// Hitung sunset di lokasi ini
+	sunsetUTC, err := l.Astro.GetSunset(targetDateUTC, lat, lon)
+	if err != nil {
 		return false, nil
 	}
 
-	et := astronomy.TimeToEt(sunsetTime)
-
-	alt, elong := l.Astro.CalculateGeocentricParams(et, lat, lon)
-
-	ageHours := sunsetTime.Sub(ijtimaTime).Hours()
-	pred := &models.HilalPrediction{
-		CheckDateUTC:      sunsetTime,
-		IsNewMonth:        false,
-		IjtimaTime:        ijtimaTime,
-		AltitudeGeometric: alt,
-		AltitudeApparent:  alt + astronomy.ApplyRefraction(alt),
-		Elongation:        elong,
-		AgeHours:          ageHours,
-		Location:          &models.LocationInfo{Lat: lat, Lon: lon},
+	// Syarat dasar: sunset harus setelah ijtima
+	if sunsetUTC.Before(ijtimaTimeUTC) {
+		return false, nil
 	}
 
-	// Kriteria Turki 2016 (KHGT)
-	if alt >= 5.0 && elong >= 8.0 {
-		// Cek Pengecualian Amerika (Syarat B lu)
-		// Jika sunset > deadline tapi di Amerika, tetap SAH selama Ijtima NZ sebelum Fajar
-		if sunsetTime.After(deadline) {
-			fajrNZ, err := l.Astro.GetFajr(targetDateUTC.AddDate(0, 0, 1), NZLat, NZLon)
-			if err == nil && ijtimaTime.Before(fajrNZ) {
+	// KRITIS: Hitung altitude dan elongasi GEOSENTRIS
+	// (dari pusat bumi, tanpa koreksi lat/lon)
+	altGeo, elongGeo := l.Astro.CalculateGeocentricParamsGlobal(sunsetUTC, lat, lon)
+
+	ageHours := sunsetUTC.Sub(ijtimaTimeUTC).Hours()
+	pred := &models.HilalPrediction{
+		CheckDateUTC:      sunsetUTC,
+		IjtimaTime:        ijtimaTimeUTC,
+		Altitude:          altGeo,
+		Elongation:        elongGeo,
+		AgeHours:          ageHours,
+		Location:          &models.LocationInfo{Lat: lat, Lon: lon},
+		IsNewMonth:        false,
+	}
+
+	// Evaluasi kriteria utama (Turki 2016)
+	if altGeo >= MinAltitude && elongGeo >= MinElongation {
+		// Kasus 1: Terpenuhi SEBELUM pukul 24.00 UTC di bagian mana pun di dunia
+		if sunsetUTC.Before(deadlineUTC) || sunsetUTC.Equal(deadlineUTC) {
+			pred.IsNewMonth = true
+			return true, pred
+		}
+
+		// Kasus 2: Terpenuhi SETELAH pukul 24.00 UTC
+		// Bulan baru dimulai JIKA:
+		// 1. Terjadi di wilayah daratan Benua Amerika
+		// 2. Ijtimak terjadi sebelum fajar di Selandia Baru
+		isAmericaLand := (lon >= AmericaLonStart && lon <= AmericaLonEnd &&
+			lat >= AmericaLatEnd && lat <= AmericaLatStart)
+
+		if isAmericaLand {
+			// Cek ijtima sebelum fajar NZ (Wellington)
+			// Syarat: h+1 fajar NZ
+			nextDay := targetDateUTC.AddDate(0, 0, 1)
+			fajrNZ, err := l.Astro.GetFajr(nextDay, NZLat, NZLon)
+			if err == nil && ijtimaTimeUTC.Before(fajrNZ) {
 				pred.IsNewMonth = true
+				*americaExceptionFlag = true
 				return true, pred
 			}
-			return false, pred
 		}
-		pred.IsNewMonth = true
-		return true, pred
+
+		// Terpenuhi setelah 24:00 UTC tapi tidak memenuhi syarat exception → TIDAK SAH
+		return false, pred
 	}
 
 	return false, pred

@@ -47,32 +47,34 @@ func getPhaseName(illum float64, isWaxing bool) string {
 func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (models.MoonTelemetry, error) {
 	et, _ := Str2et(dt.UTC().Format(TimeFormat))
 
-	// 1. Get Positions
-	sunPos, _ := a.Manager.GetGeocentric(Sun, et, FrameJ2000)
-	moonPos, _ := a.Manager.GetGeocentric(Moon, et, FrameJ2000)
-	// Earth is at (0,0,0) in Geocentric mode, so moonPos is already Earth->Moon vector
+	// 1. Geocentric Positions (Inertial frame is fine for elongation)
+	sunPosGeo, _ := a.Manager.GetGeocentric(Sun, et, FrameJ2000)
+	moonPosGeo, _ := a.Manager.GetGeocentric(Moon, et, FrameJ2000)
+	elongGeo := math.Acos(sunPosGeo.Unit().Dot(moonPosGeo.Unit())) * (180.0 / math.Pi)
 
-	// 2. Elongation (Angle Earth-Sun vs Earth-Moon)
-	elongation := math.Acos(sunPos.Unit().Dot(moonPos.Unit())) * (180.0 / math.Pi)
+	// 3. Topocentric Positions (In ECEF)
+	_, _ = a.Manager.GetTopocentricPosition(Sun, et, latitude, longitude)
+	topoMoon, _ := a.Manager.GetTopocentricPosition(Moon, et, latitude, longitude)
 
-	// 3. Illumination & Phase (Angle Sun-Moon-Earth)
-	sunToMoon := sunPos.Sub(moonPos).Unit()
-	earthToMoon := moonPos.Scale(-1).Unit() // Earth (0,0,0) minus MoonPos
+	// 4. Illumination & Phase (Using inertial frame)
+	sunToMoon := sunPosGeo.Sub(moonPosGeo).Unit()
+	earthToMoon := moonPosGeo.Scale(-1).Unit()
 	phaseAngle := math.Acos(sunToMoon.Dot(earthToMoon))
 	illumination := (1.0 + math.Cos(phaseAngle)) / 2.0 * 100.0
 
-	// 4. Topocentric conversion (Alt/Az)
-	topoPos, _ := a.Manager.GetTopocentricPosition(Moon, et, latitude, longitude)
-	alt, az := a.Manager.GetLocalAltAz(topoPos, latitude, longitude)
+	// 5. Alt/Az
+	altTopo, azTopo := a.Manager.GetLocalAltAz(topoMoon, latitude, longitude)
 
+	altApparent := altTopo + ApplyRefraction(altTopo)
 	return models.MoonTelemetry{
-		Altitude:     alt,
-		Azimuth:      az,
-		Elongation:   elongation,
-		Illumination: illumination,
-		DistanceKM:   moonPos.Norm(),
-		PhaseName:    getPhaseName(illumination, sunToMoon.Dot(earthToMoon) < 0),
-		Timestamp:    dt.UTC(),
+		Altitude:         altTopo,
+		AltitudeApparent: &altApparent,
+		Azimuth:          azTopo,
+		Elongation:       elongGeo,
+		Illumination:     illumination,
+		DistanceKM:       moonPosGeo.Norm(),
+		PhaseName:        getPhaseName(illumination, sunToMoon.Dot(earthToMoon) < 0),
+		Timestamp:        dt.UTC(),
 	}, nil
 }
 
@@ -94,6 +96,21 @@ func (a *Adapter) CalculateGeocentricParams(et float64, lat, lon float64) (altit
 		return 0, elongation
 	}
 	altitude, _ = a.Manager.GetLocalAltAz(topoPos, lat, lon)
+
+	return altitude, elongation
+}
+
+// CalculateGeocentricParamsGlobal returns geocentric elongation and geocentric altitude relative to local horizon
+func (a *Adapter) CalculateGeocentricParamsGlobal(dt time.Time, lat, lon float64) (altitude, elongation float64) {
+	et, _ := Str2et(dt.UTC().Format(TimeFormat))
+
+	sunPosGeo, _ := a.Manager.GetGeocentric(Sun, et, FrameJ2000)
+	moonPosGeo, _ := a.Manager.GetGeocentric(Moon, et, FrameJ2000)
+	elongation = math.Acos(sunPosGeo.Unit().Dot(moonPosGeo.Unit())) * (180.0 / math.Pi)
+
+	// Use Body-Fixed for Altitude
+	moonPosFixed, _ := a.Manager.GetGeocentric(Moon, et, "IAU_EARTH")
+	altitude, _ = a.Manager.GetLocalAltAz(moonPosFixed, lat, lon)
 
 	return altitude, elongation
 }
