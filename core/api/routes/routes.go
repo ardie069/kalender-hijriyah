@@ -2,28 +2,23 @@ package routes
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/ardie069/kalender-hijriyah/core/api/handlers"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-func corsMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "false")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-		c.Next()
-	}
-}
-
 func SetupRoutes(router *gin.Engine, hijriHandler *handlers.HijriHandler, prayerHandler *handlers.PrayerHandler) {
-	// Safety Check: Avoid nil pointer dereference if NASA Engine failure occurred during init
+	// CORS configuration using gin-contrib/cors
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept", "X-Requested-With", "Cache-Control"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))	// Safety Check: Avoid nil pointer dereference if NASA Engine failure occurred during init
 	if hijriHandler == nil || prayerHandler == nil {
 		router.NoRoute(func(c *gin.Context) {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
@@ -35,7 +30,6 @@ func SetupRoutes(router *gin.Engine, hijriHandler *handlers.HijriHandler, prayer
 	}
 
 	// Root ping
-	router.Use(corsMiddleware())
 	router.GET("/ping", hijriHandler.Ping)
 
 	// API Version 4 endpoints setup function
@@ -44,6 +38,7 @@ func SetupRoutes(router *gin.Engine, hijriHandler *handlers.HijriHandler, prayer
 		{
 			hijri.GET("/date", hijriHandler.GetHijriDate)
 			hijri.GET("/search", hijriHandler.SearchDate)
+			hijri.GET("/calendar", hijriHandler.GetYearlyCalendar)
 		}
 
 		moon := g.Group("/moon")

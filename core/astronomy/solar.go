@@ -127,6 +127,7 @@ func (em *EphemerisManager) GetSunset(date time.Time, lat, lon float64) (time.Ti
 func (em *EphemerisManager) GetIsha(date time.Time, lat, lon float64) (time.Time, error) {
 	return em.GetTimeByAltitude(date, lat, lon, -18.0, false, "SUN")
 }
+
 // GetMoonset: Waktu terbenam bulan (altitude = -0.583° untuk standar toposentrik)
 func (em *EphemerisManager) GetMoonset(date time.Time, lat, lon float64) (time.Time, error) {
 	return em.GetTimeByAltitude(date, lat, lon, -0.583, false, "MOON")
@@ -135,4 +136,53 @@ func (em *EphemerisManager) GetMoonset(date time.Time, lat, lon float64) (time.T
 // GetFajr: Waktu Subuh (altitude = -18.0°)
 func (em *EphemerisManager) GetFajr(date time.Time, lat, lon float64) (time.Time, error) {
 	return em.GetTimeByAltitude(date, lat, lon, -18.0, true, "SUN")
+}
+
+// GetSunsetFast: Waktu terbenam matahari dengan iterasi lebih sedikit (untuk scan global)
+func (em *EphemerisManager) GetSunsetFast(date time.Time, lat, lon float64) (time.Time, error) {
+	return em.GetTimeByAltitudeFast(date, lat, lon, -0.833, false, "SUN")
+}
+
+// GetTimeByAltitudeFast: Versi cepat dari GetTimeByAltitude dengan iterasi terbatas (12 iterasi ~ 3 menit akurasi)
+func (em *EphemerisManager) GetTimeByAltitudeFast(date time.Time, lat, lon, targetAlt float64, rising bool, body string) (time.Time, error) {
+	approxNoonUTC := 12.0 - (lon / 15.0)
+	base := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+	noon := base.Add(time.Duration(approxNoonUTC*3600) * time.Second)
+
+	var start, end time.Time
+	if rising {
+		start = noon.Add(-10 * time.Hour)
+		end = noon.Add(2 * time.Hour)
+	} else {
+		start = noon.Add(-2 * time.Hour)
+		end = noon.Add(10 * time.Hour)
+	}
+
+	low := TimeToEt(start)
+	high := TimeToEt(end)
+
+	for i := 0; i < 12; i++ {
+		mid := (low + high) / 2
+		pos, err := em.GetTopocentricPosition(body, mid, lat, lon)
+		if err != nil {
+			return time.Time{}, err
+		}
+		currentAlt, _ := em.GetLocalAltAz(pos, lat, lon)
+
+		if rising {
+			if currentAlt < targetAlt {
+				low = mid
+			} else {
+				high = mid
+			}
+		} else {
+			if currentAlt > targetAlt {
+				low = mid
+			} else {
+				high = mid
+			}
+		}
+	}
+
+	return Et2Utc((low + high) / 2), nil
 }

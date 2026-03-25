@@ -10,6 +10,7 @@ import (
 	"github.com/ardie069/kalender-hijriyah/core/calendar"
 	"github.com/ardie069/kalender-hijriyah/core/services"
 	"github.com/gin-gonic/gin"
+	"os"
 )
 
 func main() {
@@ -32,9 +33,6 @@ func main() {
 		log.Fatalf("❌ Hijri Service Failure: %v", err)
 	}
 
-	fmt.Println("🚀 Kalender Hijriyah Engine: STANDBY ON PORT 8080")
-	fmt.Println("🌍 Coordinate System: NASA SPICE Topocentric")
-
 	r := gin.Default()
 
 	// 3. Setup Handlers dan Routes
@@ -44,5 +42,12 @@ func main() {
 
 	routes.SetupRoutes(r, hijriHandler, prayerHandler)
 
-	r.Run(":8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	fmt.Printf("🚀 Kalender Hijriyah Engine: STANDBY ON PORT %s\n", port)
+	fmt.Printf("🌍 Coordinate System: NASA SPICE Topocentric\n")
+	r.Run(":" + port)
 }

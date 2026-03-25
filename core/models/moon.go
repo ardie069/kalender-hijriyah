@@ -9,6 +9,7 @@ type MoonTelemetry struct {
 	Elongation       float64   `json:"elongation"`
 	Illumination     float64   `json:"illumination"`
 	DistanceKM       float64   `json:"distance_km"`
+	AgeHours         float64   `json:"age_hours"`
 	PhaseName        string    `json:"phase_name"`
 	Timestamp        time.Time `json:"timestamp"`
 }

@@ -2,37 +2,54 @@ package calendar
 
 import (
 	"github.com/ardie069/kalender-hijriyah/core/models"
+	"github.com/ardie069/kalender-hijriyah/core/astronomy"
+	"math"
+	"sync"
+	"sync/atomic"
 	"time"
+)
+
+var (
+	vectorCache   = make(map[string]*astronomy.DayVectors)
+	vectorCacheMu sync.Mutex
 )
 
 // KHGT Parameters berdasarkan Muhammadiyah
 const (
-	// Global scan coverage
 	GlobalLonStart = -180.0
 	GlobalLonEnd   = 180.0
 	GlobalLatStart = 65.0
 	GlobalLatEnd   = -65.0
 
-	// Amerika continent bounds (daratan perkiraan)
 	AmericaLonStart = -168.0
 	AmericaLonEnd   = -30.0
 	AmericaLatStart = 60.0
 	AmericaLatEnd   = -55.0
 
-	// NZ untuk pengecualian
-	NZLat = -41.2866 // Wellington
+	NZLat = -41.2866
 	NZLon = 174.7756
 
-	// Kriteria KHGT (Turki 2016)
 	MinElongation = 8.0
 	MinAltitude   = 5.0
 )
 
 func (l *Logic) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time) (bool, *models.HilalPrediction) {
-	deadlineUTC := time.Date(
-		targetDateUTC.Year(), targetDateUTC.Month(), targetDateUTC.Day(),
-		23, 59, 59, 999999999, time.UTC,
-	)
+	deadlineUTC := time.Date(targetDateUTC.Year(), targetDateUTC.Month(), targetDateUTC.Day(), 23, 59, 59, 999999999, time.UTC)
+
+	// 1. Get or Pre-calculate geocentric vectors (IAU_EARTH frame)
+	dateKey := targetDateUTC.Format("2006-01-02")
+	vectorCacheMu.Lock()
+	vectors, exists := vectorCache[dateKey]
+	if !exists {
+		vectors = l.Astro.Manager.PrecalculateDayVectors(targetDateUTC)
+		vectorCache[dateKey] = vectors
+	}
+	vectorCacheMu.Unlock()
+
+	// 2. Pre-calculate Fajr NZ for America Exception
+	nextDay := targetDateUTC.AddDate(0, 0, 1)
+	fajrNZ, _ := l.Astro.GetFajr(nextDay, NZLat, NZLon)
+	isIjtimaBeforeFajrNZ := ijtimaTimeUTC.Before(fajrNZ)
 
 	result := &models.KHGTResult{
 		Date:               targetDateUTC,
@@ -42,37 +59,101 @@ func (l *Logic) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time)
 	}
 
 	var bestPred *models.HilalPrediction
-	maxScore := -999.0
+	var bestScore float64 = -999.0
+	var mu sync.Mutex
+	var foundGlobal int32
+	var wg sync.WaitGroup
 
-	// Scan global grid
-Loop:
-	for lon := GlobalLonStart; lon <= GlobalLonEnd; lon += 5.0 {
-		for lat := GlobalLatStart; lat >= GlobalLatEnd; lat -= 5.0 {
-			// Evaluasi titik ini dengan KRITERIA GEOSENTRIS
-			isValid, pred := l.evaluateGeocentricPoint(
-				targetDateUTC, ijtimaTimeUTC, deadlineUTC,
-				lat, lon, &result.IsAmericaException,
-			)
+	// 3. Grid Scan (Pure Go)
+	step := 15.0
+	for lon := GlobalLonStart; lon <= GlobalLonEnd; lon += step {
+		wg.Add(1)
+		go func(ln float64) {
+			defer wg.Done()
+			for lat := GlobalLatStart; lat >= GlobalLatEnd; lat -= step {
+				if atomic.LoadInt32(&foundGlobal) == 1 {
+					return
+				}
 
-			if pred != nil {
-				score := pred.Altitude + pred.Elongation
-				if score > maxScore {
-					maxScore = score
-					bestPred = pred
+				approxNoonUTC := 12.0 - (ln / 15.0)
+				low := approxNoonUTC
+				high := approxNoonUTC + 12.0
+				
+				baseTime := time.Date(targetDateUTC.Year(), targetDateUTC.Month(), targetDateUTC.Day(), 0, 0, 0, 0, time.UTC)
+				var preciseSunset time.Time
+				for i := 0; i < 10; i++ {
+					mid := (low + high) / 2
+					t := baseTime.Add(time.Duration(mid * float64(time.Hour)))
+					sunVec := vectors.InterpolateVector("SUN", t)
+					alt, _ := l.Astro.Manager.GetLocalAltAz(sunVec, lat, ln)
+					if alt > -0.833 {
+						low = mid
+					} else {
+						high = mid
+					}
+				}
+				preciseSunset = baseTime.Add(time.Duration(((low + high) / 2) * float64(time.Hour)))
+
+				if preciseSunset.Before(ijtimaTimeUTC) {
+					continue
+				}
+
+				moonVec := vectors.InterpolateVector("MOON", preciseSunset)
+				sunVec := vectors.InterpolateVector("SUN", preciseSunset)
+				altGeo, _ := l.Astro.Manager.GetLocalAltAz(moonVec, lat, ln)
+				
+				uSun := sunVec.Unit()
+				uMoon := moonVec.Unit()
+				cosElong := uSun.X*uMoon.X + uSun.Y*uMoon.Y + uSun.Z*uMoon.Z
+				if cosElong > 1.0 { cosElong = 1.0 }
+				if cosElong < -1.0 { cosElong = -1.0 }
+				elongGeo := math.Acos(cosElong) * 180.0 / math.Pi
+
+				isValid := false
+				var isAmEx bool
+				if altGeo >= MinAltitude && elongGeo >= MinElongation {
+					if preciseSunset.Before(deadlineUTC) || preciseSunset.Equal(deadlineUTC) {
+						isValid = true
+					} else {
+						inAmerica := ln >= AmericaLonStart && ln <= AmericaLonEnd && lat >= AmericaLatEnd && lat <= AmericaLatStart
+						if inAmerica && isIjtimaBeforeFajrNZ {
+							isValid = true
+							isAmEx = true
+						}
+					}
+				}
+
+				if altGeo > -20 { 
+					score := altGeo + elongGeo
+					mu.Lock()
+					// bestPred should reflect the most "visible" point, but we prioritize valid ones
+					if score > bestScore || (isValid && bestPred != nil && !bestPred.IsNewMonth) {
+						bestScore = score
+						bestPred = &models.HilalPrediction{
+							CheckDateUTC:      preciseSunset,
+							IjtimaTime:        ijtimaTimeUTC,
+							Altitude:          altGeo,
+							Elongation:        elongGeo,
+							AgeHours:          preciseSunset.Sub(ijtimaTimeUTC).Hours(),
+							Location:          &models.LocationInfo{Lat: lat, Lon: ln},
+							IsNewMonth:        isValid,
+						}
+					}
+					if isValid {
+						result.IsGlobalValid = true
+						if isAmEx { 
+							result.IsAmericaException = true 
+						} else {
+							atomic.StoreInt32(&foundGlobal, 1)
+						}
+					}
+					mu.Unlock()
 				}
 			}
-
-			if isValid {
-				result.ValidLocations = append(result.ValidLocations, *pred)
-				result.IsGlobalValid = true
-
-				// Early exit jika sudah ketemu dan bukan Amerika exception
-				if !result.IsAmericaException {
-					break Loop
-				}
-			}
-		}
+		}(lon)
 	}
+
+	wg.Wait()
 	return result.IsGlobalValid, bestPred
 }
 
@@ -88,14 +169,11 @@ func (l *Logic) evaluateGeocentricPoint(
 		return false, nil
 	}
 
-	// Syarat dasar: sunset harus setelah ijtima
 	if sunsetUTC.Before(ijtimaTimeUTC) {
 		return false, nil
 	}
 
-	// KRITIS: Hitung altitude dan elongasi GEOSENTRIS
-	// (dari pusat bumi, tanpa koreksi lat/lon)
-	altGeo, elongGeo := l.Astro.CalculateGeocentricParamsGlobal(sunsetUTC, lat, lon)
+	altGeo, elongGeo := l.Astro.CalculateGeocentricParamsGlobal(targetDateUTC, lat, lon)
 
 	ageHours := sunsetUTC.Sub(ijtimaTimeUTC).Hours()
 	pred := &models.HilalPrediction{
@@ -108,24 +186,16 @@ func (l *Logic) evaluateGeocentricPoint(
 		IsNewMonth:        false,
 	}
 
-	// Evaluasi kriteria utama (Turki 2016)
 	if altGeo >= MinAltitude && elongGeo >= MinElongation {
-		// Kasus 1: Terpenuhi SEBELUM pukul 24.00 UTC di bagian mana pun di dunia
 		if sunsetUTC.Before(deadlineUTC) || sunsetUTC.Equal(deadlineUTC) {
 			pred.IsNewMonth = true
 			return true, pred
 		}
 
-		// Kasus 2: Terpenuhi SETELAH pukul 24.00 UTC
-		// Bulan baru dimulai JIKA:
-		// 1. Terjadi di wilayah daratan Benua Amerika
-		// 2. Ijtimak terjadi sebelum fajar di Selandia Baru
 		isAmericaLand := (lon >= AmericaLonStart && lon <= AmericaLonEnd &&
 			lat >= AmericaLatEnd && lat <= AmericaLatStart)
 
 		if isAmericaLand {
-			// Cek ijtima sebelum fajar NZ (Wellington)
-			// Syarat: h+1 fajar NZ
 			nextDay := targetDateUTC.AddDate(0, 0, 1)
 			fajrNZ, err := l.Astro.GetFajr(nextDay, NZLat, NZLon)
 			if err == nil && ijtimaTimeUTC.Before(fajrNZ) {
@@ -135,7 +205,6 @@ func (l *Logic) evaluateGeocentricPoint(
 			}
 		}
 
-		// Terpenuhi setelah 24:00 UTC tapi tidak memenuhi syarat exception → TIDAK SAH
 		return false, pred
 	}
 

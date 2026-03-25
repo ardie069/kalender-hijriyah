@@ -33,10 +33,25 @@ type HilalPrediction struct {
 	Elongation       float64       `json:"elongation"`
 	AgeHours         float64       `json:"age_hours"`
 	Location         *LocationInfo `json:"location,omitempty"`
+	GlobalLocation   *LocationInfo `json:"global_location,omitempty"`
 }
 
 type HijriResponse struct {
 	GregorianDate time.Time               `json:"gregorian_date"`
 	Location      LocationInfo            `json:"location"`
 	Methods       map[string]MethodResult `json:"methods"`
+}
+
+type CalendarMonth struct {
+	MonthID        int    `json:"month_id"`
+	MonthName      string `json:"month_name"`
+	TotalDays      int    `json:"total_days"`
+	Day1Weekday    int    `json:"day_1_weekday"`
+	StartGregorian string `json:"start_gregorian"`
+}
+
+type YearlyCalendarResponse struct {
+	Year   int             `json:"year"`
+	Method string          `json:"method"`
+	Months []CalendarMonth `json:"months"`
 }

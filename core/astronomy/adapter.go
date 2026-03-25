@@ -127,6 +127,10 @@ func (a *Adapter) GetSunset(date time.Time, lat, lon float64) (time.Time, error)
 	return a.Manager.GetSunset(date, lat, lon)
 }
 
+func (a *Adapter) GetSunsetFast(date time.Time, lat, lon float64) (time.Time, error) {
+	return a.Manager.GetSunsetFast(date, lat, lon)
+}
+
 func (a *Adapter) GetIsha(date time.Time, lat, lon float64) (time.Time, error) {
 	return a.Manager.GetIsha(date, lat, lon)
 }

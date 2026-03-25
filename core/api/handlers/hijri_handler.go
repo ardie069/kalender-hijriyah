@@ -124,10 +124,47 @@ func (h *HijriHandler) GetTelemetry(ctx *gin.Context) {
 		return
 	}
 
-	tel, err := h.Adapter.GetMoonTelemetry(time.Now(), lat, lon)
+	now := time.Now()
+	tel, err := h.Adapter.GetMoonTelemetry(now, lat, lon)
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": "Gagal dapet data langit"})
 		return
 	}
+
+	// Calculate Moon Age (Hours since previous Ijtima)
+	ijtima, err := h.Service.Cal.FindPreviousIjtima(now)
+	if err == nil {
+		tel.AgeHours = now.Sub(ijtima).Hours()
+	}
+
 	ctx.JSON(200, tel)
+}
+
+func (h *HijriHandler) GetYearlyCalendar(ctx *gin.Context) {
+	yearStr := ctx.Query("year")
+	if yearStr == "" {
+		ctx.JSON(400, gin.H{"error": "Parameter 'year' wajib disertakan."})
+		return
+	}
+
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Parameter 'year' harus berupa angka."})
+		return
+	}
+
+	latStr := ctx.Query("lat")
+	lonStr := ctx.Query("lon")
+	if latStr == "" || lonStr == "" {
+		ctx.JSON(400, gin.H{"error": "Parameter 'lat' dan 'lon' wajib disertakan."})
+		return
+	}
+
+	lat, _ := strconv.ParseFloat(latStr, 64)
+	lon, _ := strconv.ParseFloat(lonStr, 64)
+
+	method := ctx.DefaultQuery("method", "KHGT")
+
+	result := h.Service.GetYearlyCalendar(year, lat, lon, method)
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": result})
 }

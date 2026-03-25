@@ -3,6 +3,7 @@ module github.com/ardie069/kalender-hijriyah
 go 1.25.0
 
 require (
+	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.12.0
 	github.com/ringsaturn/tzf v1.0.4
 )

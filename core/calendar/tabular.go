@@ -7,7 +7,13 @@ import (
 	"github.com/ardie069/kalender-hijriyah/core/models"
 )
 
+const HijriEpochJD = 1948439.5
+
 var HijriEpoch = time.Date(622, time.July, 16, 0, 0, 0, 0, time.UTC)
+
+func JDToTime(jd float64) time.Time {
+	return time.Unix(int64((jd-2440587.5)*86400.0), 0).UTC()
+}
 var LeapYears = map[int]bool{
 	2: true, 5: true, 7: true, 10: true, 13: true,
 	16: true, 18: true, 21: true, 24: true, 26: true, 29: true,
