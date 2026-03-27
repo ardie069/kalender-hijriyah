@@ -7,21 +7,36 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ardie069/kalender-hijriyah/core/hijri"
 	"github.com/ardie069/kalender-hijriyah/core/models"
 	"github.com/ardie069/kalender-hijriyah/core/prayer"
-	"github.com/ardie069/kalender-hijriyah/core/services"
+	"github.com/ardie069/kalender-hijriyah/core/timezone"
 	"github.com/gin-gonic/gin"
 )
 
 type PrayerHandler struct {
-	PrayerService *services.PrayerService
-	HijriService  *services.HijriService
+	PrayerCalc *prayer.Calculator
+	DateSvc    *hijri.DateService
+	TzSvc      *timezone.Service
 }
 
-func NewPrayerHandler(prayerService *services.PrayerService, hijriService *services.HijriService) *PrayerHandler {
+func NewPrayerHandler(calc *prayer.Calculator, dateSvc *hijri.DateService, tzSvc *timezone.Service) *PrayerHandler {
 	return &PrayerHandler{
-		PrayerService: prayerService,
-		HijriService:  hijriService,
+		PrayerCalc: calc,
+		DateSvc:    dateSvc,
+		TzSvc:      tzSvc,
+	}
+}
+
+// mapPrayerMethodToHijri maps a prayer time method name to the corresponding Hijri calendar criterion.
+func mapPrayerMethodToHijri(methodStr string) string {
+	switch methodStr {
+	case "UMM_AL_QURA":
+		return "UMM_AL_QURA"
+	case "KEMENAG", "JAKIM", "MUIS":
+		return "MABIMS"
+	default:
+		return "MABIMS"
 	}
 }
 
@@ -74,28 +89,21 @@ func (h *PrayerHandler) GetPrayerTimes(c *gin.Context) {
 	cfg.HighLatMethod = prayer.ParseHighLat(highLatStr)
 
 	// 3. Tentukan Timezone Berdasarkan Lokasi
-	loc := h.HijriService.GetLocation(lat, lon)
+	loc := h.TzSvc.GetLocation(lat, lon)
 
-	// 4. Panggil Service
-	times, err := h.PrayerService.GetPrayerTimes(targetDate, lat, lon, cfg)
+	// 4. Panggil Calculator
+	times, err := h.PrayerCalc.GetPrayerTimes(targetDate, lat, lon, cfg)
 	if err != nil {
 		c.JSON(500, gin.H{"error": fmt.Sprintf("Gagal menghitung waktu sholat: %v", err)})
 		return
 	}
 
 	// 5. Ambil Info Timezone & Hijriah buat melengkapi response
-	localDate, tzName := h.HijriService.GetLocalTimeInfo(targetDate, lat, lon)
+	localDate, tzName := h.TzSvc.GetLocalTimeInfo(targetDate, lat, lon)
 
-	// Petakan metode waktu sholat ke kriteria Kalender Hijriyah yang sesuai
-	hijriMethod := "MABIMS" // Default regional
-	switch methodStr {
-	case "UMM_AL_QURA":
-		hijriMethod = "UMM_AL_QURA"
-	case "KEMENAG", "JAKIM", "MUIS":
-		hijriMethod = "MABIMS"
-	}
-	hijriTargetDate := h.HijriService.GetHijriTargetDate(targetDate, lat, lon)
-	hijri := h.HijriService.ResolveDynamicHijriDate(hijriMethod, hijriTargetDate, lat, lon)
+	hijriMethod := mapPrayerMethodToHijri(methodStr)
+	hijriTargetDate := h.DateSvc.GetHijriTargetDate(targetDate, lat, lon)
+	hijriDate := h.DateSvc.ResolveDynamicHijriDate(hijriMethod, hijriTargetDate, lat, lon)
 
 	// 6. Susun JSON
 	resp := models.PrayerResponse{}
@@ -103,7 +111,7 @@ func (h *PrayerHandler) GetPrayerTimes(c *gin.Context) {
 	resp.Location.Longitude = lon
 	resp.Location.Timezone = tzName
 	resp.Date.Gregorian = localDate
-	resp.Date.Hijri = fmt.Sprintf("%d %s %d", hijri.Day, hijri.MonthName, hijri.Year)
+	resp.Date.Hijri = fmt.Sprintf("%d %s %d", hijriDate.Day, hijriDate.MonthName, hijriDate.Year)
 
 	resp.Method.Name = cfg.Name
 	resp.Method.Madhab = prayer.MadhabName(cfg.Madhab)

@@ -10,11 +10,6 @@ type HijriDate struct {
 	IsTabular bool   `json:"is_tabular"`
 }
 
-type LocationInfo struct {
-	Lat float64 `json:"latitude"`
-	Lon float64 `json:"longitude"`
-}
-
 type MethodResult struct {
 	HijriDate         HijriDate        `json:"hijri_date"`
 	CurrentAltitude   *float64         `json:"current_altitude,omitempty"`

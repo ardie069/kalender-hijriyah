@@ -3,14 +3,16 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/ardie069/kalender-hijriyah/core/api/handlers"
 	"github.com/ardie069/kalender-hijriyah/core/api/routes"
 	"github.com/ardie069/kalender-hijriyah/core/astronomy"
 	"github.com/ardie069/kalender-hijriyah/core/calendar"
-	"github.com/ardie069/kalender-hijriyah/core/services"
+	"github.com/ardie069/kalender-hijriyah/core/hijri"
+	"github.com/ardie069/kalender-hijriyah/core/prayer"
+	"github.com/ardie069/kalender-hijriyah/core/timezone"
 	"github.com/gin-gonic/gin"
-	"os"
 )
 
 func main() {
@@ -26,19 +28,23 @@ func main() {
 	}
 
 	// 2. Setup Layers (Gunakan Factory Function biar konsisten)
+	tzSvc, err := timezone.NewService()
+	if err != nil {
+		log.Fatalf("❌ Timezone Service Failure: %v", err)
+	}
+
 	adapter := astronomy.GetAdapter(manager)
 	logic := calendar.NewLogic(adapter, manager)
-	service, err := services.NewHijriService(adapter, logic)
-	if err != nil {
-		log.Fatalf("❌ Hijri Service Failure: %v", err)
-	}
+
+	dateSvc := hijri.NewDateService(adapter, logic, tzSvc)
+	calSvc := hijri.NewCalendarService(dateSvc)
+	prayerCalc := prayer.NewCalculator(adapter)
 
 	r := gin.Default()
 
 	// 3. Setup Handlers dan Routes
-	prayerService := services.NewPrayerService(adapter)
-	prayerHandler := handlers.NewPrayerHandler(prayerService, service)
-	hijriHandler := handlers.NewHijriHandler(service, adapter)
+	prayerHandler := handlers.NewPrayerHandler(prayerCalc, dateSvc, tzSvc)
+	hijriHandler := handlers.NewHijriHandler(dateSvc, calSvc, adapter)
 
 	routes.SetupRoutes(r, hijriHandler, prayerHandler)
 

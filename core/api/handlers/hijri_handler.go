@@ -6,21 +6,23 @@ import (
 	"time"
 
 	"github.com/ardie069/kalender-hijriyah/core/astronomy"
-	"github.com/ardie069/kalender-hijriyah/core/services"
+	"github.com/ardie069/kalender-hijriyah/core/hijri"
 	"github.com/gin-gonic/gin"
 )
 
 type HijriHandler struct {
-	Service   *services.HijriService
-	Adapter   *astronomy.Adapter
-	startTime time.Time
+	DateSvc     *hijri.DateService
+	CalendarSvc *hijri.CalendarService
+	Adapter     *astronomy.Adapter
+	startTime   time.Time
 }
 
-func NewHijriHandler(service *services.HijriService, adapter *astronomy.Adapter) *HijriHandler {
+func NewHijriHandler(dateSvc *hijri.DateService, calSvc *hijri.CalendarService, adapter *astronomy.Adapter) *HijriHandler {
 	return &HijriHandler{
-		Service:   service,
-		Adapter:   adapter,
-		startTime: time.Now(),
+		DateSvc:     dateSvc,
+		CalendarSvc: calSvc,
+		Adapter:     adapter,
+		startTime:   time.Now(),
 	}
 }
 
@@ -43,7 +45,6 @@ func (h *HijriHandler) GetHijriDate(ctx *gin.Context) {
 		targetDate = time.Now().UTC()
 	} else {
 		// PARSING TANGGAL DARI USER (YYYY-MM-DD atau ISO8601)
-		// Kita coba format RFC3339 dulu, kalau gagal fallback ke 2006-01-02
 		parsedDate, err := time.Parse(time.RFC3339, dateStr)
 		if err != nil {
 			parsedDate, err = time.Parse("2006-01-02", dateStr)
@@ -77,7 +78,7 @@ func (h *HijriHandler) GetHijriDate(ctx *gin.Context) {
 		return
 	}
 
-	result := h.Service.GetFullCalendarInfo(targetDate, lat, lon)
+	result := h.DateSvc.GetFullCalendarInfo(targetDate, lat, lon)
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": result})
 }
 
@@ -95,7 +96,7 @@ func (h *HijriHandler) SearchDate(ctx *gin.Context) {
 	}
 
 	// Langsung panggil logic Tabular (Tanpa butuh data NASA karena ini murni itungan kitab)
-	result := h.Service.GetTabularOnly(targetDate)
+	result := h.DateSvc.GetTabularOnly(targetDate)
 
 	ctx.JSON(200, gin.H{
 		"status": "success",
@@ -132,7 +133,7 @@ func (h *HijriHandler) GetTelemetry(ctx *gin.Context) {
 	}
 
 	// Calculate Moon Age (Hours since previous Ijtima)
-	ijtima, err := h.Service.Cal.FindPreviousIjtima(now)
+	ijtima, err := h.DateSvc.Cal.FindPreviousIjtima(now)
 	if err == nil {
 		tel.AgeHours = now.Sub(ijtima).Hours()
 	}
@@ -165,6 +166,6 @@ func (h *HijriHandler) GetYearlyCalendar(ctx *gin.Context) {
 
 	method := ctx.DefaultQuery("method", "KHGT")
 
-	result := h.Service.GetYearlyCalendar(year, lat, lon, method)
+	result := h.CalendarSvc.GetYearlyCalendar(year, lat, lon, method)
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": result})
 }

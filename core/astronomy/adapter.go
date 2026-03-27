@@ -62,6 +62,21 @@ func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (m
 	phaseAngle := math.Acos(sunToMoon.Dot(earthToMoon))
 	illumination := (1.0 + math.Cos(phaseAngle)) / 2.0 * 100.0
 
+	// Determine Waxing/Waning using Ecliptic Longitude
+	sunEclip, _ := a.Manager.GetGeocentric(Sun, et, FrameEclipJ2000)
+	moonEclip, _ := a.Manager.GetGeocentric(Moon, et, FrameEclipJ2000)
+	sunLong := math.Atan2(sunEclip.Y, sunEclip.X)
+	moonLong := math.Atan2(moonEclip.Y, moonEclip.X)
+	
+	diff := moonLong - sunLong
+	for diff <= -math.Pi {
+		diff += 2 * math.Pi
+	}
+	for diff > math.Pi {
+		diff -= 2 * math.Pi
+	}
+	isWaxing := diff > 0
+
 	// 5. Alt/Az
 	altTopo, azTopo := a.Manager.GetLocalAltAz(topoMoon, latitude, longitude)
 
@@ -73,7 +88,7 @@ func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (m
 		Elongation:       elongGeo,
 		Illumination:     illumination,
 		DistanceKM:       moonPosGeo.Norm(),
-		PhaseName:        getPhaseName(illumination, sunToMoon.Dot(earthToMoon) < 0),
+		PhaseName:        getPhaseName(illumination, isWaxing),
 		Timestamp:        dt.UTC(),
 	}, nil
 }

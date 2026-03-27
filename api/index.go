@@ -13,7 +13,9 @@ import (
 	"github.com/ardie069/kalender-hijriyah/core/api/routes"
 	"github.com/ardie069/kalender-hijriyah/core/astronomy"
 	"github.com/ardie069/kalender-hijriyah/core/calendar"
-	"github.com/ardie069/kalender-hijriyah/core/services"
+	"github.com/ardie069/kalender-hijriyah/core/hijri"
+	"github.com/ardie069/kalender-hijriyah/core/prayer"
+	"github.com/ardie069/kalender-hijriyah/core/timezone"
 )
 
 // Embed NASA kernel files langsung ke binary
@@ -36,7 +38,6 @@ func init() {
 		initError = err
 		log.Printf("❌ Kernel Extraction Failure: %v", err)
 	}
-
 
 	// 2. Initialize NASA Engine
 	var manager *astronomy.EphemerisManager
@@ -83,13 +84,28 @@ func init() {
 		return
 	}
 
+	tzSvc, err := timezone.NewService()
+	if err != nil {
+		initError = err
+		app.NoRoute(func(c *gin.Context) {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status":  "error",
+				"message": "Timezone Service Offline",
+				"detail":  initError.Error(),
+			})
+		})
+		return
+	}
+
 	adapter := astronomy.GetAdapter(manager)
 	logic := calendar.NewLogic(adapter, manager)
-	hijriService, _ := services.NewHijriService(adapter, logic)
-	prayerService := services.NewPrayerService(adapter)
 
-	hHandler := handlers.NewHijriHandler(hijriService, adapter)
-	pHandler := handlers.NewPrayerHandler(prayerService, hijriService)
+	dateSvc := hijri.NewDateService(adapter, logic, tzSvc)
+	calSvc := hijri.NewCalendarService(dateSvc)
+	prayerCalc := prayer.NewCalculator(adapter)
+
+	hHandler := handlers.NewHijriHandler(dateSvc, calSvc, adapter)
+	pHandler := handlers.NewPrayerHandler(prayerCalc, dateSvc, tzSvc)
 
 	routes.SetupRoutes(app, hHandler, pHandler)
 }
