@@ -33,7 +33,7 @@ const (
 	MinAltitude   = 5.0
 )
 
-func (l *Logic) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time) (bool, *models.HilalPrediction) {
+func (l *Logic) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time) *models.KHGTResult {
 	deadlineUTC := time.Date(targetDateUTC.Year(), targetDateUTC.Month(), targetDateUTC.Day(), 23, 59, 59, 999999999, time.UTC)
 
 	// 1. Get or Pre-calculate geocentric vectors (IAU_EARTH frame)
@@ -154,7 +154,8 @@ func (l *Logic) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time)
 	}
 
 	wg.Wait()
-	return result.IsGlobalValid, bestPred
+	result.BestVisibility = bestPred
+	return result
 }
 
 func (l *Logic) evaluateGeocentricPoint(

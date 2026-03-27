@@ -60,35 +60,38 @@ func (s *DateService) GetFullCalendarInfo(t time.Time, lat, lon float64) models.
 			}
 		} else {
 			result.HijriDate = s.ResolveDynamicHijriDate(m, targetDay, lat, lon)
+		}
 
-			// Add Real-time Telemetry
+		// Add Real-time Telemetry
+		if m != "TABULAR" {
 			alt := realtimeTel.Altitude
 			elong := realtimeTel.Elongation
 			result.CurrentAltitude = &alt
 			result.CurrentElongation = &elong
+		}
 
-			// 3. Predictions for the 29th of the Hijri Month
-			if result.HijriDate.Day <= 29 {
-				daysTo29 := 29 - result.HijriDate.Day
-				searchDateMethod := targetDay.AddDate(0, 0, daysTo29)
-				searchDateMethod = time.Date(searchDateMethod.Year(), searchDateMethod.Month(), searchDateMethod.Day(), 12, 0, 0, 0, time.UTC)
+		// 3. Predictions for the 29th of the Hijri Month
+		if result.HijriDate.Day <= 29 {
+			daysTo29 := 29 - result.HijriDate.Day
+			searchDateMethod := targetDay.AddDate(0, 0, daysTo29)
+			searchDateMethod = time.Date(searchDateMethod.Year(), searchDateMethod.Month(), searchDateMethod.Day(), 12, 0, 0, 0, time.UTC)
 
-				pred, err := s.calculateMethodPrediction(m, searchDateMethod, lat, lon)
+			pred, err := s.calculateMethodPrediction(m, searchDateMethod, lat, lon)
+			if err == nil {
+				result.Prediction = pred
+			}
+
+			if m == "MABIMS" {
+				localPred, err := s.calculateMethodPrediction("MABIMS_LOCAL", searchDateMethod, lat, lon)
 				if err == nil {
-					result.Prediction = pred
-				}
-
-				if m == "MABIMS" {
-					localPred, err := s.calculateMethodPrediction("MABIMS_LOCAL", searchDateMethod, lat, lon)
-					if err == nil {
-						if pred != nil {
-							localPred.IsNewMonth = pred.IsNewMonth
-						}
-						result.LocalPrediction = localPred
+					if pred != nil {
+						localPred.IsNewMonth = pred.IsNewMonth
 					}
+					result.LocalPrediction = localPred
 				}
 			}
 		}
+
 		resp.Methods[m] = result
 	}
 

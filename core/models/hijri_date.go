@@ -27,9 +27,13 @@ type HilalPrediction struct {
 	Altitude         float64       `json:"altitude"`
 	AltitudeApparent *float64      `json:"altitude_apparent,omitempty"`
 	Elongation       float64       `json:"elongation"`
-	AgeHours         float64       `json:"age_hours"`
-	Location         *LocationInfo `json:"location,omitempty"`
-	GlobalLocation   *LocationInfo `json:"global_location,omitempty"`
+	AgeHours             float64       `json:"age_hours"`
+	Location             *LocationInfo `json:"location,omitempty"`
+	GlobalLocation       *LocationInfo `json:"global_location,omitempty"`
+	KHGTGlobalValid      *bool         `json:"khgt_global_valid,omitempty"`
+	KHGTAmericaException *bool         `json:"khgt_america_exception,omitempty"`
+	MoonsetTimeLocal     string        `json:"moonset_time_local,omitempty"`
+	MoonsetDiffMinutes   float64       `json:"moonset_diff_minutes,omitempty"`
 }
 
 type HijriResponse struct {

@@ -50,10 +50,12 @@ func (s *DateService) ResolveDynamicHijriDate(m string, targetDay time.Time, lat
 
 	case "KHGT":
 		// KHGT tidak bergantung pada satu sunset spesifik, melainkan global.
-		isNewMonth, _ = s.Cal.ScanGlobalKHGT(sunsetCheckDate, prevIjtima)
+		khgtRes := s.Cal.ScanGlobalKHGT(sunsetCheckDate, prevIjtima)
+		isNewMonth = khgtRes.IsGlobalValid
 		if !isNewMonth {
 			sunsetCheckDate = sunsetCheckDate.AddDate(0, 0, 1)
-			isNewMonth, _ = s.Cal.ScanGlobalKHGT(sunsetCheckDate, prevIjtima)
+			khgtRes2 := s.Cal.ScanGlobalKHGT(sunsetCheckDate, prevIjtima)
+			isNewMonth = khgtRes2.IsGlobalValid
 		}
 
 	default:
