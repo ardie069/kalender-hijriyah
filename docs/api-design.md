@@ -13,6 +13,7 @@ API dirancang agar:
 Mengembalikan tanggal Hijriyah hari ini beserta prediksi pergantian bulan dari berbagai metode penetapan.
 
 Parameter Query Opsional:
+
 - `date`: Tanggal ISO 8601 (Contoh: `2026-03-18T12:00:00Z`). Default: current time.
 - `lat`: Latitude observer (Contoh: `-7.98`). Default: Malang.
 - `lon`: Longitude observer (Contoh: `112.63`). Default: Malang.

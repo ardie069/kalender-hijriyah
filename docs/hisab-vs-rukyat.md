@@ -21,10 +21,10 @@ Kalender Hijriyah API v4 tidak menyatukan Hisab dan Rukyat, melainkan menampilka
 - Diadopsi dari **Kongres Turki 2016**.
 - Bertujuan menyatukan kalender Islam sedunia menggunakan Hisab Imkanur Rukyat *Global*.
 - Kriteria global (Turki 2016):
-  - Hilal harus mencapai **Elongasi ≥ 8°** dan **Altitude Geosentrik ≥ 5°** di *mana pun* di bumi sebelum pukul **24:00 UTC**.
+  - Hilal harus mencapai **Elongasi ≥ 8°** dan **Altitude Geosentrik ≥ 5°** di belahan bumi *mana pun* sebelum pukul **24:00 UTC**.
   - **Pengecualian Rollover**: Jika kriteria di atas hanya terpenuhi *setelah* 24:00 UTC, bulan baru tetap masuk jika:
     1. Kriteria terpenuhi di wilayah **daratan Benua Amerika**.
-    2. **Ijtimak** (konjungsi) terjadi sebelum fajar di **Selandia Baru**.
+    2. **Ijtimak** (konjungsi) terjadi sebelum subuh di **Selandia Baru**.
 
 ## Implikasi API v4
 

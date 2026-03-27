@@ -13,16 +13,18 @@ yang dikomputasi oleh API Golang v4.
 ## Alur Orkestrasi (Service Layer)
 
 1. Tentukan target `Date` (UTC) dan lokasi `Lat/Lon`.
-2. Hitung waktu sunset (Maghrib) lokal via Bisection Search 24H.
-3. Tentukan Ijtima (konjungsi) menggunakan pencarian dinamis (FindPreviousIjtima), bukan berdasarkan data tabular statis.
-4. Tentukan apakah waktu request *sebelum* atau *sesudah* Maghrib.
-5. Jalankan Evaluasi Multi-Metode:
-   - **KHGT (Global)**: Melakukan scan global (65° LU/LS) untuk mencari terpenuhinya kriteria Turki 2016 sebelum dan sesudah 24:00 UTC, termasuk *override* Ijtima Selandia Baru. Menggunakan parameter **Geosentris**.
-   - **Hisab Lokal**:
-     - **MABIMS**: Menggunakan proyeksi **Toposentrik** (termasuk refraksi atmosfer untuk ketinggian nyata).
-     - **Wujudul Hilal**: Menggunakan proyeksi **Geosentris**.
-   - **Umm al-Qura**: Mencocokkan dengan standar observatorium Makkah (Toposentris).
+2. Ambil tanggal Hijriyah **Tabular** sebagai pijakan awal untuk estimasi bulan dan tahun (`baseH`).
+3. Cari waktu **Ijtima (Konjungsi)** sebelumnya dalam rentang 30 hari menggunakan `FindPreviousIjtima`.
+4. Tentukan waktu evaluasi (Sunset/Maghrib) berdasarkan kriteria:
+   - **UMM_AL_QURA**: Lokasi Makkah.
+   - **MABIMS**: Lokasi Sabang (titik barat Indonesia).
+   - **Lokal**: Lokasi observer (`lat/lon`).
+   - **KHGT**: Pemindaian Global (tidak terikat satu lokasi).
+5. Tentukan apakah waktu request *sebelum* atau *sesudah* Maghrib.
+6. Tentukan `monthStartDate` (H+1 atau H+2 dari Ijtima) berdasarkan hasil evaluasi kriteria (`isNewMonth`).
+7. Hitung selisih hari (`daysElapsed`) antara target dengan awal bulan.
+8. Lakukan koreksi **Rollover** (jika `hDay < 1` atau `hDay > 30`) untuk menyesuaikan bulan dan tahun secara dinamis.
 
 ## Mengatasi Limitasi "Hari H+1"
 
-Sistem menggunakan fungsi pembantu `PredictHijriDate` untuk mengeliminasi statik +1 hari. Ini memastikan bulan ber-rollover dengan dinamis (menjadi hari ke-1 bulan selanjutnya) jika Hisab menyatakan wujud/imkanur rukyat, dan mengunci ke hari ke-30 (Istikmal) apabila tidak terlihat.
+Sistem secara dinamis menghitung hari Hijriyah (`hDay`) berdasarkan selisih waktu antara tanggal yang diminta dengan `monthStartDate` yang sudah dievaluasi. Logika ini memastikan pergantian bulan (rollover) terjadi secara akurat: menjadi hari ke-1 bulan selanjutnya jika kriteria hisab/rukyat terpenuhi, atau mengunci ke hari ke-30 (Istikmal) apabila hilal tidak terlihat. Penyesuaian bulan dan tahun juga dilakukan secara otomatis jika `hDay` berada di luar rentang bulan saat ini.
