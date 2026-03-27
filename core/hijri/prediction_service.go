@@ -16,6 +16,8 @@ func (s *DateService) calculateMethodPrediction(m string, searchDate time.Time, 
 		checkLat, checkLon = 21.4225, 39.8262 // Mecca
 	case "MABIMS":
 		checkLat, checkLon = 5.89, 95.32 // Sabang (Westernmost Indonesia)
+	case "MABIMS_LOCAL":
+		// checkLat, checkLon stays as lat, lon (user's location)
 	}
 
 	sunset, err := s.Astro.GetSunset(searchDate, checkLat, checkLon)
@@ -73,6 +75,9 @@ func (s *DateService) calculateMethodPrediction(m string, searchDate time.Time, 
 		pred.IsNewMonth = isNew
 	case "UMM_AL_QURA":
 		pred.IsNewMonth = calendar.IsUmmAlQura(ijtima, sunset, moonset)
+	case "MABIMS_LOCAL":
+		resLocal := s.Cal.EvaluateLocalHisab("MABIMS", sunset, tel, sunset, moonset, ijtima)
+		pred.IsNewMonth = resLocal.IsNewMonth
 	default:
 		resLocal := s.Cal.EvaluateLocalHisab(m, sunset, tel, sunset, moonset, ijtima)
 		pred.IsNewMonth = resLocal.IsNewMonth

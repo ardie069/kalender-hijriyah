@@ -77,6 +77,16 @@ func (s *DateService) GetFullCalendarInfo(t time.Time, lat, lon float64) models.
 				if err == nil {
 					result.Prediction = pred
 				}
+
+				if m == "MABIMS" {
+					localPred, err := s.calculateMethodPrediction("MABIMS_LOCAL", searchDateMethod, lat, lon)
+					if err == nil {
+						if pred != nil {
+							localPred.IsNewMonth = pred.IsNewMonth
+						}
+						result.LocalPrediction = localPred
+					}
+				}
 			}
 		}
 		resp.Methods[m] = result

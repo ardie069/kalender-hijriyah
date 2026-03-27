@@ -15,6 +15,7 @@ type MethodResult struct {
 	CurrentAltitude   *float64         `json:"current_altitude,omitempty"`
 	CurrentElongation *float64         `json:"current_elongation,omitempty"`
 	Prediction        *HilalPrediction `json:"prediction,omitempty"`
+	LocalPrediction   *HilalPrediction `json:"local_prediction,omitempty"`
 }
 
 type HilalPrediction struct {
