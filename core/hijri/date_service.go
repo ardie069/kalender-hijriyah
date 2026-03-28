@@ -75,6 +75,16 @@ func (s *DateService) GetFullCalendarInfo(t time.Time, lat, lon float64) models.
 				}
 			}
 
+			if m == "MABIMS" {
+				sabangTel, err := s.Astro.GetMoonTelemetry(tUTC, 5.89, 95.32)
+				if err == nil {
+					refAlt := sabangTel.Altitude
+					refElong := sabangTel.Elongation
+					result.ReferenceAltitude = &refAlt
+					result.ReferenceElongation = &refElong
+				}
+			}
+
 			result.CurrentAltitude = &alt
 			result.CurrentElongation = &elong
 		}
