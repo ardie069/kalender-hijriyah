@@ -66,6 +66,15 @@ func (s *DateService) GetFullCalendarInfo(t time.Time, lat, lon float64) models.
 		if m != "TABULAR" {
 			alt := realtimeTel.Altitude
 			elong := realtimeTel.Elongation
+
+			if m == "UMM_AL_QURA" {
+				meccaTel, err := s.Astro.GetMoonTelemetry(tUTC, 21.4225, 39.8262)
+				if err == nil {
+					alt = meccaTel.Altitude
+					elong = meccaTel.Elongation
+				}
+			}
+
 			result.CurrentAltitude = &alt
 			result.CurrentElongation = &elong
 		}
