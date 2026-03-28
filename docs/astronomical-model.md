@@ -1,102 +1,51 @@
-# 🌌 Astronomical Model v4
+# 🌌 Astronomical Model Hilal Scope (v4)
 
-Sistem ini menggunakan model astronomi *real-time* berbasis data ephemeris standar tinggi
-untuk menghitung posisi Matahari dan Bulan menggunakan binding ke pustaka NASA SPICE.
+Hilal Scope menggunakan model astronomi *real-time* berbasis data ephemeris standar tinggi untuk menghitung posisi Matahari dan Bulan menggunakan pustaka **NASA SPICE**.
 
 ## Komponen Engine Utama
 
 - Algoritma Dasar J2000 (Julian Date Reference)
-- Ephemeris JPL **DE440s** (de440s.bsp)
-- Planetary Constants (pck00011.tpc) dan Leapseconds (naif0012.tls)
+- Ephemeris JPL **DE440s** (`de440s.bsp`)
+- Planetary Constants (`pck00011.tpc`) dan Leapseconds (`naif0012.tls`)
 - **Golang CSPICE Bindings** (via CGO)
 
 ## Perhitungan Kunci (Falak Engine)
 
-- **Global Scan KHGT Check**: Bisection Search untuk mendeteksi terbenamnya matahari (Sunset) & fajar (Fajr) dalam lingkup *sliding window* 24-jam di lintang dan bujur belahan dunia manapun (65° lintang utara/selatan).
-- **Topocentric AltAz**: Proyeksi vektor Ecliptic (ECLIPJ2000) ke geometri Zenith observer lokal, digunakan untuk kriteria MABIMS dan Umm al-Qura.
-- **Geocentric Altitude**: Menggunakan frame Body-Fixed (IAU_EARTH) untuk kebutuhan hisab murni (seperti KHGT dan Wujudul Hilal).
-- Analisis Elongasi Geosentrik (Sudut pisah pusat Bumi-Bulan-Matahari) dan Toposentrik.
-- Prediksi Konjungsi Presisi (Ijtima).
+- **Global Scan KHGT Check**: Bisection Search untuk mendeteksi Sunset & Fajr dalam lingkup *sliding window* 24-jam di seluruh dunia (batas ±65° lintang).
+- **Topocentric AltAz**: Proyeksi vektor Ecliptic ke geometri Zenith observer lokal, digunakan untuk kriteria **MABIMS** (dengan referensi Sabang) dan **Umm al-Qura**.
+- **Geocentric Altitude**: Menggunakan frame Body-Fixed (IAU_EARTH) untuk kebutuhan hisab global (**KHGT** dan **Wujudul Hilal**).
+- **Refraksi Atmosfer**: Koreksi refraksi (model Bennett/Sæmundsson) diterapkan pada kriteria toposentris untuk akurasi visual yang lebih baik.
 
-## 🌦 Refraksi Atmosfer
+## 🛠 Arsitektur Teknis: SPICE & CGO
 
-Untuk kriteria berbasis Toposentrik (seperti MABIMS), sistem menerapkan koreksi refraksi atmosfer pada fungsi `ApplyRefraction`.
-Kami menggunakan model aproksimasi Bennett/Sæmundsson yang menghitung deviasi cahaya berdasarkan ketinggian geometris hilal. Hal ini sangat krusial karena hilal yang secara geometris berada di bawah ufuk bisa jadi terlihat secara visual karena pembiasan atmosfer.
+Sistem ini mengintegrasikan pustaka **CSPICE** (versi C dari toolkit SPICE NASA) ke dalam ekosistem **Golang** menggunakan CGO.
 
-## 🛠 Arsitektur Teknis: SPICE, CGO, & Thread-Safety
+### 1. Keamanan Thread (Thread-Safety)
 
-Sistem ini mengintegrasikan pustaka **CSPICE** (versi C dari toolkit SPICE NASA) ke dalam ekosistem **Golang** untuk mendapatkan akurasi tingkat tinggi yang setara dengan navigasi wahana antariksa.
+Pustaka CSPICE asli **tidak bersifat thread-safe**. Karena menggunakan variabel statis internal, Hilal Scope menerapkan **Global Lock** menggunakan `sync.Mutex` (`spiceMu`) di setiap pemanggilan fungsi jembatan CGO. Ini memastikan stabilitas engine pada lingkungan server yang melayani banyak request secara konkuren.
 
-### 1. Integrasi CGO
+### 2. Deployment Serverless (Vercel)
 
-Karena CSPICE adalah pustaka berbasis C, kami menggunakan **CGO** sebagai jembatan. File `spice_bridge.go` bertindak sebagai *wrapper* yang memetakan fungsi-fungsi C (seperti `spkpos_c`, `str2et_c`, `furnsh_c`) ke fungsi Go. Hal ini memungkinkan logika bisnis kalender tetap berada di level tinggi (Go) sementara perhitungan geometri astronomi yang kompleks dilakukan oleh mesin SPICE yang sudah teruji.
+Tantangan utama menjalankan engine ini di Vercel adalah ketergantungan pada pustaka C dan file kernel yang besar.
 
-### 2. Keterbatasan Thread-Safety
+- **Vercel Build Step**: Kami menggunakan skrip `vercel-build.sh` untuk mengunduh binary `libcspice.a` yang sudah dikompilasi secara statis untuk lingkungan Amazon Linux 2 (arsitektur Vercel).
+- **Static Linking**: Library di-link secara statis saat proses build Go di Vercel, sehingga binary akhir bersifat mandiri (*standalone*).
+- **Kernel Placement**: File-file kernel (`.bsp`, `.tls`, `.tpc`) diletakkan di folder `data/` yang di-copy ke output deployment untuk diakses saat runtime melalui `furnsh_c`.
 
-Pustaka CSPICE asli **tidak bersifat thread-safe**. Pustaka ini menggunakan variabel statis dan global internal untuk manajemen state (seperti error handling dan pool kernel). Jika dua goroutine mencoba memanggil fungsi SPICE secara bersamaan, hal ini dapat menyebabkan *memory corruption*, hasil kalkulasi yang tidak konsisten, atau aplikasi berhenti mendadak (*crash*).
+## 🏗 Setup Lokal
 
-### 3. Mekanisme `sync.Mutex`
+Untuk pengembangan di mesin lokal (Linux/WSL):
 
-Untuk mengatasi masalah keamanan thread tersebut, aplikasi ini menerapkan kebijakan **Global Lock** menggunakan `sync.Mutex` (didefinisikan sebagai `spiceMu`).
-
-Setiap kali fungsi jembatan astronomi dipanggil:
-
-1. `spiceMu.Lock()` dijalankan untuk memastikan hanya satu goroutine yang memiliki akses ke engine SPICE pada satu waktu.
-2. Fungsi internal SPICE dieksekusi melalui CGO.
-3. `spiceMu.Unlock()` (biasanya melalui `defer`) dijalankan segera setelah operasi selesai untuk memberikan giliran kepada goroutine lain.
-
-**Dampak Performa:**
-Meskipun akses ke SPICE dilakukan secara berurutan (*serialized*), performa sistem tetap sangat tinggi. Hal ini dikarenakan:
-
-- Operasi matematika SPICE sangat efisien dan berbasis memori.
-- Bottleneck aplikasi biasanya berada pada I/O jaringan, bukan pada kecepatan CPU dalam menghitung orbit.
-- Mekanisme ini jauh lebih aman dan stabil untuk lingkungan server yang melayani banyak permintaan secara konkuren.
-
-## 🏗 Setup Environment CGO & CSPICE
-
-Untuk mengompilasi proyek ini, sistem Anda harus memiliki compiler C (GCC/Clang) dan library CSPICE yang sudah terpasang di struktur folder yang benar.
-
-### 1. Persyaratan Sistem
-
-- **Linux/macOS**: GCC atau Clang terpasang.
-- **Windows**: MSYS2 atau MinGW-w64.
-- **Go**: Versi 1.25+ dengan `CGO_ENABLED=1`.
-
-### 2. Download CSPICE Toolkit
-
-Unduh toolkit sesuai dengan arsitektur sistem Anda dari NASA NAIF Website. [Klik di sini](https://naif.jpl.nasa.gov/pub/naif/toolkit/C/).
-
-### 3. Struktur Direktori Library
-
-Berdasarkan arahan `#cgo` di `core/astronomy/spice_bridge.go`, library harus diletakkan sebagai berikut:
-
-```plaintext
-core/astronomy/
-├── include/           <-- Salin semua file .h dari direktori 'include' CSPICE
-│   ├── SpiceUsr.h
-│   ├── SpiceZpl.h
-│   └── ...
-├── lib/               <-- Salin file library (.a atau .so) dari direktori 'lib'
-│   ├── cspice.a
-│   └── csupport.a
-└── spice_bridge.go
-```
-
-### 4. Kompilasi
-
-Pastikan variabel lingkungan `CGO_ENABLED` aktif saat melakukan build:
+1. Pastikan GCC atau Clang terpasang.
+2. Letakkan file library di `core/astronomy/lib/` dan header di `core/astronomy/include/`.
+3. Set `CGO_ENABLED=1` saat menjalankan `go build`.
 
 ```bash
-# Linux / macOS
-CGO_ENABLED=1 go build -o hilal-engine ./cmd/api
-
-# Windows (PowerShell)
-$env:CGO_ENABLED="1"; go build -o hilal-engine.exe ./cmd/api
+CGO_ENABLED=1 go run cmd/api/main.go
 ```
 
-*Catatan: Jika Anda menggunakan Docker, proses ini sudah diotomatisasi di dalam Dockerfile menggunakan multi-stage build untuk memastikan library C ter-link secara statis atau tersedia di runtime.*
+## Catatan Penting
 
-## Catatan
-
-- Sistem ini **tidak menggantikan observasi lapangan** (Rukyatul Hilal aktual).
-- Hasil visibilitas adalah perhitungan matematis astronomis menggunakan limitasi kriteria visibilitas spesifik, bukan penampakan visual (Optik).
+- **Akurasi**: Data posisi memiliki tingkat ketelitian mili-arcsecond, namun hasil akhir sangat bergantung pada kriteria fikih yang dipilih.
+- **Limitasi**: Pada lintang ekstrem (di atas ±65°), perhitungan Sunset/Fajr menggunakan metode koreksi khusus untuk menangani fenomena matahari tengah malam atau malam kutub.
+imitasi kriteria visibilitas spesifik, bukan penampakan visual (Optik).

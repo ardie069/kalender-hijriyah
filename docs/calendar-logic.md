@@ -1,30 +1,50 @@
-# 🧠 Calendar Logic v4 (Engine Falak)
+# 🧠 Calendar Logic Hilal Scope (v4)
 
-Dokumen ini menjelaskan **alur penentuan tanggal Hijriyah**
-yang dikomputasi oleh API Golang v4.
+Dokumen ini menjelaskan alur orkestrasi dan logika falak yang digunakan Hilal Scope untuk menentukan tanggal Hijriyah secara akurat.
 
-## Prinsip Dasar Logika Kalender
+## Prinsip Utama
 
-1. Hari Hijriyah **dimulai saat Matahari terbenam (Maghrib)** di lokasi pengamat.
-2. Tidak ada pergantian hari Hijriyah di tengah malam waktu lokal (00:00).
-3. Evaluasi akhir bulan (penentuan umur bulan 29 atau 30 hari) **hanya terjadi pada hari ke-29 Hijriyah** setelah Maghrib.
-4. Perhitungan lintasan Astronomi menggunakan Julian Date Ephemeris Timed (ET) dari NASA SPICE, dikonversi kembali ke UTC timezone-aware.
+1. **Maghrib sebagai Titik Nol**: Hari Hijriyah berganti tepat saat Matahari terbenam secara lokal.
+2. **Evaluasi Hari ke-29**: Penentuan apakah bulan berjalan berjumlah 29 atau 30 hari dilakukan dengan mengevaluasi visibilitas hilal pada petang hari ke-29.
+3. **NASA SPICE Precision**: Semua posisi benda langit dihitung menggunakan kernel ephemeris NASA untuk mendapatkan akurasi tingkat tinggi.
+
+## Kriteria Penetapan
+
+### 🌍 1. KHGT (Kalender Hijriyah Global Tunggal)
+Berdasarkan Kongres Turki 2016, awal bulan dimulai secara global jika:
+- Di bagian mana pun di bumi (Global Scan), tinggi hilal minimal **5°** dan elongasi minimal **8°** saat Matahari terbenam.
+- Terjadi sebelum pukul 00:00 UTC.
+- Jika syarat terpenuhi di benua Amerika (setelah 00:00 UTC), maka tetap berlaku untuk hari yang sama secara global jika kriteria terpenuhi sebelum fajar di Selandia Baru (eksepsi KHGT).
+
+### 🇮🇩 2. MABIMS (New Criteria 2022)
+Digunakan secara resmi di Indonesia, Malaysia, Brunei, dan Singapura:
+- **Titik Referensi**: Sabang, Indonesia (titik paling barat untuk memaksimalkan peluang visibilitas).
+- **Syarat**: Tinggi hilal minimal **3°** dan elongasi minimal **6.4°**.
+- Jika syarat terpenuhi di Sabang, maka esok harinya adalah tanggal 1 Hijriyah untuk seluruh wilayah zona MABIMS.
+
+### 🕋 3. Umm al-Qura
+Kriteria resmi Arab Saudi:
+- Konjungsi (Ijtima) terjadi sebelum Matahari terbenam di Makkah.
+- Bulan terbenam setelah Matahari terbenam di Makkah.
+
+### 🔢 4. Wujudul Hilal
+Kriteria Muhammadiyah:
+- Konjungsi terjadi sebelum Maghrib.
+- Saat Maghrib, piringan atas piringan piringan Bulan berada di atas ufuk (Altitude > 0°).
+
+---
 
 ## Alur Orkestrasi (Service Layer)
 
-1. Tentukan target `Date` (UTC) dan lokasi `Lat/Lon`.
-2. Ambil tanggal Hijriyah **Tabular** sebagai pijakan awal untuk estimasi bulan dan tahun (`baseH`).
-3. Cari waktu **Ijtima (Konjungsi)** sebelumnya dalam rentang 30 hari menggunakan `FindPreviousIjtima`.
-4. Tentukan waktu evaluasi (Sunset/Maghrib) berdasarkan kriteria:
-   - **UMM_AL_QURA**: Lokasi Makkah.
-   - **MABIMS**: Lokasi Sabang (titik barat Indonesia).
-   - **Lokal**: Lokasi observer (`lat/lon`).
-   - **KHGT**: Pemindaian Global (tidak terikat satu lokasi).
-5. Tentukan apakah waktu request *sebelum* atau *sesudah* Maghrib.
-6. Tentukan `monthStartDate` (H+1 atau H+2 dari Ijtima) berdasarkan hasil evaluasi kriteria (`isNewMonth`).
-7. Hitung selisih hari (`daysElapsed`) antara target dengan awal bulan.
-8. Lakukan koreksi **Rollover** (jika `hDay < 1` atau `hDay > 30`) untuk menyesuaikan bulan dan tahun secara dinamis.
+1. **Inisialisasi**: Menentukan waktu target dan lokasi pengamat.
+2. **Backtrack Ijtima**: Mencari waktu konjungsi Bulan-Matahari sebelumnya untuk menentukan batasan bulan Hijriyah.
+3. **Sunset Detection**: Menggunakan *Bisection Search* untuk menemukan waktu terbenam Matahari yang presisi di lokasi referensi (Sabang untuk MABIMS, Makkah untuk Umm al-Qura, atau Lokal).
+4. **Visibilitas Hilal**: Menentukan apakah hilal memenuhi kriteria spesifik metode pada waktu Maghrib tersebut.
+5. **Dynamic Rollover**: Berdasarkan status `isNewMonth`, sistem menghitung `monthStartDate`. Selisih hari antara `target_date` dan `monthStartDate` akan menentukan angka hari Hijriyah, dengan penyesuaian otomatis jika terjadi pergantian bulan atau tahun di luar kalender tabular.
 
-## Mengatasi Limitasi "Hari H+1"
+## Penentuan Status Indikator
 
-Sistem secara dinamis menghitung hari Hijriyah (`hDay`) berdasarkan selisih waktu antara tanggal yang diminta dengan `monthStartDate` yang sudah dievaluasi. Logika ini memastikan pergantian bulan (rollover) terjadi secara akurat: menjadi hari ke-1 bulan selanjutnya jika kriteria hisab/rukyat terpenuhi, atau mengunci ke hari ke-30 (Istikmal) apabila hilal tidak terlihat. Penyesuaian bulan dan tahun juga dilakukan secara otomatis jika `hDay` berada di luar rentang bulan saat ini.
+Hilal Scope menyediakan indikator visual untuk membantu pengguna memahami status kriteria:
+- 🟢 **Memenuhi**: Semua syarat (Tinggi & Elongasi) terpenuhi.
+- 🟡 **Hampir**: Salah satu syarat terpenuhi atau sangat dekat dengan ambang batas.
+- 🔴 **Belum**: Tidak memenuhi syarat minimum.
