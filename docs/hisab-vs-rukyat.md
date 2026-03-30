@@ -1,12 +1,6 @@
-# 🌙 Hisab vs Rukyat di API v4
+# 🌙 Hisab Kontemporer vs Rukyat di API v4
 
 Kalender Hijriyah API v4 tidak menyatukan Hisab dan Rukyat, melainkan menampilkannya secara transparan dalam objek `methods`.
-
-## Hisab (Wujudul Hilal)
-
-- Menggunakan syarat *Sunset harus terjadi sesudah Ijtima (konjungsi)*.
-- Altitude > 0° saat Maghrib.
-- Deterministik murni geometris bumi-bulan-matahari.
 
 ## Rukyat (Imkanur Rukyat / MABIMS Baru 2022)
 

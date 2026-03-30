@@ -12,9 +12,9 @@ Dokumen ini menjelaskan alur orkestrasi dan logika falak yang digunakan Hilal Sc
 
 ### 🌍 1. KHGT (Kalender Hijriyah Global Tunggal)
 Berdasarkan Kongres Turki 2016, awal bulan dimulai secara global jika:
-- Di bagian mana pun di bumi (Global Scan), tinggi hilal minimal **5°** dan elongasi minimal **8°** saat Matahari terbenam.
+- Di bagian mana pun di bumi (**Global Scan**), tinggi hilal minimal **5°** dan elongasi minimal **8°** saat Matahari terbenam.
 - Terjadi sebelum pukul 00:00 UTC.
-- Jika syarat terpenuhi di benua Amerika (setelah 00:00 UTC), maka tetap berlaku untuk hari yang sama secara global jika kriteria terpenuhi sebelum fajar di Selandia Baru (eksepsi KHGT).
+- **Eksepsi Benua Amerika**: Jika syarat terpenuhi di benua Amerika (setelah 00:00 UTC), maka tetap berlaku untuk hari yang sama secara global jika kriteria terpenuhi sebelum fajar di Selandia Baru. Hilal Scope menggunakan pemindaian 24 jam yang deterministik untuk memastikan validitas eksepsi ini.
 
 ### 🇮🇩 2. MABIMS (New Criteria 2022)
 Digunakan secara resmi di Indonesia, Malaysia, Brunei, dan Singapura:
@@ -24,13 +24,10 @@ Digunakan secara resmi di Indonesia, Malaysia, Brunei, dan Singapura:
 
 ### 🕋 3. Umm al-Qura
 Kriteria resmi Arab Saudi:
+- **Titik Referensi**: Ka'bah, Makkah.
 - Konjungsi (Ijtima) terjadi sebelum Matahari terbenam di Makkah.
 - Bulan terbenam setelah Matahari terbenam di Makkah.
-
-### 🔢 4. Wujudul Hilal
-Kriteria Muhammadiyah:
-- Konjungsi terjadi sebelum Maghrib.
-- Saat Maghrib, piringan atas piringan piringan Bulan berada di atas ufuk (Altitude > 0°).
+- Hilal Scope menyediakan `reference_altitude` dan `reference_elongation` khusus untuk koordinat Makkah pada metode ini.
 
 ---
 

@@ -13,7 +13,8 @@ Hilal Scope menggunakan model astronomi *real-time* berbasis data ephemeris stan
 
 - **Global Scan KHGT Check**: Bisection Search untuk mendeteksi Sunset & Fajr dalam lingkup *sliding window* 24-jam di seluruh dunia (batas ±65° lintang).
 - **Topocentric AltAz**: Proyeksi vektor Ecliptic ke geometri Zenith observer lokal, digunakan untuk kriteria **MABIMS** (dengan referensi Sabang) dan **Umm al-Qura**.
-- **Geocentric Altitude**: Menggunakan frame Body-Fixed (IAU_EARTH) untuk kebutuhan hisab global (**KHGT** dan **Wujudul Hilal**).
+- **Geocentric Altitude**: Menggunakan frame Body-Fixed (IAU_EARTH) untuk kebutuhan hisab global (**KHGT**).
+- **Topocentric Elongation**: Sejak v4.1.0, perhitungan elongasi (jarak sudut Bulan-Matahari) diubah dari **Geosentris** ke **Toposentris**. Hal ini memberikan data yang lebih akurat sesuai dengan apa yang benar-benar dilihat oleh pengamat di permukaan Bumi, terutama untuk kriteria visibilitas hilal yang sangat sensitif.
 - **Refraksi Atmosfer**: Koreksi refraksi (model Bennett/Sæmundsson) diterapkan pada kriteria toposentris untuk akurasi visual yang lebih baik.
 
 ## 🛠 Arsitektur Teknis: SPICE & CGO
@@ -48,4 +49,4 @@ CGO_ENABLED=1 go run cmd/api/main.go
 
 - **Akurasi**: Data posisi memiliki tingkat ketelitian mili-arcsecond, namun hasil akhir sangat bergantung pada kriteria fikih yang dipilih.
 - **Limitasi**: Pada lintang ekstrem (di atas ±65°), perhitungan Sunset/Fajr menggunakan metode koreksi khusus untuk menangani fenomena matahari tengah malam atau malam kutub.
-imitasi kriteria visibilitas spesifik, bukan penampakan visual (Optik).
+- **Visibilitas**: Model ini menghitung kriteria visibilitas spesifik (threshold), bukan simulasi penampakan visual optik (teleskopik).

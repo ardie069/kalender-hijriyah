@@ -12,11 +12,11 @@
 ## 🚀 Fitur Unggulan
 
 - 🔭 **NASA-Grade Precision**: Menggunakan kernel `de440s.bsp` untuk akurasi data posisi Bulan dan Matahari yang ekstrem.
-- 🌍 **KHGT (Unified Global Hijri Calendar)**: Implementasi Kalender Hijriyah Global Tunggal dengan optimasi pemindaian visibilitas global (Scan 24 jam).
-- 🇮🇩 **MABIMS (Sabang Reference)**: Penentuan awal bulan berdasarkan titik geografis paling barat Indonesia (Sabang) sesuai standar Kemenag 2022.
-- 📊 **Rich Lunar Telemetry**: Data altitude, elongation, illumination, dan fase bulan secara real-time maupun prediktif.
-- 🕋 **Multi-Location Hijri**: Mendukung perhitungan toposentris (lokal observer) dan geosentris.
-- ⚡ **Serverless Ready**: Teroptimasi untuk dideploy di **Vercel** dengan penanganan khusus pustaka CGO/CSPICE.
+- 🌍 **KHGT (Unified Global Hijri Calendar)**: Implementasi KHGT dengan pemindaian visibilitas global 24 jam yang deterministik.
+- 🇮🇩 **MABIMS (Sabang Reference)**: Penentuan awal bulan berdasarkan titik Sabang sesuai standar MABIMS 2022.
+- 🕋 **Umm al-Qura (Makkah Reference)**: Simulasi kalender resmi Saudi dengan telemetri spesifik koordinat Makkah.
+- 📊 **Rich Lunar Telemetry**: Data altitude (apparent), topocentric elongation, illumination, moon phase name, dan jarak Bumi-Bulan.
+- 📍 **Mandatory Coordinates**: Parameter `lat` dan `lon` wajib untuk akurasi data toposentris (lokal observer).
 
 ---
 
