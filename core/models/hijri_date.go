@@ -57,3 +57,17 @@ type YearlyCalendarResponse struct {
 	Method string          `json:"method"`
 	Months []CalendarMonth `json:"months"`
 }
+
+type MonthDayInfo struct {
+	GregorianDate string                `json:"gregorian_date"`
+	Tabular       HijriDate             `json:"tabular"`
+	Corrections   map[string]HijriDate `json:"corrections"`
+}
+
+type GregorianMonthResponse struct {
+	Year  int            `json:"year"`
+	Month int            `json:"month"`
+	Lat   float64        `json:"lat"`
+	Lon   float64        `json:"lon"`
+	Days  []MonthDayInfo `json:"days"`
+}

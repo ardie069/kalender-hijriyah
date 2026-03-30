@@ -43,7 +43,7 @@ func (s *DateService) GetFullCalendarInfo(t time.Time, lat, lon float64) models.
 	realtimeTel, _ := s.Astro.GetMoonTelemetry(tUTC, lat, lon)
 
 	// Methods to evaluate
-	methodList := []string{"TABULAR", "MABIMS", "WUJUDUL_HILAL", "KHGT", "UMM_AL_QURA"}
+	methodList := []string{"TABULAR", "MABIMS", "KHGT", "UMM_AL_QURA"}
 
 	// Process methods sequentially.
 	// SPICE is serialized via mutex, so goroutines here only add overhead.
@@ -89,8 +89,8 @@ func (s *DateService) GetFullCalendarInfo(t time.Time, lat, lon float64) models.
 			result.CurrentElongation = &elong
 		}
 
-		// 3. Predictions for the 29th of the Hijri Month
-		if result.HijriDate.Day <= 29 {
+		// 3. Predictions for the 29th of the Hijri Month (Skip for TABULAR)
+		if m != "TABULAR" && result.HijriDate.Day <= 29 {
 			daysTo29 := 29 - result.HijriDate.Day
 			searchDateMethod := targetDay.AddDate(0, 0, daysTo29)
 			searchDateMethod = time.Date(searchDateMethod.Year(), searchDateMethod.Month(), searchDateMethod.Day(), 12, 0, 0, 0, time.UTC)
@@ -154,4 +154,39 @@ func (s *DateService) GetHijriTargetDate(t time.Time, lat, lon float64) time.Tim
 		return tUTC.Add(24 * time.Hour)
 	}
 	return tUTC
+}
+
+// GetGregorianMonthInfo returns Hijri info for all days in a Gregorian month.
+func (s *DateService) GetGregorianMonthInfo(year, month int, lat, lon float64) models.GregorianMonthResponse {
+	resp := models.GregorianMonthResponse{
+		Year:  year,
+		Month: month,
+		Lat:   lat,
+		Lon:   lon,
+		Days:  make([]models.MonthDayInfo, 0, 31),
+	}
+
+	startDate := time.Date(year, time.Month(month), 1, 12, 0, 0, 0, time.UTC)
+	for d := startDate; d.Month() == time.Month(month); d = d.AddDate(0, 0, 1) {
+		dayInfo := models.MonthDayInfo{
+			GregorianDate: d.Format("2006-01-02"),
+			Corrections:   make(map[string]models.HijriDate),
+		}
+
+		// 1. Tabular
+		dayInfo.Tabular = calendar.GetTabularHijri(d)
+		dayInfo.Tabular.IsTabular = true
+
+		// 2. Corrections (Only if they differ or for common display)
+		methods := []string{"KHGT", "UMM_AL_QURA", "MABIMS"}
+		for _, m := range methods {
+			resolved := s.ResolveDynamicHijriDate(m, d, lat, lon)
+			// Selalu tambahkan agar frontend gampang bandingin
+			dayInfo.Corrections[m] = resolved
+		}
+
+		resp.Days = append(resp.Days, dayInfo)
+	}
+
+	return resp
 }

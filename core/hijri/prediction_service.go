@@ -74,12 +74,7 @@ func (s *DateService) calculateMethodPrediction(m string, searchDate time.Time, 
 		}
 		pred.IsNewMonth = (monthLen == 29)
 		pred.CheckDateUTC = searchDate // Stable reference for tabular
-	case "WUJUDUL_HILAL":
-		// Wujudul Hilal requires geocentric altitude
-		altGeo, _ := s.Astro.CalculateGeocentricParamsGlobal(sunset, checkLat, checkLon)
-		pred.Altitude = altGeo
-		pred.AltitudeApparent = nil // Exclude for geocentric-based methods
-		pred.IsNewMonth = calendar.IsWujudulHilal(altGeo, sunset.After(ijtima))
+
 	case "KHGT":
 		khgtResult := s.Cal.ScanGlobalKHGT(sunset, ijtima)
 		if khgtResult.BestVisibility != nil {

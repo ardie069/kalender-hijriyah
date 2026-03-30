@@ -169,3 +169,23 @@ func (h *HijriHandler) GetYearlyCalendar(ctx *gin.Context) {
 	result := h.CalendarSvc.GetYearlyCalendar(year, lat, lon, method)
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": result})
 }
+
+func (h *HijriHandler) GetGregorianMonth(ctx *gin.Context) {
+	yearStr := ctx.Query("year")
+	monthStr := ctx.Query("month")
+	latStr := ctx.Query("lat")
+	lonStr := ctx.Query("lon")
+
+	if yearStr == "" || monthStr == "" || latStr == "" || lonStr == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Parameter year, month, lat, dan lon wajib disertakan."})
+		return
+	}
+
+	year, _ := strconv.Atoi(yearStr)
+	month, _ := strconv.Atoi(monthStr)
+	lat, _ := strconv.ParseFloat(latStr, 64)
+	lon, _ := strconv.ParseFloat(lonStr, 64)
+
+	result := h.DateSvc.GetGregorianMonthInfo(year, month, lat, lon)
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": result})
+}

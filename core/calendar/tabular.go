@@ -20,8 +20,8 @@ var LeapYears = map[int]bool{
 }
 var MonthNames = []string{
 	"Muharram", "Safar", "Rabi'ul Awwal", "Rabi'ul Akhir",
-	"Jumadil Awwal", "Jumadil Akhir", "Rajab", "Sya'ban",
-	"Ramadan", "Syawal", "Zulqa'dah", "Zulhijjah",
+	"Jumadil Awwal", "Jumadil Akhirah", "Rajab", "Sha'ban",
+	"Ramadan", "Shawwal", "Dhul-Qadah", "Dhul-Hijjah",
 }
 
 func GetTabularHijri(t time.Time) models.HijriDate {

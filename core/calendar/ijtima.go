@@ -38,9 +38,10 @@ func (l *Logic) FindIjtima(approxDate time.Time) (time.Time, error) {
 
 // FindPreviousIjtima: Nyari ijtima terakhir sebelum atau sekitar tanggal target
 func (l *Logic) FindPreviousIjtima(t time.Time) (time.Time, error) {
-	// Mundur 15 hari buat nyari konjungsi yang mendasari bulan ini.
-	// FindIjtima nyari +/- 15 hari dari titik ini, jadi total nyari di [t-30, t].
-	return l.FindIjtima(t.AddDate(0, 0, -15))
+	// Mundur 16 hari buat nyari konjungsi yang mendasari bulan ini.
+	// FindIjtima nyari +/- 15 hari dari titik ini, jadi total nyari di [t-31, t-1].
+	// Ini memastikan ijtima yang baru terjadi "hari ini" tidak terambil sebagai ijtima bulan lalu.
+	return l.FindIjtima(t.AddDate(0, 0, -16))
 }
 
 func (l *Logic) getLongitudeDiff(et float64) (float64, error) {

@@ -48,7 +48,7 @@ Memberikan simulasi kalender tahunan berdasarkan metode tertentu.
 - `year` (wajib): Tahun yang ingin dicari (Contoh: `2026`).
 - `lat` (wajib): Latitude lokasi pengamat.
 - `lon` (wajib): Longitude lokasi pengamat.
-- `method` (opsional): Metode yang digunakan (`KHGT`, `MABIMS`, `UMM_AL_QURA`, `WUJUDUL_HILAL`, `TABULAR`). Default: `KHGT`.
+- `method` (opsional): Metode yang digunakan (`KHGT`, `MABIMS`, `UMM_AL_QURA`, `TABULAR`). Default: `KHGT`.
 
 ---
 

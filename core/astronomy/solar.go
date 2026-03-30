@@ -5,49 +5,68 @@ import (
 	"time"
 )
 
-// GetTimeByAltitude: Cari waktu ketika benda (body) mencapai altitude tertentu (bisection search)
+// GetTimeByAltitude: Mencari waktu saat benda mencapai altitude tertentu dalam jendela 36 jam dari tengah malam.
 func (em *EphemerisManager) GetTimeByAltitude(date time.Time, lat, lon, targetAlt float64, rising bool, body string) (time.Time, error) {
-	approxNoonUTC := 12.0 - (lon / 15.0)
-	base := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
-	noon := base.Add(time.Duration(approxNoonUTC*3600) * time.Second)
+	// Mulai dari tengah malam waktu lokal (pendekatan UTC)
+	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC).Add(time.Duration(-(lon / 15.0) * float64(time.Hour)))
+	end := start.Add(36 * time.Hour) // Scan 36 jam untuk Bulan
 
-	var start, end time.Time
-	if rising {
-		start = noon.Add(-10 * time.Hour)
-		end = noon.Add(2 * time.Hour)
-	} else {
-		start = noon.Add(-2 * time.Hour)
-		end = noon.Add(10 * time.Hour)
-	}
+	return em.FindAltitudeCrossing(body, start, end, lat, lon, targetAlt, rising)
+}
 
-	low := TimeToEt(start)
-	high := TimeToEt(end)
-
-	for range 30 {
-		mid := (low + high) / 2
-		pos, err := em.GetTopocentricPosition(body, mid, lat, lon)
-		if err != nil {
-			return time.Time{}, err
+// FindAltitudeCrossing: Scan interval demi interval untuk menemukan crossing altitude.
+func (em *EphemerisManager) FindAltitudeCrossing(body string, start, end time.Time, lat, lon, targetAlt float64, rising bool) (time.Time, error) {
+	step := time.Hour
+	for t := start; t.Before(end); t = t.Add(step) {
+		t1 := t
+		t2 := t.Add(step)
+		if t2.After(end) {
+			t2 = end
 		}
-		currentAlt, _ := em.GetLocalAltAz(pos, lat, lon)
-		currentAlt += ApplyRefraction(currentAlt)
 
-		if rising {
-			if currentAlt < targetAlt {
-				low = mid
-			} else {
-				high = mid
+		et1 := TimeToEt(t1)
+		et2 := TimeToEt(t2)
+
+		pos1, _ := em.GetTopocentricPosition(body, et1, lat, lon)
+		alt1, _ := em.GetLocalAltAz(pos1, lat, lon)
+		if body == "SUN" || body == "MOON" {
+			alt1 += ApplyRefraction(alt1)
+		}
+
+		pos2, _ := em.GetTopocentricPosition(body, et2, lat, lon)
+		alt2, _ := em.GetLocalAltAz(pos2, lat, lon)
+		if body == "SUN" || body == "MOON" {
+			alt2 += ApplyRefraction(alt2)
+		}
+
+		if (rising && alt1 < targetAlt && alt2 > targetAlt) || (!rising && alt1 > targetAlt && alt2 < targetAlt) {
+			low := et1
+			high := et2
+			for range 30 {
+				mid := (low + high) / 2
+				posM, _ := em.GetTopocentricPosition(body, mid, lat, lon)
+				altM, _ := em.GetLocalAltAz(posM, lat, lon)
+				if body == "SUN" || body == "MOON" {
+					altM += ApplyRefraction(altM)
+				}
+				if rising {
+					if altM < targetAlt {
+						low = mid
+					} else {
+						high = mid
+					}
+				} else {
+					if altM > targetAlt {
+						low = mid
+					} else {
+						high = mid
+					}
+				}
 			}
-		} else {
-			if currentAlt > targetAlt {
-				low = mid
-			} else {
-				high = mid
-			}
+			return Et2Utc((low + high) / 2), nil
 		}
 	}
-
-	return Et2Utc((low + high) / 2), nil
+	return time.Time{}, nil
 }
 
 // GetSolarTransit: Cari waktu kulminasi matahari / Dhuhr (golden section search)
@@ -128,9 +147,14 @@ func (em *EphemerisManager) GetIsha(date time.Time, lat, lon float64) (time.Time
 	return em.GetTimeByAltitude(date, lat, lon, -18.0, false, "SUN")
 }
 
-// GetMoonset: Waktu terbenam bulan (altitude = -0.583° untuk standar toposentrik)
+// GetMoonset: Waktu terbenam bulan (altitude = 0° sesuai permintaan pengguna untuk crossing horizon)
 func (em *EphemerisManager) GetMoonset(date time.Time, lat, lon float64) (time.Time, error) {
-	return em.GetTimeByAltitude(date, lat, lon, -0.583, false, "MOON")
+	return em.GetTimeByAltitude(date, lat, lon, 0.0, false, "MOON")
+}
+
+// GetMoonrise: Waktu terbit bulan (altitude = 0° sesuai permintaan pengguna untuk crossing horizon)
+func (em *EphemerisManager) GetMoonrise(date time.Time, lat, lon float64) (time.Time, error) {
+	return em.GetTimeByAltitude(date, lat, lon, 0.0, true, "MOON")
 }
 
 // GetFajr: Waktu Subuh (altitude = -18.0°)

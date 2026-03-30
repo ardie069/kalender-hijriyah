@@ -84,6 +84,19 @@ func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (m
 	altTopo, azTopo := a.Manager.GetLocalAltAz(topoMoon, latitude, longitude)
 
 	altApparent := altTopo + ApplyRefraction(altTopo)
+	// 6. Moonrise & Moonset: Cari terbit hari ini, dan terbenam setelah terbit tersebut.
+	moonrise, _ := a.Manager.GetMoonrise(dt, latitude, longitude)
+	
+	// Cari terbenam. Jika terbit ditemukan, cari terbenam setelah waktu terbit.
+	// Jika tidak, cari terbenam terdekat hari ini.
+	var moonset time.Time
+	if !moonrise.IsZero() {
+		// Cari terbenam dalam 24 jam setelah terbit
+		moonset, _ = a.Manager.FindAltitudeCrossing("MOON", moonrise, moonrise.Add(24*time.Hour), latitude, longitude, 0.0, false)
+	} else {
+		moonset, _ = a.Manager.GetMoonset(dt, latitude, longitude)
+	}
+
 	return models.MoonTelemetry{
 		Altitude:         altTopo,
 		AltitudeApparent: &altApparent,
@@ -92,6 +105,8 @@ func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (m
 		Illumination:     illumination,
 		DistanceKM:       moonPosGeo.Norm(),
 		PhaseName:        getPhaseName(illumination, isWaxing),
+		Moonrise:         &moonrise,
+		Moonset:          &moonset,
 		Timestamp:        dt.UTC(),
 	}, nil
 }
@@ -127,6 +142,10 @@ func (a *Adapter) CalculateGeocentricParamsGlobal(dt time.Time, lat, lon float64
 
 func (a *Adapter) GetFajr(date time.Time, lat, lon float64) (time.Time, error) {
 	return a.Manager.GetFajr(date, lat, lon)
+}
+
+func (a *Adapter) GetMoonrise(date time.Time, lat, lon float64) (time.Time, error) {
+	return a.Manager.GetMoonrise(date, lat, lon)
 }
 
 func (a *Adapter) GetMoonset(date time.Time, lat, lon float64) (time.Time, error) {

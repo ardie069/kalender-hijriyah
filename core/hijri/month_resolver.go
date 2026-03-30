@@ -10,11 +10,6 @@ import (
 
 // ResolveDynamicHijriDate resolves the Hijri date for a specific method on the target day.
 func (s *DateService) ResolveDynamicHijriDate(m string, targetDay time.Time, lat, lon float64) models.HijriDate {
-	// Pijakan dasar: Gunakan tabular untuk tahu kita di bulan dan tahun berapa secara kasar.
-	// Tabular cukup akurat dalam margin +/- 2 hari.
-	stableNoon := time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), 12, 0, 0, 0, time.UTC)
-	baseH := calendar.GetTabularHijri(stableNoon)
-
 	// 1. Tentukan Ijtima yang mendasari bulan ini.
 	// FindPreviousIjtima akan mencari dalam rentang [targetDay-30, targetDay].
 	prevIjtima, _ := s.Cal.FindPreviousIjtima(targetDay)
@@ -58,6 +53,7 @@ func (s *DateService) ResolveDynamicHijriDate(m string, targetDay time.Time, lat
 			isNewMonth = khgtRes2.IsGlobalValid
 		}
 
+
 	default:
 		// Metode Lokal (Wujudul Hilal, dll)
 		sunsetCheck, _ = s.Astro.GetSunset(sunsetCheckDate, lat, lon)
@@ -87,31 +83,29 @@ func (s *DateService) ResolveDynamicHijriDate(m string, targetDay time.Time, lat
 
 	hDay := daysElapsed + 1
 
-	evalMonth := baseH.Month
-	evalYear := baseH.Year
+	// --- LOGIKA PENENTUAN BULAN ---
+	// Gunakan Lunasi dari Epoch (JD 1948439.5) untuk mencari angka bulan yang pasti.
+	// 1 Muharram 1 H punya JD 1948439.5.
+	monthStartJD := float64(monthStartNoon.Unix())/86400.0 + 2440587.5
+	monthsSinceEpoch := int(math.Round((monthStartJD - 1948439.5) / 29.53059))
+	
+	evalYear := (monthsSinceEpoch / 12) + 1
+	evalMonth := (monthsSinceEpoch % 12) + 1
 
-	// Jika hDay < 1, berarti kita masih di bulan sebelumnya
+	// Fallback handle jika hDay < 1 atau > 30 (biasanya karena transisi ijtima di tengah hari)
 	if hDay < 1 {
+		hDay += 30
 		evalMonth--
 		if evalMonth < 1 {
 			evalMonth = 12
 			evalYear--
 		}
-		hDay += 30
 	} else if hDay > 30 {
 		hDay -= 30
 		evalMonth++
 		if evalMonth > 12 {
 			evalMonth = 1
 			evalYear++
-		}
-	} else if hDay > 29 && !isNewMonth {
-		if baseH.Day == 1 {
-			evalMonth--
-			if evalMonth < 1 {
-				evalMonth = 12
-				evalYear--
-			}
 		}
 	}
 
