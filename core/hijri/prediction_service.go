@@ -97,7 +97,7 @@ func (s *DateService) calculateMethodPrediction(m string, searchDate time.Time, 
 		pred.IsNewMonth = khgtResult.IsGlobalValid
 	case "UMM_AL_QURA":
 		pred.IsNewMonth = calendar.IsUmmAlQura(ijtima, sunset, moonset)
-	case "MABIMS_LOCAL":
+	case "MABIMS", "MABIMS_LOCAL":
 		resLocal := s.Cal.EvaluateLocalHisab("MABIMS", sunset, tel, sunset, moonset, ijtima)
 		pred.IsNewMonth = resLocal.IsNewMonth
 	default:
