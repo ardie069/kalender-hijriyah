@@ -4,6 +4,14 @@ Semua perubahan penting pada proyek ini akan didokumentasikan di file ini.
 
 Format changelog ini berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), dan proyek ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.1] - 2026-03-30
+
+### 🚀 Peningkatan & Refactor (Improved/Refactored)
+- Optimasi dan penyederhanaan logika resolusi bulan Hijriyah (Hijri date resolution) untuk stabilitas yang lebih baik.
+- Penambahan alias metode **MABIMS** pada layanan prediksi untuk kemudahan integrasi.
+
+---
+
 ## [4.2.0] - 2026-03-30
 
 ### ✨ Fitur Baru (Added)
