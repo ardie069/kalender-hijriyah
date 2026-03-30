@@ -32,35 +32,62 @@ func (em *EphemerisManager) GetTopocentricPosition(target string, et, lat, lon f
 	}, nil
 }
 
-// GetLocalAltAz: Transformasi vektor toposentrik ke Altitude dan Azimuth lokal
+// GetLocalAltAz: Transformasi vektor toposentrik ke Altitude dan Azimuth lokal (Toposentrik)
 func (em *EphemerisManager) GetLocalAltAz(pos Vector3, lat, lon float64) (float64, float64) {
+	x, y, z := ecefToHorizon(pos, lat, lon)
+
+	dist := pos.Norm()
+	if dist < 1e-9 {
+		return -90, 0
+	}
+
+	alt := math.Asin(z/dist) * 180.0 / math.Pi
+	az := math.Atan2(y, x) * 180.0 / math.Pi
+	if az < 0 {
+		az += 360.0
+	}
+	return alt, az
+}
+
+// GetGeocentricAltAz: Transformasi geometri dari IAU_EARTH ke horizon lokal (Geosentris)
+// Digunakan untuk kriteria KHGT/Muhammadiyah di mana posisi bulan geosentris
+// diproyeksikan ke horizon pengamat tanpa koreksi paralaks.
+func (em *EphemerisManager) GetGeocentricAltAz(pos Vector3, lat, lon float64) (float64, float64) {
+	x, y, z := ecefToHorizon(pos, lat, lon)
+
+	// Jarak (dist) adalah norm dari vektor posisi (rotasi mempertahankan magnitude)
+	dist := pos.Norm()
+	if dist < 1e-9 {
+		return -90, 0
+	}
+
+	// Hitung Altitude Geosentris
+	geoAlt := math.Asin(z/dist) * 180.0 / math.Pi
+
+	// Hitung Azimuth (North-based: North=0, East=90)
+	az := math.Atan2(y, x) * 180.0 / math.Pi
+	if az < 0 {
+		az += 360.0
+	}
+
+	return geoAlt, az
+}
+
+// ecefToHorizon mengubah vektor dalam frame IAU_EARTH (ECEF) ke sistem koordinat lokal (NEU: North-East-Up)
+func ecefToHorizon(pos Vector3, lat, lon float64) (x, y, z float64) {
 	latRad := lat * math.Pi / 180.0
 	lonRad := lon * math.Pi / 180.0
 
 	sinLat, cosLat := math.Sin(latRad), math.Cos(latRad)
 	sinLon, cosLon := math.Sin(lonRad), math.Cos(lonRad)
 
-	// Transformasi ke Toposentrik (North-East-Down)
-	x := -sinLat*cosLon*pos.X - sinLat*sinLon*pos.Y + cosLat*pos.Z
-	y := -sinLon*pos.X + cosLon*pos.Y
-	z := cosLat*cosLon*pos.X + cosLat*sinLon*pos.Y + sinLat*pos.Z
+	// Matrix Rotasi ECEF -> Horizontal (North-East-Up)
+	// x = North
+	x = -sinLat*cosLon*pos.X - sinLat*sinLon*pos.Y + cosLat*pos.Z
+	// y = East
+	y = -sinLon*pos.X + cosLon*pos.Y
+	// z = Up (Zenith)
+	z = cosLat*cosLon*pos.X + cosLat*sinLon*pos.Y + sinLat*pos.Z
 
-	hyp := math.Sqrt(x*x + y*y + z*z)
-	if hyp < 1e-9 {
-		return -90, 0 // Fallback untuk posisi nol (pusat bumi)
-	}
-
-	ratio := z / hyp
-	if ratio > 1.0 {
-		ratio = 1.0
-	} else if ratio < -1.0 {
-		ratio = -1.0
-	}
-
-	geoAlt := math.Asin(ratio) * 180.0 / math.Pi
-	az := math.Atan2(y, x) * 180.0 / math.Pi
-	if az < 0 {
-		az += 360.0
-	}
-	return geoAlt, az
+	return x, y, z
 }

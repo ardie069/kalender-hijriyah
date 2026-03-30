@@ -89,7 +89,7 @@ func (l *Logic) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time)
 
 			moonVec := vectors.InterpolateVector("MOON", preciseSunset)
 			sunVec := vectors.InterpolateVector("SUN", preciseSunset)
-			altGeo, _ := l.Astro.Manager.GetLocalAltAz(moonVec, lat, ln)
+			altGeo, _ := l.Astro.Manager.GetGeocentricAltAz(moonVec, lat, ln)
 
 			uSun := sunVec.Unit()
 			uMoon := moonVec.Unit()
