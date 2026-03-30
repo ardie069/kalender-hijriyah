@@ -32,11 +32,6 @@ func (l *Logic) EvaluateLocalHisab(method string, t time.Time, tel models.MoonTe
 		if isMoonAfterSun {
 			res.IsNewMonth = IsMABIMS(alt, elong)
 		}
-	case "TURKEY_2016":
-		if isMoonAfterSun {
-			res.IsNewMonth = IsTurkey2016(alt, elong)
-		}
-
 	}
 	return res
 }

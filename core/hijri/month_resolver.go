@@ -55,16 +55,9 @@ func (s *DateService) ResolveDynamicHijriDate(m string, targetDay time.Time, lat
 
 
 	default:
-		// Metode Lokal (Wujudul Hilal, dll)
-		sunsetCheck, _ = s.Astro.GetSunset(sunsetCheckDate, lat, lon)
-		if sunsetCheck.Before(prevIjtima) {
-			sunsetCheckDate = sunsetCheckDate.AddDate(0, 0, 1)
-			sunsetCheck, _ = s.Astro.GetSunset(sunsetCheckDate, lat, lon)
-		}
-		moonsetCheck, _ := s.Astro.GetMoonset(sunsetCheck, lat, lon)
-		telCheck, _ := s.Astro.GetMoonTelemetry(sunsetCheck, lat, lon)
-		resLocal := s.Cal.EvaluateLocalHisab(m, sunsetCheck, telCheck, sunsetCheck, moonsetCheck, prevIjtima)
-		isNewMonth = resLocal.IsNewMonth
+		// Unknown method: Fallback to KHGT or empty
+		khgtRes := s.Cal.ScanGlobalKHGT(sunsetCheckDate, prevIjtima)
+		isNewMonth = khgtRes.IsGlobalValid
 	}
 
 	// 3. Konklusi: Kapan tanggal 1-nya?

@@ -111,7 +111,7 @@ func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (m
 	}, nil
 }
 
-// CalculateGeocentricParams returns topocentric parameters for local evaluation (MABIMS/Wujudul Hilal)
+// CalculateGeocentricParams returns topocentric parameters for local evaluation (e.g., MABIMS)
 func (a *Adapter) CalculateGeocentricParams(et float64, lat, lon float64) (altitude, elongation float64) {
 	topoSun, _ := a.Manager.GetTopocentricPosition(Sun, et, lat, lon)
 	topoMoon, err := a.Manager.GetTopocentricPosition(Moon, et, lat, lon)

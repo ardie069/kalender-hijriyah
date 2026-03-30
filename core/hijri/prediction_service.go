@@ -101,8 +101,8 @@ func (s *DateService) calculateMethodPrediction(m string, searchDate time.Time, 
 		resLocal := s.Cal.EvaluateLocalHisab("MABIMS", sunset, tel, sunset, moonset, ijtima)
 		pred.IsNewMonth = resLocal.IsNewMonth
 	default:
-		resLocal := s.Cal.EvaluateLocalHisab(m, sunset, tel, sunset, moonset, ijtima)
-		pred.IsNewMonth = resLocal.IsNewMonth
+		// Not implemented or unsupported method
+		pred.IsNewMonth = false
 	}
 
 	return pred, nil
