@@ -7,27 +7,30 @@ import (
 )
 
 func (l *Logic) FindIjtima(approxDate time.Time) (time.Time, error) {
-	// Cari dalam rentang 30 hari (biar pasti ketemu 1 fase konjungsi)
-	startET, err := astronomy.Str2et(approxDate.AddDate(0, 0, -15).Format(astronomy.TimeFormat))
-	if err != nil {
-		return time.Time{}, err
-	}
-	endET, err := astronomy.Str2et(approxDate.AddDate(0, 0, 15).Format(astronomy.TimeFormat))
+	// 1. Get current longitude difference as an estimate
+	et, _ := astronomy.Str2et(approxDate.Format(astronomy.TimeFormat))
+	diff, err := l.getLongitudeDiff(et)
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	low, high := startET, endET
+	// Moon moves ~12.2 degrees per day relative to Sun.
+	// Estimated days since/until ijtima: diff (radians) / (12.2 * PI / 180)
+	daysDiff := diff / (12.19 * math.Pi / 180.0)
+	estIjtimaET := et - (daysDiff * 86400.0)
+
+	// 2. Search in a narrow 4-day window around the estimate
+	low := estIjtimaET - (2 * 86400.0)
+	high := estIjtimaET + (2 * 86400.0)
 	var mid float64
 
-	// Gunakan 60 iterasi biar makin sakti
 	for range 60 {
 		mid = (low + high) / 2
-		diff, err := l.getLongitudeDiff(mid)
+		d, err := l.getLongitudeDiff(mid)
 		if err != nil {
 			return time.Time{}, err
 		}
-		if diff > 0 {
+		if d > 0 {
 			high = mid
 		} else {
 			low = mid

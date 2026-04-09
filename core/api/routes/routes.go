@@ -40,7 +40,9 @@ func SetupRoutes(router *gin.Engine, hijriHandler *handlers.HijriHandler, prayer
 			hijri.GET("/search", hijriHandler.SearchDate)
 			hijri.GET("/calendar", hijriHandler.GetYearlyCalendar)
 			hijri.GET("/month", hijriHandler.GetGregorianMonth)
+			hijri.GET("/visibility-map", hijriHandler.GetVisibilityMap)
 		}
+
 
 		moon := g.Group("/moon")
 		{

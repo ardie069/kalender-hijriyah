@@ -7,9 +7,26 @@ import (
 
 // GetTimeByAltitude: Mencari waktu saat benda mencapai altitude tertentu dalam jendela 36 jam dari tengah malam.
 func (em *EphemerisManager) GetTimeByAltitude(date time.Time, lat, lon, targetAlt float64, rising bool, body string) (time.Time, error) {
-	// Mulai dari tengah malam waktu lokal (pendekatan UTC)
-	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC).Add(time.Duration(-(lon / 15.0) * float64(time.Hour)))
-	end := start.Add(36 * time.Hour) // Scan 36 jam untuk Bulan
+	// Calculate approximate local noon in UTC
+	approxNoonUTC := 12.0 - (lon / 15.0)
+	base := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+	noon := base.Add(time.Duration(approxNoonUTC*3600) * time.Second)
+
+	var start, end time.Time
+	if rising {
+		// Morning events (Fajr, Sunrise): Search from local midnight (-12h from noon)
+		start = noon.Add(-12 * time.Hour)
+		end = noon.Add(6 * time.Hour)
+	} else {
+		// Evening events (Sunset, Isha): Search around and after local noon
+		start = noon.Add(-6 * time.Hour)
+		end = noon.Add(14 * time.Hour)
+	}
+
+	// Moon cycles are longer, extend window to ensure we don't miss crossing
+	if body == "MOON" {
+		end = start.Add(36 * time.Hour)
+	}
 
 	return em.FindAltitudeCrossing(body, start, end, lat, lon, targetAlt, rising)
 }

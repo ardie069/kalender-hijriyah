@@ -12,6 +12,7 @@ import (
 	"github.com/ardie069/kalender-hijriyah/core/hijri"
 	"github.com/ardie069/kalender-hijriyah/core/prayer"
 	"github.com/ardie069/kalender-hijriyah/core/timezone"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,6 +42,7 @@ func main() {
 	prayerCalc := prayer.NewCalculator(adapter)
 
 	r := gin.Default()
+	r.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	// 3. Setup Handlers dan Routes
 	prayerHandler := handlers.NewPrayerHandler(prayerCalc, dateSvc, tzSvc)

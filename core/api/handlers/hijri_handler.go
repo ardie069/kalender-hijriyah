@@ -189,3 +189,30 @@ func (h *HijriHandler) GetGregorianMonth(ctx *gin.Context) {
 	result := h.DateSvc.GetGregorianMonthInfo(year, month, lat, lon)
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": result})
 }
+
+// GetVisibilityMap - Peta Visibilitas Hilal Global
+func (h *HijriHandler) GetVisibilityMap(ctx *gin.Context) {
+	dateStr := ctx.Query("date")
+	method := ctx.DefaultQuery("method", "KHGT")
+
+	var targetDate time.Time
+	if dateStr == "" {
+		targetDate = time.Now().UTC()
+	} else {
+		parsedDate, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Format tanggal salah. Gunakan YYYY-MM-DD."})
+			return
+		}
+		targetDate = parsedDate
+	}
+
+	result, err := h.DateSvc.GenerateVisibilityGrid(targetDate, method)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat peta visibilitas: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": result})
+}
+

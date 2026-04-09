@@ -35,9 +35,9 @@ func (s *DateService) calculateMethodPrediction(m string, searchDate time.Time, 
 		return nil, err
 	}
 
-	ijtima, err := s.Cal.FindIjtima(searchDate.AddDate(0, 0, -5))
+	ijtima, err := s.Cal.FindIjtima(searchDate)
 	if err != nil {
-		ijtima = searchDate // Fallback (should not happen with FindIjtima)
+		ijtima = searchDate // Fallback
 	}
 
 	localTime, tzName := s.Tz.GetLocalTimeInfo(sunset, checkLat, checkLon)

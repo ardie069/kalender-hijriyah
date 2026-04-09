@@ -126,18 +126,69 @@ func (a *Adapter) CalculateGeocentricParams(et float64, lat, lon float64) (altit
 }
 
 // CalculateGeocentricParamsGlobal returns geocentric elongation and geocentric altitude relative to local horizon
-func (a *Adapter) CalculateGeocentricParamsGlobal(dt time.Time, lat, lon float64) (altitude, elongation float64) {
-	et, _ := Str2et(dt.UTC().Format(TimeFormat))
+func (a *Adapter) CalculateGeocentricParamsGlobal(dt time.Time, lat, lon float64) (altitude, elongation, arcv, width float64) {
+	et := TimeToEt(dt)
 
 	sunPosGeo, _ := a.Manager.GetGeocentric(Sun, et, FrameJ2000)
 	moonPosGeo, _ := a.Manager.GetGeocentric(Moon, et, FrameJ2000)
 	elongation = math.Acos(sunPosGeo.Unit().Dot(moonPosGeo.Unit())) * (180.0 / math.Pi)
 
-	// Use Body-Fixed for Altitude
-	moonPosFixed, _ := a.Manager.GetGeocentric(Moon, et, "IAU_EARTH")
-	altitude, _ = a.Manager.GetLocalAltAz(moonPosFixed, lat, lon)
+	// --- Manual Earth Rotation for Altitude ---
+	d := et / 86400.0
+	gmstDeg := 280.46061837 + 360.98564736629 * d
+	gmstRad := gmstDeg * math.Pi / 180.0
+	cosG, sinG := math.Cos(gmstRad), math.Sin(gmstRad)
 
-	return altitude, elongation
+	// Rotate Moon to ECEF (Geocentric: observer at center of Earth)
+	moonECEF := Vector3{
+		X: moonPosGeo.X*cosG + moonPosGeo.Y*sinG,
+		Y: -moonPosGeo.X*sinG + moonPosGeo.Y*cosG,
+		Z: moonPosGeo.Z,
+	}
+
+	altitude, _ = a.Manager.GetLocalAltAz(moonECEF, lat, lon)
+	arcv = altitude // Simplified for Geocentric as Sun alt is 0 at center of Earth boundary? 
+	// Actually for KHGT we use fixed 5/8 so ArcV is not strictly needed but we'll return altitude
+
+	// Width: Simplified SD for geocentric (approx 15.5')
+	width = (15.5 / 60.0) * (1.0 - math.Cos(elongation*math.Pi/180.0))
+
+	return altitude, elongation, arcv, width
+}
+
+// CalculateTopocentricParamsGlobal returns parameters relative to an observer at (lat, lon)
+// Includes both parallax and atmospheric refraction.
+func (a *Adapter) CalculateTopocentricParamsGlobal(dt time.Time, lat, lon float64) (altitude, elongation, arcv, width float64) {
+	et := TimeToEt(dt)
+
+	// Get positions relative to surface observer (Topocentric)
+	topoSun, _ := a.Manager.GetTopocentricPosition(Sun, et, lat, lon)
+	topoMoon, _ := a.Manager.GetTopocentricPosition(Moon, et, lat, lon)
+
+	elongation = math.Acos(topoSun.Unit().Dot(topoMoon.Unit())) * (180.0 / math.Pi)
+	
+	// Local Altitude/Azimuth from topocentric vectors
+	altMoon, _ := a.Manager.GetLocalAltAz(topoMoon, lat, lon)
+	altSun, _ := a.Manager.GetLocalAltAz(topoSun, lat, lon)
+	
+	// Apparent moon altitude (refracted)
+	altitude = altMoon + ApplyRefraction(altMoon)
+	
+	// Arc of Vision (Legacy Odeh uses refracted moon alt - refracted sun alt)
+	// At sunset, refracted sun altitude is approx -0.583 (0.2665 radius + 0.566 refraction)
+	sunApparent := altSun + ApplyRefraction(altSun)
+	arcv = altitude - sunApparent
+
+	// Width: Calculate using dynamic Moon Semi-Diameter (SD)
+	// SD = 0.27254 * horizontal_parallax
+	// Horizontal parallax approx sin-1(Re/d)
+	re := 6378.137
+	dist := topoMoon.Norm()
+	hp := math.Asin(re/dist) * (180.0 / math.Pi)
+	sdDegrees := 0.27254 * hp
+	width = sdDegrees * (1.0 - math.Cos(elongation*math.Pi/180.0))
+
+	return altitude, elongation, arcv, width
 }
 
 func (a *Adapter) GetFajr(date time.Time, lat, lon float64) (time.Time, error) {
