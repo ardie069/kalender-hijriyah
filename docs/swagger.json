@@ -1,0 +1,349 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API untuk konversi tanggal Masehi ke Hijriyah, informasi fase bulan, dan jadwal sholat menggunakan perhitungan NASA SPICE.",
+        "title": "Kalender Hijriyah API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "email": "ardie069@example.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "4.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v4",
+    "paths": {
+        "/hijri/calendar": {
+            "get": {
+                "description": "Generate kalender hijriyah setahun",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Hijri"
+                ],
+                "summary": "Kalender Tahunan",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Tahun Hijriyah/Masehi (contoh: 1446 atau 2024)",
+                        "name": "year",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Latitude",
+                        "name": "lat",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Longitude",
+                        "name": "lon",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Metode hisab (KHGT, WUJUDUL_HILAL, MABIMS, UMM_AL_QURA)",
+                        "name": "method",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/hijri/date": {
+            "get": {
+                "description": "Mendapatkan tanggal Hijriyah berdasarkan tanggal, latitude, dan longitude",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Hijri"
+                ],
+                "summary": "Prediksi Kalender 4 Metode",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Format YYYY-MM-DD",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Latitude",
+                        "name": "lat",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Longitude",
+                        "name": "lon",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/hijri/month": {
+            "get": {
+                "description": "Info bulan Masehi beserta tanggal Hijriyahnya",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Hijri"
+                ],
+                "summary": "Kalender Masehi per Bulan",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Tahun Masehi",
+                        "name": "year",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Bulan Masehi (1-12)",
+                        "name": "month",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Latitude",
+                        "name": "lat",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Longitude",
+                        "name": "lon",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/hijri/search": {
+            "get": {
+                "description": "Mendapatkan data konversi tabular murni tanpa perhitungan astronomi",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Hijri"
+                ],
+                "summary": "Cari Data Hijriyah Tabular",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Format YYYY-MM-DD",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/hijri/visibility-map": {
+            "get": {
+                "description": "Mendapatkan data visibilitas hilal dalam bentuk grid untuk dibuat peta",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Hijri"
+                ],
+                "summary": "Peta Visibilitas Hilal Global",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tanggal Masehi (YYYY-MM-DD)",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Metode Kriteria (KHGT, MABIMS, WUJUDUL_HILAL)",
+                        "name": "method",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/moon/telemetry": {
+            "get": {
+                "description": "Mendapatkan data astronomis hilal (moon telemetry) real-time",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Moon"
+                ],
+                "summary": "Telemetry Hilal",
+                "parameters": [
+                    {
+                        "type": "number",
+                        "description": "Latitude",
+                        "name": "lat",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Longitude",
+                        "name": "lon",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/ping": {
+            "get": {
+                "description": "Cek status server dan uptime",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/prayer/times": {
+            "get": {
+                "description": "Mendapatkan jadwal sholat berdasarkan tanggal, latitude, longitude, dan metode",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Prayer"
+                ],
+                "summary": "Jadwal Sholat",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Format YYYY-MM-DD",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Latitude",
+                        "name": "lat",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Longitude",
+                        "name": "lon",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Metode (contoh: KEMENAG, MWL, ISNA, UMM_AL_QURA)",
+                        "name": "method",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Madzhab (shafii, hanafi)",
+                        "name": "madhab",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Metode lintang tinggi (ANGLE_BASED, dll)",
+                        "name": "high_lat",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

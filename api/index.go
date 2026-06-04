@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"embed"
 	"log"
 	"net/http"
 	"os"
@@ -9,19 +8,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/ardie069/kalender-hijriyah/core/api/handlers"
-	"github.com/ardie069/kalender-hijriyah/core/api/routes"
-	"github.com/ardie069/kalender-hijriyah/core/astronomy"
-	"github.com/ardie069/kalender-hijriyah/core/calendar"
-	"github.com/ardie069/kalender-hijriyah/core/hijri"
-	"github.com/ardie069/kalender-hijriyah/core/prayer"
-	"github.com/ardie069/kalender-hijriyah/core/timezone"
+	"github.com/ardie069/kalender-hijriyah/internal/delivery/http/handlers"
+	"github.com/ardie069/kalender-hijriyah/internal/delivery/http/routes"
+	"github.com/ardie069/kalender-hijriyah/internal/usecase/calendar"
+	"github.com/ardie069/kalender-hijriyah/internal/usecase/hijri"
+	"github.com/ardie069/kalender-hijriyah/internal/usecase/prayer"
+	"github.com/ardie069/kalender-hijriyah/internal/usecase/timezone"
+	"github.com/ardie069/kalender-hijriyah/pkg/cspice"
+	"github.com/ardie069/kalender-hijriyah/pkg/cspice/kernels"
 )
-
-// Embed NASA kernel files langsung ke binary
-//
-//go:embed de440s.bsp naif0012.tls pck00011.tpc
-var kernelFS embed.FS
 
 var (
 	app       *gin.Engine
@@ -40,9 +35,9 @@ func init() {
 	}
 
 	// 2. Initialize NASA Engine
-	var manager *astronomy.EphemerisManager
+	var manager *cspice.EphemerisManager
 	if err == nil {
-		manager, err = astronomy.NewEphemerisManager(kernelPaths...)
+		manager, err = cspice.NewEphemerisManager(kernelPaths...)
 		if err != nil {
 			initError = err
 			log.Printf("❌ NASA Engine Failure: %v", err)
@@ -97,7 +92,7 @@ func init() {
 		return
 	}
 
-	adapter := astronomy.GetAdapter(manager)
+	adapter := cspice.GetAdapter(manager)
 	logic := calendar.NewLogic(adapter, manager)
 
 	dateSvc := hijri.NewDateService(adapter, logic, tzSvc)
@@ -122,7 +117,7 @@ func extractKernels() ([]string, error) {
 	var paths []string
 
 	for _, name := range kernelNames {
-		data, err := kernelFS.ReadFile(name)
+		data, err := kernels.FS.ReadFile(name)
 		if err != nil {
 			return nil, err
 		}

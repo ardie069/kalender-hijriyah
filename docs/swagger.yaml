@@ -1,0 +1,240 @@
+basePath: /api/v4
+host: localhost:8080
+info:
+  contact:
+    email: ardie069@example.com
+    name: API Support
+  description: API untuk konversi tanggal Masehi ke Hijriyah, informasi fase bulan,
+    dan jadwal sholat menggunakan perhitungan NASA SPICE.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Kalender Hijriyah API
+  version: "4.0"
+paths:
+  /hijri/calendar:
+    get:
+      description: Generate kalender hijriyah setahun
+      parameters:
+      - description: 'Tahun Hijriyah/Masehi (contoh: 1446 atau 2024)'
+        in: query
+        name: year
+        required: true
+        type: integer
+      - description: Latitude
+        in: query
+        name: lat
+        required: true
+        type: number
+      - description: Longitude
+        in: query
+        name: lon
+        required: true
+        type: number
+      - description: Metode hisab (KHGT, WUJUDUL_HILAL, MABIMS, UMM_AL_QURA)
+        in: query
+        name: method
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Kalender Tahunan
+      tags:
+      - Hijri
+  /hijri/date:
+    get:
+      description: Mendapatkan tanggal Hijriyah berdasarkan tanggal, latitude, dan
+        longitude
+      parameters:
+      - description: Format YYYY-MM-DD
+        in: query
+        name: date
+        type: string
+      - description: Latitude
+        in: query
+        name: lat
+        required: true
+        type: number
+      - description: Longitude
+        in: query
+        name: lon
+        required: true
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Prediksi Kalender 4 Metode
+      tags:
+      - Hijri
+  /hijri/month:
+    get:
+      description: Info bulan Masehi beserta tanggal Hijriyahnya
+      parameters:
+      - description: Tahun Masehi
+        in: query
+        name: year
+        required: true
+        type: integer
+      - description: Bulan Masehi (1-12)
+        in: query
+        name: month
+        required: true
+        type: integer
+      - description: Latitude
+        in: query
+        name: lat
+        required: true
+        type: number
+      - description: Longitude
+        in: query
+        name: lon
+        required: true
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Kalender Masehi per Bulan
+      tags:
+      - Hijri
+  /hijri/search:
+    get:
+      description: Mendapatkan data konversi tabular murni tanpa perhitungan astronomi
+      parameters:
+      - description: Format YYYY-MM-DD
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Cari Data Hijriyah Tabular
+      tags:
+      - Hijri
+  /hijri/visibility-map:
+    get:
+      description: Mendapatkan data visibilitas hilal dalam bentuk grid untuk dibuat
+        peta
+      parameters:
+      - description: Tanggal Masehi (YYYY-MM-DD)
+        in: query
+        name: date
+        type: string
+      - description: Metode Kriteria (KHGT, MABIMS, WUJUDUL_HILAL)
+        in: query
+        name: method
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Peta Visibilitas Hilal Global
+      tags:
+      - Hijri
+  /moon/telemetry:
+    get:
+      description: Mendapatkan data astronomis hilal (moon telemetry) real-time
+      parameters:
+      - description: Latitude
+        in: query
+        name: lat
+        required: true
+        type: number
+      - description: Longitude
+        in: query
+        name: lon
+        required: true
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Telemetry Hilal
+      tags:
+      - Moon
+  /ping:
+    get:
+      description: Cek status server dan uptime
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health check
+      tags:
+      - System
+  /prayer/times:
+    get:
+      description: Mendapatkan jadwal sholat berdasarkan tanggal, latitude, longitude,
+        dan metode
+      parameters:
+      - description: Format YYYY-MM-DD
+        in: query
+        name: date
+        type: string
+      - description: Latitude
+        in: query
+        name: lat
+        required: true
+        type: number
+      - description: Longitude
+        in: query
+        name: lon
+        required: true
+        type: number
+      - description: 'Metode (contoh: KEMENAG, MWL, ISNA, UMM_AL_QURA)'
+        in: query
+        name: method
+        type: string
+      - description: Madzhab (shafii, hanafi)
+        in: query
+        name: madhab
+        type: string
+      - description: Metode lintang tinggi (ANGLE_BASED, dll)
+        in: query
+        name: high_lat
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Jadwal Sholat
+      tags:
+      - Prayer
+swagger: "2.0"
