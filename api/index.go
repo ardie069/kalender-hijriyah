@@ -8,44 +8,48 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/ardie069/kalender-hijriyah/internal/delivery/http/handlers"
-	"github.com/ardie069/kalender-hijriyah/internal/delivery/http/routes"
-	"github.com/ardie069/kalender-hijriyah/internal/usecase/calendar"
-	"github.com/ardie069/kalender-hijriyah/internal/usecase/hijri"
-	"github.com/ardie069/kalender-hijriyah/internal/usecase/prayer"
-	"github.com/ardie069/kalender-hijriyah/internal/usecase/timezone"
+	"github.com/ardie069/kalender-hijriyah/pkg/app"
 	"github.com/ardie069/kalender-hijriyah/pkg/cspice"
 	"github.com/ardie069/kalender-hijriyah/pkg/cspice/kernels"
 )
 
 var (
-	app       *gin.Engine
+	appConfig *app.AppConfig
 	initError error
 )
 
 func init() {
 	gin.SetMode(gin.ReleaseMode)
-	app = gin.New()
 
 	// 1. Extract embedded NASA kernels ke temp directory
 	kernelPaths, err := extractKernels()
 	if err != nil {
 		initError = err
 		log.Printf("❌ Kernel Extraction Failure: %v", err)
+		setupErrorHandler(kernelPaths)
+		return
 	}
 
 	// 2. Initialize NASA Engine
-	var manager *cspice.EphemerisManager
-	if err == nil {
-		manager, err = cspice.NewEphemerisManager(kernelPaths...)
-		if err != nil {
-			initError = err
-			log.Printf("❌ NASA Engine Failure: %v", err)
-		}
+	manager, err := cspice.NewEphemerisManager(kernelPaths...)
+	if err != nil {
+		initError = err
+		log.Printf("❌ NASA Engine Failure: %v", err)
+		setupErrorHandler(kernelPaths)
+		return
 	}
 
-	// 3. Debug endpoint (selalu available)
-	app.GET("/debug", func(c *gin.Context) {
+	// 3. Initialize AppConfig with all services and handlers
+	appConfig, err = app.NewAppConfig(manager)
+	if err != nil {
+		initError = err
+		log.Printf("❌ Application Initialization Failure: %v", err)
+		setupErrorHandler(kernelPaths)
+		return
+	}
+
+	// 4. Add debug endpoint
+	appConfig.GetEngine().GET("/debug", func(c *gin.Context) {
 		cwd, _ := os.Getwd()
 		files, _ := os.ReadDir(cwd)
 		var fileList []string
@@ -53,56 +57,36 @@ func init() {
 			fileList = append(fileList, f.Name())
 		}
 
-		errMsg := "none"
-		if initError != nil {
-			errMsg = initError.Error()
-		}
-
 		c.JSON(200, gin.H{
 			"status":       "Ready",
 			"cwd":          cwd,
 			"files":        fileList,
-			"init_error":   errMsg,
+			"init_error":   "none",
+			"kernel_paths": kernelPaths,
+		})
+	})
+}
+
+func setupErrorHandler(kernelPaths []string) {
+	errorEngine := gin.New()
+
+	errorEngine.GET("/debug", func(c *gin.Context) {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status":       "error",
+			"init_error":   initError.Error(),
 			"kernel_paths": kernelPaths,
 		})
 	})
 
-	// 4. Setup Handlers & Routes
-	if err != nil {
-		app.NoRoute(func(c *gin.Context) {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status":  "error",
-				"message": "NASA Engine Offline",
-				"detail":  initError.Error(),
-			})
+	errorEngine.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status":  "error",
+			"message": "Application initialization failed",
+			"detail":  initError.Error(),
 		})
-		return
-	}
+	})
 
-	tzSvc, err := timezone.NewService()
-	if err != nil {
-		initError = err
-		app.NoRoute(func(c *gin.Context) {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status":  "error",
-				"message": "Timezone Service Offline",
-				"detail":  initError.Error(),
-			})
-		})
-		return
-	}
-
-	adapter := cspice.GetAdapter(manager)
-	logic := calendar.NewLogic(adapter, manager)
-
-	dateSvc := hijri.NewDateService(adapter, logic, tzSvc)
-	calSvc := hijri.NewCalendarService(dateSvc)
-	prayerCalc := prayer.NewCalculator(adapter)
-
-	hHandler := handlers.NewHijriHandler(dateSvc, calSvc, adapter)
-	pHandler := handlers.NewPrayerHandler(prayerCalc, dateSvc, tzSvc)
-
-	routes.SetupRoutes(app, hHandler, pHandler)
+	appConfig = &app.AppConfig{Engine: errorEngine}
 }
 
 // extractKernels writes embedded kernel files to a temp directory
@@ -133,9 +117,9 @@ func extractKernels() ([]string, error) {
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-	if app == nil {
-		http.Error(w, "Engine not initialized", http.StatusInternalServerError)
+	if appConfig == nil {
+		http.Error(w, "Application not initialized", http.StatusInternalServerError)
 		return
 	}
-	app.ServeHTTP(w, r)
+	appConfig.ServeHTTP(w, r)
 }
