@@ -143,8 +143,9 @@ func (s *DateService) evalMonthStart(m string, ijtima time.Time, lat, lon float6
 		
 		mabims := decision.MABIMS{}
 		ctx := decision.Context{
-			Altitude:   telCheck.Altitude,
-			Elongation: telCheck.Elongation,
+			Altitude:      telCheck.Altitude,
+			Elongation:    telCheck.Elongation,
+			ElongationGeo: telCheck.ElongationGeo,
 		}
 		isNewMonth = mabims.IsVisible(ctx)
 

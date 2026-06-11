@@ -64,10 +64,11 @@ func (s *Service) GenerateNotifications(ctx context.Context) {
 			}
 
 			moonset, _ := s.astro.GetMoonset(sunset, user.Latitude, user.Longitude)
-			alt, elong, _, width := s.astro.CalculateTopocentricParamsGlobal(sunset, user.Latitude, user.Longitude)
+			alt, _, _, width := s.astro.CalculateTopocentricParamsGlobal(sunset, user.Latitude, user.Longitude)
+			_, elongGeo, _, _ := s.astro.CalculateGeocentricParamsGlobal(sunset, user.Latitude, user.Longitude)
 
-			// Simple visibility rule based on MABIMS (Altitude > 3, Elongation > 6.4)
-			isVisible := alt > 3.0 && elong > 6.4
+			// Simple visibility rule based on MABIMS (Altitude > 3, Elongation (Geo) > 6.4)
+			isVisible := alt > 3.0 && elongGeo > 6.4
 
 			pred := Prediction{
 				Date:         now,
@@ -75,7 +76,7 @@ func (s *Service) GenerateNotifications(ctx context.Context) {
 				Moonset:      moonset,
 				Altitude:     alt,
 				Azimuth:      0, // Optional or calculated separately
-				Elongation:   elong,
+				Elongation:   elongGeo,
 				AgeHours:     0,                      // Would need ijtima time to calculate accurately
 				Illumination: (width * 60.0) / 100.0, // rough proxy for demonstration
 				Visible:      isVisible,

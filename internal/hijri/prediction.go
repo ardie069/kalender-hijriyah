@@ -154,8 +154,9 @@ func (s *DateService) CalculateMethodPrediction(m string, searchDate time.Time, 
 	case "MABIMS", "MABIMS_LOCAL":
 		mabims := decision.MABIMS{}
 		ctx := decision.Context{
-			Altitude:   tel.Altitude,
-			Elongation: tel.Elongation,
+			Altitude:      tel.Altitude,
+			Elongation:    tel.Elongation,
+			ElongationGeo: tel.ElongationGeo,
 		}
 		pred.IsNewMonth = mabims.IsVisible(ctx)
 		

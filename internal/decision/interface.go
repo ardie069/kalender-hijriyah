@@ -5,6 +5,7 @@ import "time"
 type Context struct {
 	Altitude       float64
 	Elongation     float64
+	ElongationGeo  float64
 	IjtimaTime     time.Time
 	SunsetTime     time.Time
 	MoonsetTime    time.Time

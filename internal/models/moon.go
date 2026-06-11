@@ -7,6 +7,7 @@ type MoonTelemetry struct {
 	AltitudeApparent *float64   `json:"altitude_apparent,omitempty"`
 	Azimuth          float64   `json:"azimuth"`
 	Elongation       float64   `json:"elongation"`
+	ElongationGeo    float64   `json:"elongation_geo"`
 	Illumination     float64   `json:"illumination"`
 	DistanceKM       float64   `json:"distance_km"`
 	AgeHours         float64    `json:"age_hours"`

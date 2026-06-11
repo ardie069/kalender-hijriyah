@@ -55,6 +55,7 @@ func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (m
 	// 2. Geocentric Positions (For illumination/phase calculations)
 	sunPosGeo, _ := a.Manager.GetGeocentric(Sun, et, FrameJ2000)
 	moonPosGeo, _ := a.Manager.GetGeocentric(Moon, et, FrameJ2000)
+	elongGeo := math.Acos(sunPosGeo.Unit().Dot(moonPosGeo.Unit())) * (180.0 / math.Pi)
 
 	// 3. Topocentric Positions (In ECEF)
 	// No changes needed here, just updating the return mapping below
@@ -102,6 +103,7 @@ func (a *Adapter) GetMoonTelemetry(dt time.Time, latitude, longitude float64) (m
 		AltitudeApparent: &altApparent,
 		Azimuth:          azTopo,
 		Elongation:       elongTopo,
+		ElongationGeo:    elongGeo,
 		Illumination:     illumination,
 		DistanceKM:       moonPosGeo.Norm(),
 		PhaseName:        getPhaseName(illumination, isWaxing),
