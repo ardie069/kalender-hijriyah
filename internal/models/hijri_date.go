@@ -12,10 +12,12 @@ type HijriDate struct {
 
 type MethodResult struct {
 	HijriDate           HijriDate        `json:"hijri_date"`
-	CurrentAltitude     *float64         `json:"current_altitude,omitempty"`
-	CurrentElongation   *float64         `json:"current_elongation,omitempty"`
-	ReferenceAltitude   *float64         `json:"reference_altitude,omitempty"`
-	ReferenceElongation *float64         `json:"reference_elongation,omitempty"`
+	CurrentAltitude        *float64         `json:"current_altitude,omitempty"`
+	CurrentElongation      *float64         `json:"current_elongation,omitempty"`
+	CurrentElongationGeo   *float64         `json:"current_elongation_geo,omitempty"`
+	ReferenceAltitude      *float64         `json:"reference_altitude,omitempty"`
+	ReferenceElongation    *float64         `json:"reference_elongation,omitempty"`
+	ReferenceElongationGeo *float64         `json:"reference_elongation_geo,omitempty"`
 	Prediction          *HilalPrediction `json:"prediction,omitempty"`
 	LocalPrediction     *HilalPrediction `json:"local_prediction,omitempty"`
 }
@@ -29,6 +31,7 @@ type HilalPrediction struct {
 	Altitude         float64       `json:"altitude"`
 	AltitudeApparent *float64      `json:"altitude_apparent,omitempty"`
 	Elongation       float64       `json:"elongation"`
+	ElongationGeo    float64       `json:"elongation_geo"`
 	AgeHours             float64       `json:"age_hours"`
 	Location             *LocationInfo `json:"location,omitempty"`
 	GlobalLocation       *LocationInfo `json:"global_location,omitempty"`

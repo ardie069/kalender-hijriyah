@@ -43,12 +43,14 @@ func (s *DateService) GetFullCalendarInfo(t time.Time, lat, lon float64) models.
 		if m != "TABULAR" {
 			alt := realtimeTel.Altitude
 			elong := realtimeTel.Elongation
+			elongGeo := realtimeTel.ElongationGeo
 
 			if m == "UMM_AL_QURA" {
 				meccaTel, err := s.Astro.GetMoonTelemetry(tUTC, 21.4225, 39.8262)
 				if err == nil {
 					alt = meccaTel.Altitude
 					elong = meccaTel.Elongation
+					elongGeo = meccaTel.ElongationGeo
 				}
 			}
 
@@ -58,6 +60,7 @@ func (s *DateService) GetFullCalendarInfo(t time.Time, lat, lon float64) models.
 				if err == nil {
 					alt = sudairTel.Altitude
 					elong = sudairTel.Elongation
+					elongGeo = sudairTel.ElongationGeo
 				}
 			}
 
@@ -66,13 +69,16 @@ func (s *DateService) GetFullCalendarInfo(t time.Time, lat, lon float64) models.
 				if err == nil {
 					refAlt := sabangTel.Altitude
 					refElong := sabangTel.Elongation
+					refElongGeo := sabangTel.ElongationGeo
 					result.ReferenceAltitude = &refAlt
 					result.ReferenceElongation = &refElong
+					result.ReferenceElongationGeo = &refElongGeo
 				}
 			}
 
 			result.CurrentAltitude = &alt
 			result.CurrentElongation = &elong
+			result.CurrentElongationGeo = &elongGeo
 		}
 
 		if m != "TABULAR" && result.HijriDate.Day <= 29 {
