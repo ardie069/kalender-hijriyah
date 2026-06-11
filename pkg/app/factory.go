@@ -9,7 +9,7 @@ import (
 	"github.com/ardie069/kalender-hijriyah/internal/delivery/http/routes"
 	"github.com/ardie069/kalender-hijriyah/internal/usecase/calendar"
 	"github.com/ardie069/kalender-hijriyah/internal/usecase/hijri"
-	"github.com/ardie069/kalender-hijriyah/internal/usecase/prayer"
+	"github.com/ardie069/kalender-hijriyah/internal/prayer"
 	"github.com/ardie069/kalender-hijriyah/internal/usecase/timezone"
 	"github.com/ardie069/kalender-hijriyah/pkg/cspice"
 )
@@ -20,7 +20,7 @@ type AppConfig struct {
 	TzService  *timezone.Service
 	DateSvc    *hijri.DateService
 	CalSvc     *hijri.CalendarService
-	PrayerCalc *prayer.Calculator
+	PrayerSvc  *prayer.Service
 	Engine     *gin.Engine
 }
 
@@ -42,11 +42,11 @@ func NewAppConfig(manager *cspice.EphemerisManager) (*AppConfig, error) {
 	// Initialize Services
 	dateSvc := hijri.NewDateService(adapter, logic, tzSvc)
 	calSvc := hijri.NewCalendarService(dateSvc)
-	prayerCalc := prayer.NewCalculator(adapter)
+	prayerSvc := prayer.NewService(adapter)
 
 	// Initialize Handlers
 	hHandler := handlers.NewHijriHandler(dateSvc, calSvc, adapter)
-	pHandler := handlers.NewPrayerHandler(prayerCalc, dateSvc, tzSvc)
+	pHandler := handlers.NewPrayerHandler(prayerSvc, dateSvc, tzSvc)
 
 	// Setup Routes
 	routes.SetupRoutes(engine, hHandler, pHandler)
@@ -56,7 +56,7 @@ func NewAppConfig(manager *cspice.EphemerisManager) (*AppConfig, error) {
 		TzService:  tzSvc,
 		DateSvc:    dateSvc,
 		CalSvc:     calSvc,
-		PrayerCalc: prayerCalc,
+		PrayerSvc:  prayerSvc,
 		Engine:     engine,
 	}, nil
 }
