@@ -75,14 +75,19 @@ func (s *Service) GenerateVisibilityGrid(searchDate time.Time, method string) (*
 
 			if method == "KHGT" {
 				alt, elong, arcv, width = s.Astro.CalculateGeocentricParamsGlobal(sunset, lat, lon)
-				if alt >= 5.0 && elong >= 8.0 {
-					category = "KHGT_YES"
+				
+				khgt := criteria.KHGT{}
+				ctx := criteria.Context{
+					Altitude:   alt,
+					Elongation: elong,
+				}
+				category = string(khgt.Evaluate(ctx))
+				
+				if category == "KHGT_YES" {
 					if lon < minLonFound {
 						minLonFound = lon
 						bestLoc = &models.LocationInfo{Lat: lat, Lon: lon}
 					}
-				} else {
-					category = "KHGT_NO"
 				}
 			} else {
 				alt, elong, arcv, width = s.Astro.CalculateTopocentricParamsGlobal(sunset, lat, lon)

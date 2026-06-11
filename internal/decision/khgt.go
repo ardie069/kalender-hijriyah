@@ -3,8 +3,9 @@ package decision
 type KHGT struct{}
 
 func (k KHGT) IsVisible(ctx Context) bool {
-	// Syarat Ijtima qoblal sunset & Alt > 0 derajat
-	return ctx.IjtimaHappened && ctx.Altitude > 0.0
+	// Syarat KHGT (Kongres Istanbul 2016):
+	// Altitude >= 5 derajat dan Elongasi >= 8 derajat (Geosentris)
+	return ctx.Altitude >= 5.0 && ctx.Elongation >= 8.0
 }
 
 func (k KHGT) Name() string {
