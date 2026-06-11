@@ -13,6 +13,7 @@ import (
 	"github.com/ardie069/kalender-hijriyah/internal/astronomy/ephemeris"
 	"github.com/ardie069/kalender-hijriyah/internal/visibility"
 	"github.com/ardie069/kalender-hijriyah/internal/visibility/scan"
+	"github.com/ardie069/kalender-hijriyah/internal/calendar/ummalqura"
 	"github.com/ardie069/kalender-hijriyah/pkg/cspice"
 )
 
@@ -43,9 +44,10 @@ func NewAppConfig(manager *cspice.EphemerisManager) (*AppConfig, error) {
 	ephemSvc := ephemeris.NewService(adapter, manager)
 	scanSvc := &scan.Scanner{Astro: adapter}
 	visSvc := visibility.NewService(adapter, ephemSvc)
+	ummAlQuraSvc := ummalqura.NewService(adapter, ephemSvc)
 
 	// Initialize Services
-	dateSvc := hijri.NewDateService(adapter, ephemSvc, scanSvc, tzSvc)
+	dateSvc := hijri.NewDateService(adapter, ephemSvc, scanSvc, ummAlQuraSvc, tzSvc)
 	calSvc := hijri.NewCalendarService(dateSvc)
 	prayerSvc := prayer.NewService(adapter)
 

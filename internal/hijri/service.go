@@ -6,6 +6,7 @@ import (
 
 	"github.com/ardie069/kalender-hijriyah/internal/astronomy/ephemeris"
 	"github.com/ardie069/kalender-hijriyah/internal/calendar"
+	"github.com/ardie069/kalender-hijriyah/internal/calendar/ummalqura"
 	"github.com/ardie069/kalender-hijriyah/internal/decision"
 	"github.com/ardie069/kalender-hijriyah/internal/models"
 	"github.com/ardie069/kalender-hijriyah/internal/usecase/timezone"
@@ -16,16 +17,18 @@ import (
 type DateService struct {
 	Tz    *timezone.Service
 	Astro *cspice.Adapter
-	Ephem *ephemeris.Service
-	Scan  *scan.Scanner
+	Ephem     *ephemeris.Service
+	Scan      *scan.Scanner
+	UmmAlQura *ummalqura.Service
 }
 
-func NewDateService(astro *cspice.Adapter, ephem *ephemeris.Service, s *scan.Scanner, tz *timezone.Service) *DateService {
+func NewDateService(astro *cspice.Adapter, ephem *ephemeris.Service, s *scan.Scanner, umm *ummalqura.Service, tz *timezone.Service) *DateService {
 	return &DateService{
-		Tz:    tz,
-		Astro: astro,
-		Ephem: ephem,
-		Scan:  s,
+		Tz:        tz,
+		Astro:     astro,
+		Ephem:     ephem,
+		Scan:      s,
+		UmmAlQura: umm,
 	}
 }
 
@@ -109,21 +112,7 @@ func (s *DateService) evalMonthStart(m string, ijtima time.Time, lat, lon float6
 
 	switch m {
 	case "UMM_AL_QURA":
-		meccaLat, meccaLon := 21.4225, 39.8262
-		sunsetCheck, _ := s.Astro.GetSunset(sunsetCheckDate, meccaLat, meccaLon)
-		if sunsetCheck.Before(ijtima) {
-			sunsetCheckDate = sunsetCheckDate.AddDate(0, 0, 1)
-			sunsetCheck, _ = s.Astro.GetSunset(sunsetCheckDate, meccaLat, meccaLon)
-		}
-		moonsetMecca, _ := s.Astro.GetMoonset(sunsetCheck, meccaLat, meccaLon)
-		
-		ummAlQura := decision.UmmAlQura{}
-		ctx := decision.Context{
-			IjtimaTime:  ijtima,
-			SunsetTime:  sunsetCheck,
-			MoonsetTime: moonsetMecca,
-		}
-		hisabMecca := ummAlQura.IsVisible(ctx)
+		hisabMecca := s.UmmAlQura.EvaluateHisabMecca(sunsetCheckDate, ijtima)
 
 		// Evaluasi Rukyat Saudi (Sudair & Tumair)
 		rukyatSaudi := s.evaluateSaudiRukyat(sunsetCheckDate, ijtima)

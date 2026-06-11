@@ -115,13 +115,7 @@ func (s *DateService) CalculateMethodPrediction(m string, searchDate time.Time, 
 		pred.IsNewMonth = khgtResult.IsGlobalValid
 		
 	case "UMM_AL_QURA":
-		ummAlQura := decision.UmmAlQura{}
-		ctx := decision.Context{
-			IjtimaTime:  ijtima,
-			SunsetTime:  sunset,
-			MoonsetTime: moonset,
-		}
-		hisabMecca := ummAlQura.IsVisible(ctx)
+		hisabMecca := s.UmmAlQura.EvaluateHisabMecca(sunset, ijtima)
 		
 		rukyatSaudi := s.evaluateSaudiRukyat(sunset, ijtima)
 		
