@@ -139,10 +139,6 @@ func (s *DateService) evalMonthStart(m string, ijtima time.Time, lat, lon float6
 	case "MABIMS":
 		sabangLat, sabangLon := 5.89, 95.32
 		sunsetCheck, _ := s.Astro.GetSunset(sunsetCheckDate, sabangLat, sabangLon)
-		if sunsetCheck.Before(ijtima) {
-			sunsetCheckDate = sunsetCheckDate.AddDate(0, 0, 1)
-			sunsetCheck, _ = s.Astro.GetSunset(sunsetCheckDate, sabangLat, sabangLon)
-		}
 		telCheck, _ := s.Astro.GetMoonTelemetry(sunsetCheck, sabangLat, sabangLon)
 		
 		mabims := decision.MABIMS{}
@@ -155,11 +151,6 @@ func (s *DateService) evalMonthStart(m string, ijtima time.Time, lat, lon float6
 	case "KHGT":
 		khgtRes := s.Scan.ScanGlobalKHGT(sunsetCheckDate, ijtima)
 		isNewMonth = khgtRes.IsGlobalValid
-		if !isNewMonth {
-			sunsetCheckDate = sunsetCheckDate.AddDate(0, 0, 1)
-			khgtRes2 := s.Scan.ScanGlobalKHGT(sunsetCheckDate, ijtima)
-			isNewMonth = khgtRes2.IsGlobalValid
-		}
 
 	default:
 		khgtRes := s.Scan.ScanGlobalKHGT(sunsetCheckDate, ijtima)
@@ -176,10 +167,6 @@ func (s *DateService) evaluateSaudiRukyat(sunsetCheckDate time.Time, ijtima time
 	// Sudair (lat: 25.5950, lon: 45.6339)
 	sudairLat, sudairLon := 25.5950, 45.6339
 	sunsetSudair, _ := s.Astro.GetSunset(sunsetCheckDate, sudairLat, sudairLon)
-	if sunsetSudair.Before(ijtima) {
-		sunsetCheckDate = sunsetCheckDate.AddDate(0, 0, 1)
-		sunsetSudair, _ = s.Astro.GetSunset(sunsetCheckDate, sudairLat, sudairLon)
-	}
 	moonsetSudair, _ := s.Astro.GetMoonset(sunsetSudair, sudairLat, sudairLon)
 
 	// Tumair (lat: 25.7039, lon: 45.8614)

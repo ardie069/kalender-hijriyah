@@ -24,11 +24,6 @@ func NewService(astro *cspice.Adapter, ephem *ephemeris.Service) *Service {
 func (s *Service) EvaluateHisabMecca(sunsetCheckDate time.Time, ijtima time.Time) bool {
 	meccaLat, meccaLon := 21.4225, 39.8262
 	sunsetCheck, _ := s.Astro.GetSunset(sunsetCheckDate, meccaLat, meccaLon)
-	
-	if sunsetCheck.Before(ijtima) {
-		sunsetCheckDate = sunsetCheckDate.AddDate(0, 0, 1)
-		sunsetCheck, _ = s.Astro.GetSunset(sunsetCheckDate, meccaLat, meccaLon)
-	}
 	moonsetMecca, _ := s.Astro.GetMoonset(sunsetCheck, meccaLat, meccaLon)
 
 	ummAlQura := decision.UmmAlQura{}

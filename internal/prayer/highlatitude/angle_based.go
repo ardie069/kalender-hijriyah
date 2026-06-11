@@ -8,11 +8,10 @@ import (
 type AngleBased struct{}
 
 func (a AngleBased) Adjust(p AdjustParams) (time.Time, time.Time) {
-	fajr := p.Fajr
 	isha := p.Isha
 
 	fajrPortion := math.Abs(p.FajrAngle) / 60.0
-	fajr = p.Sunrise.Add(-time.Duration(float64(p.NightDuration) * fajrPortion))
+	fajr := p.Sunrise.Add(-time.Duration(float64(p.NightDuration) * fajrPortion))
 
 	if p.IshaOffsetMin <= 0 {
 		ishaPortion := math.Abs(p.IshaAngle) / 60.0
