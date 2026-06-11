@@ -1,4 +1,4 @@
-package calendar
+package scan
 
 import (
 	"github.com/ardie069/kalender-hijriyah/pkg/cspice"
@@ -32,7 +32,11 @@ const (
 	MinAltitude   = 5.0
 )
 
-func (l *Logic) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time) *models.KHGTResult {
+type Scanner struct {
+	Astro *cspice.Adapter
+}
+
+func (s *Scanner) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time) *models.KHGTResult {
 	deadlineUTC := time.Date(targetDateUTC.Year(), targetDateUTC.Month(), targetDateUTC.Day(), 23, 59, 59, 999999999, time.UTC)
 
 	// 1. Get or Pre-calculate geocentric vectors (IAU_EARTH frame)
@@ -40,14 +44,14 @@ func (l *Logic) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time)
 	vectorCacheMu.Lock()
 	vectors, exists := vectorCache[dateKey]
 	if !exists {
-		vectors = l.Astro.Manager.PrecalculateDayVectors(targetDateUTC)
+		vectors = s.Astro.Manager.PrecalculateDayVectors(targetDateUTC)
 		vectorCache[dateKey] = vectors
 	}
 	vectorCacheMu.Unlock()
 
 	// 2. Pre-calculate Fajr NZ for America Exception
 	nextDay := targetDateUTC.AddDate(0, 0, 1)
-	fajrNZ, _ := l.Astro.GetFajr(nextDay, NZLat, NZLon)
+	fajrNZ, _ := s.Astro.GetFajr(nextDay, NZLat, NZLon)
 	isIjtimaBeforeFajrNZ := ijtimaTimeUTC.Before(fajrNZ)
 
 	result := &models.KHGTResult{
@@ -74,7 +78,7 @@ func (l *Logic) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time)
 				mid := (low + high) / 2
 				t := baseTime.Add(time.Duration(mid * float64(time.Hour)))
 				sunVec := vectors.InterpolateVector("SUN", t)
-				alt, _ := l.Astro.Manager.GetLocalAltAz(sunVec, lat, ln)
+				alt, _ := s.Astro.Manager.GetLocalAltAz(sunVec, lat, ln)
 				if alt > -0.833 {
 					low = mid
 				} else {
@@ -89,7 +93,7 @@ func (l *Logic) ScanGlobalKHGT(targetDateUTC time.Time, ijtimaTimeUTC time.Time)
 
 			moonVec := vectors.InterpolateVector("MOON", preciseSunset)
 			sunVec := vectors.InterpolateVector("SUN", preciseSunset)
-			altGeo, _ := l.Astro.Manager.GetGeocentricAltAz(moonVec, lat, ln)
+			altGeo, _ := s.Astro.Manager.GetGeocentricAltAz(moonVec, lat, ln)
 
 			uSun := sunVec.Unit()
 			uMoon := moonVec.Unit()

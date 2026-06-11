@@ -7,22 +7,22 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ardie069/kalender-hijriyah/internal/usecase/hijri"
+	"github.com/ardie069/kalender-hijriyah/internal/hijri"
 	"github.com/ardie069/kalender-hijriyah/internal/models"
-	"github.com/ardie069/kalender-hijriyah/internal/usecase/prayer"
+	"github.com/ardie069/kalender-hijriyah/internal/prayer"
 	"github.com/ardie069/kalender-hijriyah/internal/usecase/timezone"
 	"github.com/gin-gonic/gin"
 )
 
 type PrayerHandler struct {
-	PrayerCalc *prayer.Calculator
+	PrayerSvc *prayer.Service
 	DateSvc    *hijri.DateService
 	TzSvc      *timezone.Service
 }
 
-func NewPrayerHandler(calc *prayer.Calculator, dateSvc *hijri.DateService, tzSvc *timezone.Service) *PrayerHandler {
+func NewPrayerHandler(svc *prayer.Service, dateSvc *hijri.DateService, tzSvc *timezone.Service) *PrayerHandler {
 	return &PrayerHandler{
-		PrayerCalc: calc,
+		PrayerSvc: svc,
 		DateSvc:    dateSvc,
 		TzSvc:      tzSvc,
 	}
@@ -105,7 +105,7 @@ func (h *PrayerHandler) GetPrayerTimes(c *gin.Context) {
 	loc := h.TzSvc.GetLocation(lat, lon)
 
 	// 4. Panggil Calculator
-	times, err := h.PrayerCalc.GetPrayerTimes(targetDate, lat, lon, cfg)
+	times, err := h.PrayerSvc.GetPrayerTimes(targetDate, lat, lon, cfg)
 	if err != nil {
 		c.JSON(500, gin.H{"error": fmt.Sprintf("Gagal menghitung waktu sholat: %v", err)})
 		return
@@ -127,9 +127,9 @@ func (h *PrayerHandler) GetPrayerTimes(c *gin.Context) {
 	resp.Date.Hijri = fmt.Sprintf("%d %s %d", hijriDate.Day, hijriDate.MonthName, hijriDate.Year)
 
 	resp.Method.Name = cfg.Name
-	resp.Method.Madhab = prayer.MadhabName(cfg.Madhab)
-	if math.Abs(lat) >= cfg.HighLatThreshold && cfg.HighLatMethod != prayer.HIGH_LAT_NONE {
-		resp.Method.HighLat = prayer.HighLatName(cfg.HighLatMethod)
+	resp.Method.Madhab = cfg.Madhab.Name()
+	if math.Abs(lat) >= cfg.HighLatThreshold && cfg.HighLatMethod != nil {
+		resp.Method.HighLat = cfg.HighLatMethod.Name()
 	}
 
 	// Format waktu ke string HH:mm dalam waktu LOKAL

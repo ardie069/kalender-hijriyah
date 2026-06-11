@@ -6,21 +6,24 @@ import (
 	"time"
 
 	"github.com/ardie069/kalender-hijriyah/pkg/cspice"
-	"github.com/ardie069/kalender-hijriyah/internal/usecase/hijri"
+	"github.com/ardie069/kalender-hijriyah/internal/hijri"
+	"github.com/ardie069/kalender-hijriyah/internal/visibility"
 	"github.com/gin-gonic/gin"
 )
 
 type HijriHandler struct {
 	DateSvc     *hijri.DateService
 	CalendarSvc *hijri.CalendarService
+	VisSvc      *visibility.Service
 	Adapter     *cspice.Adapter
 	startTime   time.Time
 }
 
-func NewHijriHandler(dateSvc *hijri.DateService, calSvc *hijri.CalendarService, adapter *cspice.Adapter) *HijriHandler {
+func NewHijriHandler(dateSvc *hijri.DateService, calSvc *hijri.CalendarService, visSvc *visibility.Service, adapter *cspice.Adapter) *HijriHandler {
 	return &HijriHandler{
 		DateSvc:     dateSvc,
 		CalendarSvc: calSvc,
+		VisSvc:      visSvc,
 		Adapter:     adapter,
 		startTime:   time.Now(),
 	}
@@ -167,7 +170,7 @@ func (h *HijriHandler) GetTelemetry(ctx *gin.Context) {
 	}
 
 	// Calculate Moon Age (Hours since previous Ijtima)
-	ijtima, err := h.DateSvc.Cal.FindPreviousIjtima(now)
+	ijtima, err := h.DateSvc.Ephem.FindPreviousIjtima(now)
 	if err == nil {
 		tel.AgeHours = now.Sub(ijtima).Hours()
 	}
@@ -272,7 +275,7 @@ func (h *HijriHandler) GetVisibilityMap(ctx *gin.Context) {
 		targetDate = parsedDate
 	}
 
-	result, err := h.DateSvc.GenerateVisibilityGrid(targetDate, method)
+	result, err := h.VisSvc.GenerateVisibilityGrid(targetDate, method)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat peta visibilitas: " + err.Error()})
 		return

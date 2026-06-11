@@ -7,10 +7,12 @@ import (
 
 	"github.com/ardie069/kalender-hijriyah/internal/delivery/http/handlers"
 	"github.com/ardie069/kalender-hijriyah/internal/delivery/http/routes"
-	"github.com/ardie069/kalender-hijriyah/internal/usecase/calendar"
-	"github.com/ardie069/kalender-hijriyah/internal/usecase/hijri"
+	"github.com/ardie069/kalender-hijriyah/internal/hijri"
 	"github.com/ardie069/kalender-hijriyah/internal/prayer"
 	"github.com/ardie069/kalender-hijriyah/internal/usecase/timezone"
+	"github.com/ardie069/kalender-hijriyah/internal/astronomy/ephemeris"
+	"github.com/ardie069/kalender-hijriyah/internal/visibility"
+	"github.com/ardie069/kalender-hijriyah/internal/visibility/scan"
 	"github.com/ardie069/kalender-hijriyah/pkg/cspice"
 )
 
@@ -21,6 +23,7 @@ type AppConfig struct {
 	DateSvc    *hijri.DateService
 	CalSvc     *hijri.CalendarService
 	PrayerSvc  *prayer.Service
+	VisSvc     *visibility.Service
 	Engine     *gin.Engine
 }
 
@@ -37,15 +40,17 @@ func NewAppConfig(manager *cspice.EphemerisManager) (*AppConfig, error) {
 
 	// Initialize Calendar Logic
 	adapter := cspice.GetAdapter(manager)
-	logic := calendar.NewLogic(adapter, manager)
+	ephemSvc := ephemeris.NewService(adapter, manager)
+	scanSvc := &scan.Scanner{Astro: adapter}
+	visSvc := visibility.NewService(adapter, ephemSvc)
 
 	// Initialize Services
-	dateSvc := hijri.NewDateService(adapter, logic, tzSvc)
+	dateSvc := hijri.NewDateService(adapter, ephemSvc, scanSvc, tzSvc)
 	calSvc := hijri.NewCalendarService(dateSvc)
 	prayerSvc := prayer.NewService(adapter)
 
 	// Initialize Handlers
-	hHandler := handlers.NewHijriHandler(dateSvc, calSvc, adapter)
+	hHandler := handlers.NewHijriHandler(dateSvc, calSvc, visSvc, adapter)
 	pHandler := handlers.NewPrayerHandler(prayerSvc, dateSvc, tzSvc)
 
 	// Setup Routes
@@ -57,6 +62,7 @@ func NewAppConfig(manager *cspice.EphemerisManager) (*AppConfig, error) {
 		DateSvc:    dateSvc,
 		CalSvc:     calSvc,
 		PrayerSvc:  prayerSvc,
+		VisSvc:     visSvc,
 		Engine:     engine,
 	}, nil
 }
