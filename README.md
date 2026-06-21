@@ -35,7 +35,7 @@
 kalender-hijriyah/
 ├── cmd/
 │   └── api/              # Entry point Gin API Server
-├── data/                 # SPICE Kernels (de440s.bsp, naif0012.tls, dll)
+├── pkg/cspice/kernels/   # SPICE Kernels (de440s.bsp, naif0012.tls, dll)
 ├── core/
 │   ├── api/              # Handlers & Routes
 │   ├── astronomy/        # Bindings CSPICE & Orbit Engine
@@ -53,12 +53,12 @@ kalender-hijriyah/
 
 Semua endpoint tersedia di prefix `/api/v4/` atau `/v4/`.
 
-| Endpoint | Method | Deskripsi | Parameter Utama |
-|----------|--------|-----------|-----------------|
-| `/hijri/date` | GET | Konversi & Prediksi Hijriyah (4 Metode) | `lat`, `lon`, `date` |
-| `/hijri/calendar` | GET | Kalender Hijriyah Tahunan | `year`, `lat`, `lon` |
-| `/moon/telemetry` | GET | Data Astronomi Bulan Real-time | `lat`, `lon` |
-| `/prayer/times` | GET | Jadwal Shalat Presisi | `lat`, `lon`, `method` |
+| Endpoint          | Method | Deskripsi                               | Parameter Utama        |
+| ----------------- | ------ | --------------------------------------- | ---------------------- |
+| `/hijri/date`     | GET    | Konversi & Prediksi Hijriyah (4 Metode) | `lat`, `lon`, `date`   |
+| `/hijri/calendar` | GET    | Kalender Hijriyah Tahunan               | `year`, `lat`, `lon`   |
+| `/moon/telemetry` | GET    | Data Astronomi Bulan Real-time          | `lat`, `lon`           |
+| `/prayer/times`   | GET    | Jadwal Shalat Presisi                   | `lat`, `lon`, `method` |
 
 ---
 

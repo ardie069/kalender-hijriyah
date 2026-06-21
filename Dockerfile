@@ -41,7 +41,7 @@ WORKDIR /app
 COPY --from=builder /app/main .
 
 # Copy data NASA (Sangat Penting!)
-COPY data/ ./data/
+COPY pkg/cspice/kernels/ ./pkg/cspice/kernels/
 
 # Karena debian-slim minimalis, kadang butuh CA-certificates buat HTTPS
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*

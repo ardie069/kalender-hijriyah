@@ -7,7 +7,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./data:/app/data
+      - ./pkg/cspice/kernels:/app/pkg/cspice/kernels
     environment:
       - GIN_MODE=release
       - TZ=Asia/Jakarta
