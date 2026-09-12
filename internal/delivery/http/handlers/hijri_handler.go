@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -17,6 +19,19 @@ type HijriHandler struct {
 	VisSvc      *visibility.Service
 	Adapter     *cspice.Adapter
 	startTime   time.Time
+}
+
+func validateCoords(lat, lon float64) error {
+	if math.IsNaN(lat) || math.IsNaN(lon) || math.IsInf(lat, 0) || math.IsInf(lon, 0) {
+		return fmt.Errorf("latitude/longitude harus berupa angka valid")
+	}
+	if lat < -90 || lat > 90 {
+		return fmt.Errorf("latitude harus berada di rentang -90 s/d 90")
+	}
+	if lon < -180 || lon > 180 {
+		return fmt.Errorf("longitude harus berada di rentang -180 s/d 180")
+	}
+	return nil
 }
 
 func NewHijriHandler(dateSvc *hijri.DateService, calSvc *hijri.CalendarService, visSvc *visibility.Service, adapter *cspice.Adapter) *HijriHandler {
@@ -97,6 +112,10 @@ func (h *HijriHandler) GetHijriDate(ctx *gin.Context) {
 		ctx.JSON(400, gin.H{"error": "Parameter 'lon' harus berupa angka desimal."})
 		return
 	}
+	if err := validateCoords(lat, lon); err != nil {
+		ctx.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
 
 	result := h.DateSvc.GetFullCalendarInfo(targetDate, lat, lon)
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": result})
@@ -161,6 +180,10 @@ func (h *HijriHandler) GetTelemetry(ctx *gin.Context) {
 		ctx.JSON(400, gin.H{"error": "Parameter 'lon' harus berupa angka desimal."})
 		return
 	}
+	if err := validateCoords(lat, lon); err != nil {
+		ctx.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
 
 	now := time.Now()
 	tel, err := h.Adapter.GetMoonTelemetry(now, lat, lon)
@@ -201,6 +224,10 @@ func (h *HijriHandler) GetYearlyCalendar(ctx *gin.Context) {
 		ctx.JSON(400, gin.H{"error": "Parameter 'year' harus berupa angka."})
 		return
 	}
+	if year < 1 {
+		ctx.JSON(400, gin.H{"error": "Parameter 'year' harus lebih besar dari 0."})
+		return
+	}
 
 	latStr := ctx.Query("lat")
 	lonStr := ctx.Query("lon")
@@ -209,8 +236,20 @@ func (h *HijriHandler) GetYearlyCalendar(ctx *gin.Context) {
 		return
 	}
 
-	lat, _ := strconv.ParseFloat(latStr, 64)
-	lon, _ := strconv.ParseFloat(lonStr, 64)
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Parameter 'lat' harus berupa angka desimal."})
+		return
+	}
+	lon, err := strconv.ParseFloat(lonStr, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Parameter 'lon' harus berupa angka desimal."})
+		return
+	}
+	if err := validateCoords(lat, lon); err != nil {
+		ctx.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
 
 	method := ctx.DefaultQuery("method", "KHGT")
 
@@ -240,10 +279,34 @@ func (h *HijriHandler) GetGregorianMonth(ctx *gin.Context) {
 		return
 	}
 
-	year, _ := strconv.Atoi(yearStr)
-	month, _ := strconv.Atoi(monthStr)
-	lat, _ := strconv.ParseFloat(latStr, 64)
-	lon, _ := strconv.ParseFloat(lonStr, 64)
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Parameter 'year' harus berupa angka."})
+		return
+	}
+	month, err := strconv.Atoi(monthStr)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Parameter 'month' harus berupa angka."})
+		return
+	}
+	if month < 1 || month > 12 {
+		ctx.JSON(400, gin.H{"error": "Parameter 'month' harus berada di rentang 1 s/d 12."})
+		return
+	}
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Parameter 'lat' harus berupa angka desimal."})
+		return
+	}
+	lon, err := strconv.ParseFloat(lonStr, 64)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Parameter 'lon' harus berupa angka desimal."})
+		return
+	}
+	if err := validateCoords(lat, lon); err != nil {
+		ctx.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
 
 	result := h.DateSvc.GetGregorianMonthInfo(year, month, lat, lon)
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": result})

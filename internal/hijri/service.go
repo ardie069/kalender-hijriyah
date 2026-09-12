@@ -67,16 +67,26 @@ func (s *DateService) GetHijriTargetDate(t time.Time, lat, lon float64) time.Tim
 func (s *DateService) ResolveDynamicHijriDate(m string, targetDay time.Time, lat, lon float64) models.HijriDate {
 	targetNoon := time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), 12, 0, 0, 0, time.UTC)
 
-	ijtimaRecent, _ := s.Ephem.FindIjtima(targetNoon)
+	ijtimaRecent, err := s.Ephem.FindIjtima(targetNoon)
+	if err != nil || ijtimaRecent.IsZero() {
+		return calendar.GetTabularHijri(targetNoon)
+	}
 	monthStartRecent := s.evalMonthStart(m, ijtimaRecent, lat, lon)
 
 	var finalMonthStart time.Time
 
 	if targetNoon.Before(monthStartRecent) {
-		ijtimaPrev, _ := s.Ephem.FindIjtima(ijtimaRecent.AddDate(0, 0, -29))
+		ijtimaPrev, errPrev := s.Ephem.FindIjtima(ijtimaRecent.AddDate(0, 0, -29))
+		if errPrev != nil || ijtimaPrev.IsZero() {
+			return calendar.GetTabularHijri(targetNoon)
+		}
 		finalMonthStart = s.evalMonthStart(m, ijtimaPrev, lat, lon)
 	} else {
 		finalMonthStart = monthStartRecent
+	}
+
+	if finalMonthStart.IsZero() || finalMonthStart.Year() < 1000 {
+		return calendar.GetTabularHijri(targetNoon)
 	}
 
 	daysElapsed := int(math.Round(targetNoon.Sub(finalMonthStart).Hours() / 24.0))
@@ -91,10 +101,17 @@ func (s *DateService) ResolveDynamicHijriDate(m string, targetDay time.Time, lat
 	if hDay > 30 {
 		hDay -= 30
 		evalMonth++
-		if evalMonth > 12 {
-			evalMonth = 1
-			evalYear++
-		}
+	}
+	if hDay < 1 {
+		hDay = 1
+	} else if hDay > 30 {
+		hDay = 30
+	}
+
+	// Normalisasi ke rentang 1..12 (anti panic index-out-of-range)
+	evalMonth = ((evalMonth-1)%12+12)%12 + 1
+	if evalYear < 1 {
+		evalYear = 1
 	}
 
 	return models.HijriDate{

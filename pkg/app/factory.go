@@ -32,6 +32,7 @@ type AppConfig struct {
 func NewAppConfig(manager *cspice.EphemerisManager) (*AppConfig, error) {
 	gin.SetMode(gin.ReleaseMode)
 	engine := gin.New()
+	engine.Use(gin.Recovery())
 
 	// Initialize Timezone Service
 	tzSvc, err := timezone.NewService()

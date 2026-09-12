@@ -76,6 +76,10 @@ func (h *PrayerHandler) GetPrayerTimes(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Parameter 'lon' harus berupa angka desimal."})
 		return
 	}
+	if err := validateCoords(lat, lon); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
 
 	var targetDate time.Time
 	if dateStr != "" {

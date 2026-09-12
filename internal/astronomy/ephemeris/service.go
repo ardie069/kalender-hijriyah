@@ -20,7 +20,10 @@ func NewService(astro *cspice.Adapter, manager *cspice.EphemerisManager) *Servic
 }
 
 func (s *Service) FindIjtima(approxDate time.Time) (time.Time, error) {
-	et, _ := cspice.Str2et(approxDate.Format(cspice.TimeFormat))
+	et, err := cspice.Str2et(approxDate.Format(cspice.TimeFormat))
+	if err != nil {
+		return time.Time{}, err
+	}
 	diff, err := s.getLongitudeDiff(et)
 	if err != nil {
 		return time.Time{}, err
