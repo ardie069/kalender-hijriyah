@@ -1,15 +1,14 @@
 package handlers
 
 import (
-	"fmt"
-	"math"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/ardie069/kalender-hijriyah/pkg/cspice"
 	"github.com/ardie069/kalender-hijriyah/internal/hijri"
+	"github.com/ardie069/kalender-hijriyah/internal/validators"
 	"github.com/ardie069/kalender-hijriyah/internal/visibility"
+	"github.com/ardie069/kalender-hijriyah/pkg/cspice"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,16 +21,7 @@ type HijriHandler struct {
 }
 
 func validateCoords(lat, lon float64) error {
-	if math.IsNaN(lat) || math.IsNaN(lon) || math.IsInf(lat, 0) || math.IsInf(lon, 0) {
-		return fmt.Errorf("latitude/longitude harus berupa angka valid")
-	}
-	if lat < -90 || lat > 90 {
-		return fmt.Errorf("latitude harus berada di rentang -90 s/d 90")
-	}
-	if lon < -180 || lon > 180 {
-		return fmt.Errorf("longitude harus berada di rentang -180 s/d 180")
-	}
-	return nil
+	return validators.ValidateCoords(lat, lon)
 }
 
 func NewHijriHandler(dateSvc *hijri.DateService, calSvc *hijri.CalendarService, visSvc *visibility.Service, adapter *cspice.Adapter) *HijriHandler {

@@ -5,6 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	hijriCtrl "github.com/ardie069/kalender-hijriyah/internal/delivery/http/controllers/hijri"
+	prayerCtrl "github.com/ardie069/kalender-hijriyah/internal/delivery/http/controllers/prayer"
 	"github.com/ardie069/kalender-hijriyah/internal/delivery/http/handlers"
 	"github.com/ardie069/kalender-hijriyah/internal/delivery/http/routes"
 	"github.com/ardie069/kalender-hijriyah/internal/hijri"
@@ -52,12 +54,14 @@ func NewAppConfig(manager *cspice.EphemerisManager) (*AppConfig, error) {
 	calSvc := hijri.NewCalendarService(dateSvc)
 	prayerSvc := prayer.NewService(adapter)
 
-	// Initialize Handlers
+	// Initialize Handlers/Controllers
 	hHandler := handlers.NewHijriHandler(dateSvc, calSvc, visSvc, adapter)
 	pHandler := handlers.NewPrayerHandler(prayerSvc, dateSvc, tzSvc)
+	hCtrl := hijriCtrl.NewController(dateSvc, calSvc, visSvc, adapter)
+	pCtrl := prayerCtrl.NewController(prayerSvc, dateSvc, tzSvc)
 
 	// Setup Routes
-	routes.SetupRoutes(engine, hHandler, pHandler)
+	routes.SetupRoutes(engine, hHandler, pHandler, hCtrl, pCtrl)
 
 	return &AppConfig{
 		Manager:    manager,

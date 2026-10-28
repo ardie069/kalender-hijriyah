@@ -11,6 +11,7 @@ import (
 	"github.com/ardie069/kalender-hijriyah/internal/models"
 	"github.com/ardie069/kalender-hijriyah/internal/prayer"
 	"github.com/ardie069/kalender-hijriyah/internal/usecase/timezone"
+	"github.com/ardie069/kalender-hijriyah/internal/validators"
 	"github.com/gin-gonic/gin"
 )
 
@@ -76,7 +77,7 @@ func (h *PrayerHandler) GetPrayerTimes(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Parameter 'lon' harus berupa angka desimal."})
 		return
 	}
-	if err := validateCoords(lat, lon); err != nil {
+	if err := validators.ValidateCoords(lat, lon); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
